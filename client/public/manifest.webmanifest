@@ -1,0 +1,52 @@
+{
+  "name": "BrainADZ Projects",
+  "short_name": "BrainADZ",
+  "description": "Projects, tasks, files and team groups for BrainADZ Live, Marketing and Exhibits.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f6fb",
+  "theme_color": "#f3f6fb",
+  "icons": [
+    {
+      "src": "/icons/brand-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Work",
+      "url": "/#/my",
+      "icons": [
+        {
+          "src": "/icons/brand-icon-512.png",
+          "sizes": "512x512"
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "url": "/#/projects",
+      "icons": [
+        {
+          "src": "/icons/brand-icon-512.png",
+          "sizes": "512x512"
+        }
+      ]
+    },
+    {
+      "name": "Team Groups",
+      "url": "/#/teams",
+      "icons": [
+        {
+          "src": "/icons/brand-icon-512.png",
+          "sizes": "512x512"
+        }
+      ]
+    }
+  ]
+}

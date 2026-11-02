@@ -1,0 +1,203 @@
+# BrainADZ Projects
+
+Project management for the three BrainADZ verticals: **Live**, **Marketing** and **Exhibits**. It uses the same look as the BrainADZ HRMS.
+
+The main rule: **employees and project heads see their assigned projects within the verticals they have been given.** Project ownership, team membership, assigned tasks and social/content assignments grant access. A website head assigned to a website does not automatically see social media projects in the same Marketing vertical. Vertical managers oversee their vertical, and the CEO's administrator account sees all projects. The server applies this scope to project lists, board/timeline exports, dashboards, search, calendar, assets, notifications and direct links. Removing an assignment takes effect on the next request when no other project assignment remains.
+
+## What it does
+
+| Area | What you get |
+| --- | --- |
+| **Menu** | Colourful icons for every page. On a computer the menu collapses to a slim rail of icons with the BrainADZ "Br" monogram (button on the menu's edge, the monogram itself, or the `[` key); hovering an icon shows its name and counts sit on the icon. The choice is remembered. Phones and tablets keep the slide-out menu. |
+| **Floating menu** | For the most room, choose **Floating menu** at the bottom of the side menu: the menu steps aside and a navy Br button floats on screen, with a red count when something new is waiting. Drag it anywhere with mouse, touch or pen; it follows smoothly, stays exactly where you drop it (also after a refresh), and never leaves the screen. A tap opens either the floating menu (icons only or with names, opening on whichever side has room) or **Quick Access**, a card of page tiles with a search that you can drag by its header. `[` opens and closes it, Escape or a click elsewhere closes it, and **Show the side menu** brings the normal menu back. |
+| **Mobile app** | Install BrainADZ Projects on Android phones, iPhones and computers: it gets the Br icon on the home screen, opens full screen without the browser bar, and starts quicker. Phones start with the floating Br button (it keeps clear of the notch and home bar and gives a light tick when you pick it up and put it down), and Quick Access opens as a bottom sheet you swipe down to close. See [Install it as an app](#install-it-as-an-app). |
+| **Dashboard** | Active projects, tasks due this week, overdue tasks, projects that need attention, upcoming event, show and launch dates, and recent activity. |
+| **Projects** | List, board and timeline views. The board works like Trello: cards with cover images, labels and badges, drag between and within columns, **Add a card** at the bottom of each column, and a list menu to sort or collapse. Filter by status, health, owner or client. Export to CSV. |
+| **Board columns** | Planning → Active → On hold → **Delivered** for Live and Marketing. Exhibits ends at **Ready for Event / Exhibition** instead, and only people with Exhibits access see that column. An admin can give any vertical its own last column under Settings → Verticals. |
+| **Project page** | Stage tracker, owner, dates, budget in ₹, location, progress, milestones, team, brief, and tabs for tasks, files and discussion. |
+| **Tasks** | Assignee, due date, priority, stage, status (To do, In progress, In review, Blocked, Done), checklist, files, comments with @mentions, and a change history. Shown grouped by stage, or as a Trello-style board. |
+| **Comments** | The author can delete a comment for 15 seconds after posting (with a countdown). After that it can only be removed if the author asks and a head of the vertical (a manager or an admin) approves; then the author gets the Delete option back. Heads cannot approve their own requests, but they can remove other people's comments directly; the author is told and the history records it. |
+| **Team Groups** | Every project has a group chat for the people working on it, like a Slack channel. People join automatically: the owner, the project team, and anyone who gets a task in the project. Post a **message**, a progress **update**, or your **status** (On track, Need help, Blocked, Done for today), and **share files**: stall designs, renders, drawings, photos, PDFs or anything else, up to 10 per message, with the paperclip, by dropping them on the chat, or by pasting a screenshot. Images show as previews and open full size; other files download in one click. Shared files are saved to the project's Files & assets as well (marked "Group chat"), and the group's **Files** tab lists everything shared in it; the People panel shows everyone's latest status, and a Blocked or Need help post also notifies the project owner. @mentions with name suggestions, unread counts in red, and a "New" line where you left off. Heads of the vertical can look in on every group they oversee. When the project is delivered or cancelled, the group closes on its own: it drops off everyone's list and its messages stay with the project, read-only (open **Group history** on the project). Reopening the project reopens the group. Messages follow the same delete rule as comments; deleting a message also removes the files shared in it, unless someone has marked a file as a final asset. Web links in messages and comments are clickable. |
+| **New-item alerts** | Counts turn red when someone else has added something since you last looked: the Tasks, Files & assets and Discussion tabs on a project, My Work (newly assigned tasks), Projects and Team Groups in the sidebar, each group, board columns and file categories. New items carry a red NEW tag. Once you open the tab, the count turns grey. Each person has their own read state. |
+| **Files & assets** | Drag-and-drop uploads, links to Drive, Dropbox or Figma, automatic categories (Brief, Design, Contract & PO, Quotes & Invoices, Production, Photos & Videos, Final deliverables, Reports), and a star for final assets. |
+| **My Work** | Your tasks grouped into Overdue, Today, This week, Next week and Later. |
+| **Calendar** | Month view of event days, show openings, launches, milestones and task deadlines. |
+| **Asset Library** | Every file from current and past projects, searchable by client, year, type and category. |
+| **Past Projects** | Completed and cancelled projects by year, with a client view. **Run again** copies a past project's plan, team and milestones to new dates, which suits repeat clients and annual shows. |
+| **Templates** | Ready-made plans per vertical, such as Exhibition stall, Corporate event or Integrated campaign. Task dates count back from the event, show or launch date. Any finished project can be saved as a template. |
+| **Team & Access** | One grid to set each person's access per vertical: Viewer, Member or Manager. |
+| **Notifications** | Sent when someone assigns you work, mentions you (in a comment or a group), comments on your task, adds you to a project, or asks for help in a group you own. |
+
+### Access levels (set per vertical)
+
+| Level | Can do |
+| --- | --- |
+| **Viewer** | See projects, tasks and files. Cannot change anything. Can read the group of a project they are on, but not post. |
+| **Member** | Work on projects: tasks, files, milestones, comments and group chat. Can edit projects they own. |
+| **Manager** | Create, edit, close, re-open and copy projects. Manage templates. Look in on every group in the vertical. Approve or decline requests to delete old comments and messages (the "head" of the vertical). |
+| **Admin** (company-wide) | Everything in every vertical, plus people, access, verticals and settings. |
+
+### Works for other industries
+
+Verticals are not hard-coded. An admin can add a new one under **Settings → Verticals**, for example *Retail* with the code `RTL` and a key date called *Store opening*, then add templates and give people access. The key date label changes per vertical: *Event date* for Live, *Show opens* for Exhibits, *Launch date* for Marketing.
+
+## Run it
+
+You need Node.js 22.13 or newer.
+
+```bash
+npm run setup          # install client/server dependencies and build the client
+npm start              # http://localhost:7125
+```
+
+On Windows PowerShell, use `npm.cmd` in place of `npm` if script execution is disabled. For example, run `npm.cmd run setup`, `npm.cmd run dev`, and `npm.cmd test`.
+
+On first start the server creates an admin account and prints the email and a temporary password in the terminal. To choose them yourself:
+
+```bash
+ADMIN_EMAIL=you@brainadz.com ADMIN_PASSWORD='a-strong-password' npm start
+```
+
+### Try it with sample data
+
+```bash
+npm run seed:demo
+npm start
+```
+
+This adds a fictional team and about twenty projects. Every sample person signs in with the password `demo1234`, for example:
+
+| Email | Sees |
+| --- | --- |
+| rajiv.malhotra@brainadz.com | Admin, all verticals |
+| suresh.iyer@brainadz.com | Exhibits manager |
+| rohan.das@brainadz.com | Exhibits member |
+| kavita.rao@brainadz.com | Marketing manager |
+| arvind.menon@brainadz.com | Live manager |
+| siddharth.menon@brainadz.com | Live and Marketing member |
+| vikram.patel@brainadz.com | Viewer for Live and Exhibits |
+
+### Development
+
+```bash
+npm run dev            # API on :7125 and the client with hot reload on :8125
+npm run dev:api        # API only
+npm run dev:client     # client only (expects the API on :7125)
+```
+
+## Marketing projects and daily reporting
+
+Use **Projects → New project**. For Marketing, choose **Social media**, **Website**, **SEO** or **Ads** first. The form shows the matching fields:
+
+- Social: monthly creative target, platforms, social/content person (the client contact), designer, manager and sales person.
+- Website: domain, page count, technology and developer.
+- SEO: website, keyword count, monthly deliverables and SEO executive.
+- Ads: platforms, monthly ad budget, objective and ads executive.
+
+Every project keeps its own team, tasks, group, files and progress. Prepare the content calendar manually and upload/share it in the project group. There is no calendar builder or calendar approval gate in the app.
+
+**Daily Reporting** is shared by the content team and the designer. The content person assigns a brief and designer; status and timings are automatic. Only the assigned person can use **Start → Pause → Resume → Done**. Pauses are excluded from **Total time**; refreshing or changing screens does not reset a timer. One person can run one timer at a time.
+
+Use **Notes** to add timestamped feedback. After Done, the content person can **Request changes** with a note; the designer starts the revision on the same row. Original and revision time remain separate in history and add up in Total time. A revision does not create another project task. Designer actions update that same row for the social person and update the project’s progress.
+
+Designers can also add **Other / extra work — no project**, assigned to themselves, or select any project they have access to across verticals. No dummy client/project is created for extra work. Daily/monthly filters include work performed in the period, even if it was assigned earlier; CSV includes lifetime active time and active time in the selected period. The sheet refreshes shared status every four seconds. Existing manually entered rows are retained; work previously in progress migrates as paused, without inventing active-time intervals.
+
+Use `npm run seed:marketing` for four fictional social-media clients and a four-person Marketing team: manager, social/content contact, designer and sales. The client’s sales person is stored separately; the social/content person is its contact. No starter tasks or daily rows are added. Use `npm run seed:marketing -- --reset` to back up the database, clear Marketing demo work, and recreate this clean setup. Live and Exhibits work is retained. Sample account password: `demo1234`.
+
+Run `npm test` for integration checks. Schema updates apply on the next server start.
+
+## Host it from this repository
+
+### GitHub Pages (demo only)
+
+`docs/index.html` is the one-file browser demo. GitHub can serve it straight from this repository:
+
+1. On GitHub, open **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
+3. Pick the branch that holds this code and the **/docs** folder, then press **Save**.
+4. After a minute the site is live at `https://<github-user>.github.io/<repo-name>/`.
+
+Every visitor gets their own copy of the sample data, kept in their browser. Use it for showing the app, not for real work. After changing the code, run `npm run build:pages` and commit `docs/` to update it.
+
+### Hosting the server
+
+On a Node.js 22 host, run `npm ci --include=dev && npm run build` and then `npm start`. Set `DATA_DIR` to persistent storage for the database and uploads.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `7125` | Port to listen on |
+| `DATA_DIR` | `./data` | Database and uploaded files. Back up this folder. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | generated | First admin account (first start only) |
+| `SECURE_COOKIES` | off | Set to `1` behind HTTPS |
+| `MAX_UPLOAD_MB` | `200` | Largest file someone can upload |
+| `TIMEZONE` | `Asia/Kolkata` | Decides what "today" and "overdue" mean |
+
+### Install it as an app
+
+Once the app is hosted on an HTTPS address, each person can install it from that address:
+
+- **Android (Chrome, Edge, Samsung Internet):** open the profile menu (your initials, top right) and choose **Install app**, or use the browser's **Install app** / **Add to Home screen** option.
+- **iPhone and iPad:** open the address in Safari, choose **Add to Home Screen** in the profile menu for the steps, or tap **Share → Add to Home Screen** directly.
+- **Windows and Mac (Chrome, Edge):** choose **Install app** in the profile menu, or the install icon in the address bar.
+
+The installed app always shows the latest version: it checks the server first and only falls back to the saved copy when there is no connection, and it never saves project data on the device. The browser demo is a single file, so it cannot be installed.
+
+## Browser demo
+
+`npm run build:demo` produces `dist-demo/brainadz-projects.html`, a single file that runs the same API against an in-browser copy of SQLite with the sample data. It has a person switcher so you can see how access changes between verticals. Data in the demo stays in that browser, so use the server version for real work.
+
+## How the code is organised
+
+```
+client/         React app, Vite config, app icons and service worker
+server/         Express API, sign-in, sessions, uploads and static files
+shared/         API rules, schema and demo data used by server and browser demo
+scripts/        demo and GitHub Pages build helpers
+docs/           generated GitHub Pages demo (refresh with npm run build:pages)
+```
+
+Security notes: passwords are hashed with scrypt; sessions are http-only cookies; every write needs a custom header so other sites cannot submit forms on your behalf; repeated failed sign-ins are slowed down; and uploaded files are served as downloads with a locked-down content policy. Run `npm audit` for the current dependency advisories.
+
+### Social media projects
+
+Social media clients are ongoing retainers. Their project page shows an automatic monthly creative target instead of Plan / Execute / Deliver / Close stages.
+
+- Assign work through Daily Reporting or the project's Daily work tab. The assigned designer controls Start, Pause, Resume, Done and revision timers.
+- Monthly completion is unique completed creatives divided by the target, e.g. 1 of 15 is 7%. Work belongs to its planned reporting month. Revisions reuse the original creative; pending changes temporarily remove it from the completed count.
+- Select an earlier month to inspect its work. The current month updates automatically, and reaching the target keeps the contract active.
+- Close contract is in the project menu and is used when the whole engagement ends.
+- Existing social project tasks are preserved and connected to Daily Reporting during the database upgrade. Existing work does not gain invented timer sessions.
+
+### Website projects
+
+A website project has one head, any number of selected developers, and a sales person. The head owns the project; no separate social contact or marketing-manager selection is used. The CEO's administrator account can oversee every service project and group without being selected into each team.
+
+- The head or manager adds **main tasks** from the project's Tasks tab, e.g. UI design or checkout development. Each has a selected project developer, phase, start date, deadline and brief. Developers cannot create or edit main tasks.
+- In **Development Reporting**, the developer chooses a project, one of their assigned main tasks, and today's module/work, e.g. UI design → homepage header. This creates a daily entry linked to the main task, without creating another main task.
+- Start / Pause / Resume record active time automatically. **Done today** finishes that daily entry. It does not complete the main task. After completing the current modules, the developer uses **Submit task for review**, confirms the full scope is complete, and may attach a completion note and preview/testing link. The main task becomes **Ready for review** and notifies its head.
+- The head chooses **Approve** to complete the main task and update project progress, or **Changes required** with mandatory feedback to return it to the developer. Each submission and decision stays in its history. A pending review freezes task/module edits and blocks new work until a decision; stale approvals cannot act on a newer submission.
+- Submission checks running task timers and unfinished current modules. Earlier daily entries that have been continued into later entries remain history and do not block completion.
+- If a module is unfinished, **Under process** stops its timer. **Continue today** creates the next dated entry with the same task/module link; the previous day's status, notes and active time stay saved. Repeated clicks reuse today's continuation, and overnight gaps do not add time.
+- The main task shows the total time across all its daily entries and earlier work history. Phase and website progress count completed main tasks. The head confirms website delivery separately.
+- Managers and heads see their team's daily entries; developers see only their own. Extra work and requested revisions can also continue into a later day.
+- Reassign unfinished main tasks before removing a developer. Pause running daily work before changing its task assignment or completion status. Existing tasks, notes, timers, files and group history are preserved; earlier task-level reporting remains available as history.
+
+To add the website demo locally without starting the app, run `npm run seed:website`. It backs up the database, keeps existing work, and adds Nova Commerce with one head, two developers, one sales person and six connected tasks. New sample logins: `web-head.demo@brainadz.com`, `web-dev1.demo@brainadz.com`, `web-dev2.demo@brainadz.com`, `web-sales.demo@brainadz.com`; password `demo1234`. Running the seed again preserves edits. The browser demo includes these accounts automatically.
+
+### Live software development
+
+In **Projects → Add project**, choose the **Live** vertical, then **Software development**. Live / event projects keep their existing form and workflow.
+
+The software form asks for client, project name, application type, technology, dates and scope. Its team is one software head, multiple selected developers and a sales person. There is no social/content contact or separate Marketing manager. The head owns the project; its group is created from this team.
+
+Software uses the same development workflow as Marketing websites: the head assigns main tasks by Design / Development / Testing / Launch, developers add their own daily modules in **Development Reporting**, and Start / Pause / Resume count active time. Unfinished modules continue into the next day without losing history. After completing the modules, the developer submits the main task for review; the head approves or requests changes. Approved main tasks update software progress automatically.
+
+Employees and heads see their assigned projects and permitted reports. Live managers oversee Live; Marketing managers oversee Marketing. The CEO/admin can oversee both. Software projects must belong to Live, and all selected team members need access to that vertical.
+
+### Separate daily reporting sheets
+
+Social Media Reporting (`#/daily-reporting/social`) contains social project work and creative extra work. Development Reporting (`#/daily-reporting/development`) contains Marketing website work, Live software work and development extra work. Project pickers, team filters and CSV exports follow the selected sheet.
+
+Managers and the configured project head can see their team's reports. Other employees see only work where they are the assigned person or social/content contact. The same access check protects work details, notes, timer history and updates; changing a filter or opening another work ID does not reveal someone else's report. Developer and social/content menus open the appropriate sheet, while managers and the CEO can open both.
+
+Existing extra work is assigned to a sheet during the database upgrade using the assignee's role. Its notes and timer history remain intact.
