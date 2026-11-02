@@ -1,86 +1,71 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { BriefcaseBusiness, Camera, CalendarDays, Mail, Pencil, Phone, ShieldCheck } from 'lucide-react';
 import { useApp } from '../store.jsx';
 import { api } from '../api.js';
-import { Field, Avatar, LEVEL_LABEL, VChip } from '../ui.jsx';
-
-const COLORS = ['#1f2b7b', '#e31b3b', '#1a6df0', '#1fa855', '#f2a600', '#7c5cfc', '#ef4778', '#1fb2d6', '#0f766e', '#b45309'];
+import { useRouter } from '../router.jsx';
+import { Avatar, Field, VChip } from '../ui.jsx';
 
 export default function Profile({ forced = false }) {
-  const { me, verticals, toast, loadBoot } = useApp();
-  const [f, setF] = useState({ name: me.name, title: me.title || '', phone: me.phone || '', color: me.color });
+  const { me, users, verticals, toast, loadBoot } = useApp();
+  const { navigate } = useRouter();
+  const [saving, setSaving] = useState(false);
   const [pw, setPw] = useState({ current: '', next: '', again: '' });
-  const [pwErr, setPwErr] = useState(null);
-  const saveProfile = async (e) => {
-    e.preventDefault();
+  const [pwErr, setPwErr] = useState('');
+  const photoInput = useRef(null);
+
+  const save = async (changes) => {
+    setSaving(true);
     try {
-      await api.patch('/me', f);
-      toast('Profile saved', 'success');
-      loadBoot();
-    } catch (e2) {
-      toast(e2.message, 'error');
-    }
+      await api.patch('/me', changes);
+      await loadBoot();
+      toast('Profile updated', 'success');
+    } catch (error) { toast(error.message, 'error'); }
+    finally { setSaving(false); }
   };
-  const savePw = async (e) => {
-    e.preventDefault();
-    setPwErr(null);
+  const changePhoto = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 220000) return toast('Choose a JPG, PNG or WebP photo under 220 KB', 'error');
+    const reader = new FileReader();
+    reader.onload = () => save({ photo: reader.result });
+    reader.onerror = () => toast('Could not read this photo', 'error');
+    reader.readAsDataURL(file);
+  };
+  const savePassword = async (event) => {
+    event.preventDefault();
+    setPwErr('');
     if (pw.next !== pw.again) return setPwErr('The two new passwords do not match');
     try {
       await api.post('/me/password', { current: pw.current, next: pw.next });
       setPw({ current: '', next: '', again: '' });
       toast('Password changed', 'success');
-      loadBoot();
-    } catch (e2) {
-      setPwErr(e2.message);
-    }
+      await loadBoot();
+    } catch (error) { setPwErr(error.message); }
   };
-  const pwForm = (
-    <form className="card" onSubmit={savePw}>
-      <div className="card-head"><h3>{forced ? 'Choose your own password' : 'Change password'}</h3></div>
-      {forced && <p className="small muted mb-12">You signed in with a temporary password. Set your own to continue.</p>}
-      {pwErr && <div className="alert error mb-12">{pwErr}</div>}
-      <div className="col" style={{ gap: 12 }}>
-        {!forced && <Field label="Current password" htmlFor="pw-cur"><input id="pw-cur" type="password" className="input" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} autoComplete="current-password" required /></Field>}
-        <Field label="New password" htmlFor="pw-new" hint="At least 8 characters"><input id="pw-new" type="password" className="input" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} autoComplete="new-password" minLength={8} required /></Field>
-        <Field label="New password again" htmlFor="pw-again"><input id="pw-again" type="password" className="input" value={pw.again} onChange={(e) => setPw({ ...pw, again: e.target.value })} autoComplete="new-password" minLength={8} required /></Field>
+  if (forced) return <form className="card" style={{ maxWidth: 460, margin: '40px auto' }} onSubmit={savePassword}>
+    <h3>Choose your own password</h3><p className="small muted mb-16">You signed in with a temporary password. Set your own to continue.</p>
+    {pwErr && <div className="alert error mb-12">{pwErr}</div>}
+    <div className="col"><Field label="New password" htmlFor="pw-new" hint="At least 8 characters"><input id="pw-new" className="input" type="password" minLength={8} required autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field><Field label="New password again" htmlFor="pw-again"><input id="pw-again" className="input" type="password" minLength={8} required autoComplete="new-password" value={pw.again} onChange={(e) => setPw({ ...pw, again: e.target.value })} /></Field></div>
+    <button className="btn primary mt-16">Save password</button>
+  </form>;
+
+  const joinedAt = me.profile?.joining_date || me.created_at;
+  const joined = joinedAt ? new Date(joinedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const manager = me.profile?.reporting_manager_id ? users.find((user) => user.id === Number(me.profile.reporting_manager_id))?.name : '';
+  return <div className="profile-overview">
+    <div className="page-head"><div><h1>My profile</h1><div className="sub">Your details at a glance.</div></div></div>
+    <div className="profile-overview-top">
+      <div className="profile-photo-area"><Avatar name={me.name} color={me.color} photo={me.photo} size={112} /><button type="button" className="btn profile-photo-btn" disabled={saving} onClick={() => photoInput.current?.click()}><Camera size={16} /> Change photo</button><input ref={photoInput} className="profile-file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={changePhoto} /></div>
+      <div className="profile-overview-info">
+        <div className="profile-name-line"><h2>{me.name}</h2>{me.profile?.employee_id && <span className="profile-id">{me.profile.employee_id}</span>}</div>
+        <p className="profile-job-title">{me.title || 'Add your job title'}</p>
+        <button type="button" className="btn primary profile-edit-btn" onClick={() => navigate('/profile/edit')}><Pencil size={17} /> Edit Profile</button>
+        <div className="profile-chips">{me.role === 'admin' && <span className="profile-chip"><ShieldCheck size={14} /> Admin</span>}{verticals.map((v) => <VChip key={v.id} name={v.name} color={v.color} />)}</div>
+        <div className="profile-meta"><span><Mail size={17} /> {me.email}</span>{me.phone && <span><Phone size={17} /> {me.phone}</span>}{joined && <span><CalendarDays size={17} /> Joined {joined}</span>}</div>
       </div>
-      <button type="submit" className="btn primary mt-16">Save password</button>
-    </form>
-  );
-  if (forced) return <div style={{ maxWidth: 460, margin: '40px auto' }}>{pwForm}</div>;
-  return (
-    <>
-      <div className="page-head"><div><h1>My profile</h1><div className="sub">How you appear to your team.</div></div></div>
-      <div className="grid">
-        <form className="card span-6" onSubmit={saveProfile}>
-          <div className="row mb-16" style={{ gap: 14 }}>
-            <Avatar name={f.name} color={f.color} size={56} />
-            <div><div className="b7" style={{ fontSize: 17 }}>{f.name}</div><div className="small muted">{me.email}</div></div>
-          </div>
-          <div className="form-grid">
-            <Field label="Name" htmlFor="pr-name"><input id="pr-name" className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required /></Field>
-            <Field label="Job title" htmlFor="pr-title"><input id="pr-title" className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
-            <Field label="Phone" htmlFor="pr-phone"><input id="pr-phone" className="input" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
-            <Field label="Avatar colour">
-              <div className="row wrap" style={{ gap: 6 }}>
-                {COLORS.map((c) => <button key={c} type="button" className={`swatch ${f.color === c ? 'on' : ''}`} style={{ background: c }} onClick={() => setF({ ...f, color: c })} aria-label={`Colour ${c}`} />)}
-              </div>
-            </Field>
-          </div>
-          <button type="submit" className="btn primary mt-16">Save profile</button>
-        </form>
-        <div className="span-6 col" style={{ gap: 16 }}>
-          <section className="card">
-            <div className="card-head"><h3>My access</h3></div>
-            {me.role === 'admin' ? <p className="small">You are an admin and can see every vertical.</p> : verticals.length === 0 ? <p className="small muted">You have not been added to a vertical yet.</p> : (
-              <div className="col" style={{ gap: 10 }}>
-                {verticals.map((v) => <div key={v.id} className="row between"><VChip name={v.name} color={v.color} /><span className="small b6">{LEVEL_LABEL[v.level]}</span></div>)}
-              </div>
-            )}
-            <p className="xs muted mt-12">An admin changes access under Team & Access.</p>
-          </section>
-          {!api.isDemo() && pwForm}
-        </div>
-      </div>
-    </>
-  );
+    </div>
+    <div className="profile-overview-tab">Overview</div>
+    <section className="card profile-about"><h3>About</h3><p>{me.profile?.about || (me.title ? `${me.title} at BrainADZ.` : 'Add your job title to tell your team a little about your role.')}</p><div className="profile-about-rows"><div><BriefcaseBusiness size={17} /><span>Job title</span><strong>{me.title || 'Not added'}</strong></div>{manager && <div><ShieldCheck size={17} /><span>Reports to</span><strong>{manager}</strong></div>}{me.profile?.department && <div><BriefcaseBusiness size={17} /><span>Department</span><strong>{me.profile.department}</strong></div>}<div><Mail size={17} /><span>Email</span><strong>{me.email}</strong></div><div><Phone size={17} /><span>Phone</span><strong>{me.phone || 'Not added'}</strong></div>{me.profile?.employment_type && <div><BriefcaseBusiness size={17} /><span>Employment</span><strong>{me.profile.employment_type}</strong></div>}{me.profile?.assigned_branch && <div><BriefcaseBusiness size={17} /><span>Branch</span><strong>{me.profile.assigned_branch}</strong></div>}{joined && <div><CalendarDays size={17} /><span>Joined</span><strong>{joined}</strong></div>}{verticals.length > 0 && <div><BriefcaseBusiness size={17} /><span>Teams</span><strong>{verticals.map((v) => v.name).join(', ')}</strong></div>}</div></section>
+  </div>;
 }

@@ -110,6 +110,8 @@ export function migrate(db) {
     addColumn(db,'extra_work','parent_task_id','INTEGER REFERENCES tasks(id) ON DELETE CASCADE');
     addColumn(db,'extra_work','continued_from_key',"TEXT NOT NULL DEFAULT ''");
   }
+  if (version < 15) addColumn(db, 'users', 'photo', "TEXT DEFAULT ''");
+  if (version < 16) addColumn(db, 'users', 'profile_data', "TEXT DEFAULT '{}'");
   db.exec("CREATE INDEX IF NOT EXISTS idx_extra_parent_task ON extra_work(parent_task_id); CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_continuation ON extra_work(continued_from_key,report_date,assignee_id) WHERE continued_from_key != '';");
   db.exec('CREATE INDEX IF NOT EXISTS idx_files_message ON files(message_id);');
   db.run(
