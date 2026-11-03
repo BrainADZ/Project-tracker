@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, unlink } from 'node:fs';
 import path from 'node:path';
 import { handle, fileForDownload } from '../shared/api.js';
 import { loadUser } from '../shared/access.js';
+import {ensureUserIdentity} from '../shared/profile.js';
 import { HttpError, todayIn } from '../shared/util.js';
 import { hashPassword, verifyPassword, newToken, loginGuard } from './auth.js';
 
@@ -67,7 +68,7 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
     res.setHeader('Referrer-Policy', 'same-origin');
     next();
   });
-  app.use('/api', express.json({ limit: '1mb' }));
+  app.use('/api', express.json({ limit: '2mb' }));
 
   // Writes must carry a custom header, which a cross-site form cannot send.
   app.use('/api', (req, res, next) => {
@@ -97,7 +98,8 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
       const password = String(req.body?.password || '');
       const key = `${req.ip}|${email}`;
       if (loginGuard.blocked(key)) throw new HttpError(429, 'Too many attempts. Try again in 10 minutes.');
-      const row = db.get('SELECT id, password_hash, active FROM users WHERE email = ?', email);
+      for(const user of db.all("SELECT id FROM users WHERE username IS NULL OR username=''"))ensureUserIdentity(db,user.id);
+      const row = db.get('SELECT id, password_hash, active FROM users WHERE email = ? OR username = ? COLLATE NOCASE', email,email);
       if (!row || !row.active || !(await verifyPassword(password, row.password_hash))) {
         loginGuard.failed(key);
         throw new HttpError(401, 'Incorrect email or password', 'bad_login');

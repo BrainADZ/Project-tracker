@@ -81,7 +81,7 @@ export default function App() {
     setBoot(false);
   };
 
-  if (me.must_change_password && !api.isDemo()) {
+  if (me.must_change_password && me.can_manage_credentials && !api.isDemo()) {
     return (
       <Layout onSignOut={signOut}>
         <Profile forced />
@@ -97,4 +97,3 @@ export default function App() {
     </>
   );
 }
-

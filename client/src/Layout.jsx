@@ -297,7 +297,7 @@ function UserMenu({ onSignOut }) {
             <div className="xs muted" style={{ fontWeight: 500 }}>{me.email}</div>
           </div>
           <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate('/profile'))}><UserRound size={16} />My profile</button>
-          {!api.isDemo() && <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate('/profile'))}><KeyRound size={16} />Change password</button>}
+          {me.can_manage_credentials && !api.isDemo() && <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate('/profile'))}><KeyRound size={16} />Change password</button>}
           {installApp && (
             <button type="button" className="item" role="menuitem" onClick={() => { close(); if (installApp.kind === 'ios') setIphoneHelp(true); else installApp.install(); }}>
               <Smartphone size={16} />{installApp.kind === 'ios' ? 'Add to Home Screen' : 'Install app'}

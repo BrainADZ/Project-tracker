@@ -3,7 +3,7 @@ import { MARKETING_SCHEMA } from './marketing-schema.js';
 // Database schema shared by the Node server (node:sqlite) and the in-browser demo (sql.js).
 // Both run SQLite, so the same SQL works everywhere.
 
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 // Kept as a function so a migration can rebuild the table with the same definition.
 export function projectsTable(name) {
@@ -72,7 +72,10 @@ CREATE TABLE IF NOT EXISTS users (
   active INTEGER DEFAULT 1,
   must_change_password INTEGER DEFAULT 0,
   created_at TEXT,
-  last_login_at TEXT
+  last_login_at TEXT,
+  username TEXT COLLATE NOCASE,
+  employee_code TEXT,
+  profile_json TEXT NOT NULL DEFAULT '{}'
 );
 
 -- Which verticals a person can see, and what they can do there.

@@ -6,6 +6,9 @@ import {canChooseWorkContact,websiteDevelopers} from './project-services.js';
 export function pendingWebsiteReview(db,taskId){
  return db.get("SELECT * FROM website_task_reviews WHERE task_id=? AND status='pending'",taskId);
 }
+export function canEditWebsiteTaskWork(ctx,task,project){
+ return atLeast(ctx.user,project.vertical_id,'member')&&task.assignee_id===ctx.user.id&&websiteDevelopers(project).includes(ctx.user.id)&&!['completed','cancelled'].includes(project.status)&&task.status!=='done'&&!pendingWebsiteReview(ctx.db,task.id);
+}
 export function websiteTaskReview(ctx,task,project,{history=false}={}){
  const rows=ctx.db.all('SELECT r.*,s.name submitted_by_name,h.name reviewed_by_name FROM website_task_reviews r JOIN users s ON s.id=r.submitted_by LEFT JOIN users h ON h.id=r.reviewed_by WHERE r.task_id=? ORDER BY r.id DESC',task.id);
  const latest=rows[0]||null,pending=rows.find(r=>r.status==='pending')||null;
@@ -47,7 +50,7 @@ export function registerWebsiteTaskReviews(route,call){
   const {task,project}=context(ctx);
   if(task.assignee_id!==ctx.user.id||!websiteDevelopers(project).includes(ctx.user.id))throw forbidden('Only the assigned developer can submit this task');
   if(ctx.body.all_modules_complete!==true)throw bad('Confirm that all modules of this main task are complete');
-  const note=text(ctx.body.note,{max:8000,label:'Completion note'})||'';
+  const note=text(ctx.body.note===undefined?task.description:ctx.body.note,{max:8000,label:'Completion note'})||'';
   const preview_url=text(ctx.body.preview_url,{max:2000,label:'Preview / testing link'})||'';
   if(preview_url){let parsed;try{parsed=new URL(preview_url);}catch{throw bad('Use a valid http:// or https:// preview link');}if(!['http:','https:'].includes(parsed.protocol))throw bad('Use an http:// or https:// preview link');}
   const pending=pendingWebsiteReview(ctx.db,task.id);

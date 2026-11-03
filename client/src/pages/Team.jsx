@@ -26,11 +26,12 @@ function AccessSelect({ id, value, onChange, disabled, color }) {
 }
 
 function PersonForm({ person, verticals, onClose, onSaved }) {
-  const { toast, me } = useApp();
+  const { toast, me, users } = useApp();
   const editing = !!person;
   const [f, setF] = useState(() => ({
-    name: person?.name || '', email: person?.email || '', title: person?.title || '', phone: person?.phone || '',
+    name: person?.name || '', email: person?.email || '', username:person?.username||'', title: person?.title || '', phone: person?.phone || '',
     role: person?.role || 'member', active: person ? !!person.active : true, password: '', access: { ...(person?.access || {}) },
+    profile:{department:person?.profile?.department||'',employment_type:person?.profile?.employment_type||'',work_place:person?.profile?.work_place||'',location:person?.profile?.location||'',join_date:person?.profile?.join_date||'',manager_id:person?.profile?.manager_id||''},
   }));
   const [err, setErr] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -41,6 +42,8 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
     setErr(null);
     const body = { name: f.name, email: f.email, title: f.title, phone: f.phone, role: f.role, access: f.access };
     if (editing) body.active = f.active;
+    if(editing)body.username=f.username;
+    if(editing)body.profile=f.profile;
     if (f.password) body.password = f.password;
     else if (!editing && demo) body.password = 'demo1234';
     try {
@@ -61,6 +64,7 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
         <div className="form-grid">
           <Field label="Full name" htmlFor="pp-name"><input id="pp-name" className="input" value={f.name} onChange={set('name')} required maxLength={120} /></Field>
           <Field label="Work email" htmlFor="pp-email"><input id="pp-email" type="email" className="input" value={f.email} onChange={set('email')} required /></Field>
+          {editing&&<Field label="Login username" htmlFor="pp-username"><input id="pp-username" className="input" required maxLength={120} value={f.username} onChange={set('username')}/></Field>}
           <Field label="Job title" htmlFor="pp-title"><input id="pp-title" className="input" value={f.title} onChange={set('title')} maxLength={120} /></Field>
           <Field label="Phone" htmlFor="pp-phone"><input id="pp-phone" className="input" value={f.phone} onChange={set('phone')} maxLength={40} /></Field>
           <Field label="Role" htmlFor="pp-role" hint={f.role === 'admin' ? 'Admins see every vertical and manage people and settings.' : 'Access depends on the verticals below.'}>
@@ -69,10 +73,16 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               <option value="admin">Admin</option>
             </select>
           </Field>
-          <Field label={editing ? 'Reset password' : 'Temporary password'} htmlFor="pp-pass" hint={demo ? 'Passwords are not used in the demo.' : editing ? 'Leave empty to keep the current password.' : 'They will be asked to change it after signing in.'}>
+          <Field label={editing ? 'Reset password' : 'Password'} htmlFor="pp-pass" hint={demo ? 'Passwords are not used in the demo.' : editing ? 'Leave empty to keep the current password.' : 'Login credentials are managed by the CEO / IT team.'}>
             <input id="pp-pass" className="input" type="text" value={f.password} onChange={set('password')} minLength={8} required={!editing && !demo} placeholder={demo ? 'demo1234' : 'At least 8 characters'} autoComplete="new-password" />
           </Field>
-          <div className="form-section">Vertical access</div>
+          {!editing&&<div className="form-section">Vertical access</div>}
+          {editing&&<>
+            <div className="form-section">Profile · employment details</div>
+            {Object.entries({department:'Department',employment_type:'Employment type',work_place:'Working place',location:'Work location',join_date:'Joining date'}).map(([key,label])=><Field key={key} label={label} htmlFor={'pp-'+key}><input id={'pp-'+key} className="input" type={key==='join_date'?'date':'text'} maxLength={1000} value={f.profile[key]} onChange={e=>setF(x=>({...x,profile:{...x.profile,[key]:e.target.value}}))}/></Field>)}
+            <Field label="Reporting manager" htmlFor="pp-manager"><select id="pp-manager" className="select" value={f.profile.manager_id} onChange={e=>setF(x=>({...x,profile:{...x.profile,manager_id:e.target.value}}))}><option value="">Not assigned</option>{users.filter(u=>u.id!==person.id).map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
+            <div className="form-section">Vertical access</div>
+          </>}
           <div className="full col" style={{ gap: 10 }}>
             {f.role === 'admin' ? <div className="alert info"><ShieldCheck size={16} />Admins can see and manage every vertical.</div> : verticals.map((v) => (
               <div key={v.id} className="row" style={{ gap: 12 }}>
