@@ -1,6 +1,6 @@
-import { addDays } from './util.js';
-import { WEBSITE_STAGES } from './project-services.js';
-import { initWebsiteDailyRows } from './work-tracking.js';
+import { addDays } from '../services/util.js';
+import { WEBSITE_STAGES } from '../services/project-services.js';
+import { initWebsiteDailyRows } from '../services/work-tracking.js';
 
 export const WEBSITE_DEMO_PEOPLE = [
   {key:'web-head',name:'Arjun Mehta (Demo)',title:'Website Head',color:'#2563eb'},

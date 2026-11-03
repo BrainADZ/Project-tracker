@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, setUnauthorizedHandler } from './api.js';
-import { defaultReportingDepartment, reportingPath } from '../../shared/reporting-access.js';
-import { usesDailyReporting } from '../../shared/reporting-audience.js';
+import { defaultReportingDepartment, reportingPath } from '../../backend/services/reporting-access.js';
+import { usesDailyReporting } from '../../backend/services/reporting-audience.js';
 
 const AppCtx = createContext(null);
 const RANK = { viewer: 1, member: 2, manager: 3 };

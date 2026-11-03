@@ -17,7 +17,6 @@ import Profile from './pages/Profile.jsx';
 import ProfileEdit from './pages/ProfileEdit.jsx';
 import Teams from './pages/Teams.jsx';
 import DailyReporting from './pages/DailyReporting.jsx';
-import { DemoBadge } from './demo/DemoBadge.jsx';
 
 function Routes() {
   const { path, navigate } = useRouter();
@@ -95,7 +94,6 @@ export default function App() {
       <Layout onSignOut={signOut}>
         <Routes key={me.id} />
       </Layout>
-      <DemoBadge />
     </>
   );
 }

@@ -1,9 +1,10 @@
-import { defaultReportingDepartment } from './reporting-access.js';
-import { initExistingWork, initSocialDailyRows, upgradeWebsiteProjects } from './work-tracking.js';
-import { importLegacyDailyRows } from './daily-reporting.js';
+import { defaultReportingDepartment } from '../services/reporting-access.js';
+import { initExistingWork, initSocialDailyRows, upgradeWebsiteProjects } from '../services/work-tracking.js';
+import { importLegacyDailyRows } from '../controllers/daily-reporting.js';
 // Creates tables and the starting verticals and templates on a fresh database,
 // and upgrades databases created by earlier versions.
 import { SCHEMA, SCHEMA_VERSION, DEFAULT_VERTICALS, DEFAULT_TEMPLATES, projectsTable } from './schema.js';
+import { migratePostgres } from './postgres-schema.js';
 
 const hasColumn = (db, table, col) => db.all(`PRAGMA table_info(${table})`).some((c) => c.name === col);
 
@@ -71,6 +72,7 @@ function upgradeTo5(db) {
 export const SEEN_TABS = ['tasks', 'files', 'discussion'];
 
 export function migrate(db) {
+  if (db.kind === 'postgres') return migratePostgres(db);
   db.exec('PRAGMA foreign_keys = ON;');
   const fresh = !db.get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'");
   db.exec(SCHEMA);

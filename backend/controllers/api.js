@@ -1,10 +1,10 @@
 import { registerWebsiteTaskReviews, websiteTaskReview, pendingWebsiteReview } from './website-task-review.js';
-import { reportingAccess } from './reporting-access.js';
+import { reportingAccess } from '../services/reporting-access.js';
 import { registerDevelopmentReporting } from './development-reporting.js';
-import { websiteProgressFor, websiteTaskTime, assertWebsiteAssignment } from './website-work.js';
-import { socialProgressFor } from './social-progress.js';
-import { trackingTaskGuard, initSocialDailyRows, initWebsiteDailyRows } from './work-tracking.js';
-import { isDevelopmentProject, serviceFields, normalizeWebsiteFields, projectRoleIds, websiteDevelopers, WEBSITE_STAGES, canChooseWorkContact } from './project-services.js';
+import { websiteProgressFor, websiteTaskTime, assertWebsiteAssignment } from '../services/website-work.js';
+import { socialProgressFor } from '../services/social-progress.js';
+import { trackingTaskGuard, initSocialDailyRows, initWebsiteDailyRows } from '../services/work-tracking.js';
+import { isDevelopmentProject, serviceFields, normalizeWebsiteFields, projectRoleIds, websiteDevelopers, WEBSITE_STAGES, canChooseWorkContact } from '../services/project-services.js';
 import { registerDailyReporting } from './daily-reporting.js';
 import { registerMarketing } from './marketing.js';
 // The whole project-management API as plain functions. The Node server mounts it under
@@ -18,12 +18,13 @@ import { registerMarketing } from './marketing.js';
 import {
   HttpError, bad, notFound, forbidden, optDate, text, oneOf, optId, toId,
   parseJSON, addDays, daysBetween, placeholders, isDate,
-} from './util.js';
+} from '../services/util.js';
 import {
   loadUser, isAdmin, levelFor, atLeast, visibleVerticalIds, canView, canManageVertical, projectVisibilitySql,
   canEditProject, canContribute, permissionsFor, LEVELS,
-} from './access.js';
-import { FILE_CATEGORIES } from './schema.js';
+} from '../models/access.js';
+import { FILE_CATEGORIES } from '../schema/schema.js';
+import { createRouteRegistry } from '../routes/registry.js';
 
 export const PROJECT_STATUSES = ['planning', 'active', 'on_hold', 'ready', 'completed', 'cancelled'];
 export const OPEN_STATUSES = ['planning', 'active', 'on_hold', 'ready'];
@@ -36,32 +37,10 @@ export const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 export const TASK_STATUSES = ['todo', 'in_progress', 'review', 'blocked', 'done'];
 const DEFAULT_STAGES = ['Plan', 'Execute', 'Deliver', 'Close'];
 
-const routes = [];
-function route(method, pattern, handler) {
-  const keys = [];
-  const re = new RegExp('^' + pattern.replace(/:(\w+)/g, (_, k) => (keys.push(k), '([^/]+)')) + '/?$');
-  routes.push({ method, re, keys, handler });
-}
+const { route, call: callRoute } = createRouteRegistry();
 
 export async function handle(ctx, method, path) {
   return callRoute(ctx, method, path);
-}
-
-// Synchronous dispatch also lets related client/task changes share one SQLite transaction.
-function callRoute(ctx, method, path, body = ctx.body) {
-  ctx = { ...ctx, body };
-  for (const rt of routes) {
-    if (rt.method !== method) continue;
-    const m = rt.re.exec(path);
-    if (!m) continue;
-    const params = {};
-    rt.keys.forEach((k, i) => (params[k] = decodeURIComponent(m[i + 1])));
-    const c = { ...ctx, params, query: ctx.query || {}, body: ctx.body || {} };
-    c.today = ctx.services.today();
-    c.now = ctx.services.now();
-    return rt.handler(c);
-  }
-  throw new HttpError(404, 'Not found', 'not_found');
 }
 
 // ---------------------------------------------------------------- helpers

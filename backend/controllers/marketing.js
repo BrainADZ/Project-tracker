@@ -1,7 +1,7 @@
-import { bad, forbidden, notFound, text, optDate, optId, toId, oneOf } from './util.js';
-import { atLeast, canManageVertical, loadUser, canView, projectVisibilitySql } from './access.js';
-import { canReadWork, canManageReport } from './reporting-access.js';
-import { POST_TYPES, PLATFORMS, JOB_STATUSES, TASK_STATE, CLOSED_JOBS } from './marketing-options.js';
+import { bad, forbidden, notFound, text, optDate, optId, toId, oneOf } from '../services/util.js';
+import { atLeast, canManageVertical, loadUser, canView, projectVisibilitySql } from '../models/access.js';
+import { canReadWork, canManageReport } from '../services/reporting-access.js';
+import { POST_TYPES, PLATFORMS, JOB_STATUSES, TASK_STATE, CLOSED_JOBS } from '../services/marketing-options.js';
 
 function marketing(ctx, write = false, manage = false) {
   const v = ctx.db.get("SELECT * FROM verticals WHERE code = 'MKT' AND active = 1");

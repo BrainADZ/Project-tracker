@@ -1,7 +1,7 @@
 // Sample data for the demo and for `npm run seed:demo`. All people, clients and
 // projects are fictional. Dates are relative to "today" so the demo always looks current.
-import { DEFAULT_TEMPLATES } from './schema.js';
-import { addDays } from './util.js';
+import { DEFAULT_TEMPLATES } from '../schema/schema.js';
+import { addDays } from '../services/util.js';
 
 export const DEMO_PASSWORD = 'demo1234';
 
@@ -166,7 +166,7 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
         );
       ids[p.key] = id;
       for (const [short, level] of Object.entries(p.access)) {
-        if (vByShort[short]) db.run('INSERT OR REPLACE INTO user_verticals (user_id, vertical_id, level) VALUES (?,?,?)', id, vByShort[short].id, level);
+        if (vByShort[short]) db.run('INSERT INTO user_verticals (user_id, vertical_id, level) VALUES (?,?,?) ON CONFLICT(user_id, vertical_id) DO UPDATE SET level=excluded.level', id, vByShort[short].id, level);
       }
     }
 
@@ -352,9 +352,9 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     const lastLook = ts(addDays(today, -2), 18, 0);
     const projectIds = db.all('SELECT id FROM projects').map((r) => r.id);
     for (const uid of Object.values(ids)) {
-      db.run('INSERT OR REPLACE INTO seen (user_id, scope, seen_at) VALUES (?,?,?)', uid, 'mywork', lastLook);
+      db.run('INSERT INTO seen (user_id, scope, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, scope) DO UPDATE SET seen_at=excluded.seen_at', uid, 'mywork', lastLook);
       for (const pid of projectIds) {
-        for (const tab of ['tasks', 'files', 'discussion']) db.run('INSERT OR REPLACE INTO seen (user_id, scope, seen_at) VALUES (?,?,?)', uid, `project:${pid}:${tab}`, lastLook);
+        for (const tab of ['tasks', 'files', 'discussion']) db.run('INSERT INTO seen (user_id, scope, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, scope) DO UPDATE SET seen_at=excluded.seen_at', uid, `project:${pid}:${tab}`, lastLook);
       }
     }
     // A handful of tasks were handed over yesterday, so My Work has something new.

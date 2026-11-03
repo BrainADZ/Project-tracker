@@ -6,9 +6,9 @@ import { useApp,useLoad } from '../store.jsx';
 import { api } from '../api.js';
 import { Link,useRouter } from '../router.jsx';
 import { Modal,Field,Loading,ErrorNote,Empty } from '../ui.jsx';
-import { WORK_TYPES } from '../../../shared/daily-reporting.js';
-import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers, WEBSITE_STAGES } from '../../../shared/project-services.js';
-import { REPORTING_DEPARTMENTS, projectReportingDepartment, reportingPath } from '../../../shared/reporting-access.js';
+import { WORK_TYPES } from '../../../backend/controllers/daily-reporting.js';
+import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers, WEBSITE_STAGES } from '../../../backend/services/project-services.js';
+import { REPORTING_DEPARTMENTS, projectReportingDepartment, reportingPath } from '../../../backend/services/reporting-access.js';
 import { fmtDate } from '../format.js';
 
 const duration=ms=>{const sec=Math.floor(Math.max(0,ms||0)/1000);return String(Math.floor(sec/3600)).padStart(2,'0')+':'+String(Math.floor(sec/60)%60).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');};

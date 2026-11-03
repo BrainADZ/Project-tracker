@@ -5,7 +5,7 @@ import {useApp,useLoad} from '../store.jsx';
 import {api} from '../api.js';
 import {Link} from '../router.jsx';
 import {Modal,Field,Loading,ErrorNote,Empty} from '../ui.jsx';
-import {WEBSITE_STAGES,websiteDevelopers,canChooseWorkContact} from '../../../shared/project-services.js';
+import {WEBSITE_STAGES,websiteDevelopers,canChooseWorkContact} from '../../../backend/services/project-services.js';
 import {duration} from '../report-utils.js';
 import WebsiteTaskReview from './WebsiteTaskReview.jsx';
 import {fmtDate} from '../format.js';

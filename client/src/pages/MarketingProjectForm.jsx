@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../store.jsx';
 import { api } from '../api.js';
 import { Modal, Field, UserSelect } from '../ui.jsx';
-import { SERVICE_TYPES, websiteDevelopers, isDevelopmentProject } from '../../../shared/project-services.js';
+import { SERVICE_TYPES, websiteDevelopers, isDevelopmentProject } from '../../../backend/services/project-services.js';
 
 export function MarketingProjectForm({project,copyFrom,initialName,initialStatus,initialService='',serviceChoices,onFieldChange,verticalId,onVerticalChange,onClose,onSaved}) {
   const {me,today,manageableVerticals,assignable,toast}=useApp();

@@ -1,7 +1,7 @@
-import { TRACKING_SCHEMA } from './work-tracking.js';
+import { TRACKING_SCHEMA } from '../services/work-tracking.js';
 import { MARKETING_SCHEMA } from './marketing-schema.js';
-// Database schema shared by the Node server (node:sqlite) and the in-browser demo (sql.js).
-// Both run SQLite, so the same SQL works everywhere.
+// Canonical schema definition for the offline demo and the PostgreSQL schema
+// converter. Existing SQLite databases are read only by the migration tool.
 
 export const SCHEMA_VERSION = 16;
 

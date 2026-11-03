@@ -1,9 +1,9 @@
-import { REPORTING_DEPARTMENTS, defaultReportingDepartment, projectReportingDepartment, rowReportingDepartment, reportingAccess, canReadWork, canManageReport, reportingPath } from './reporting-access.js';
-import { assertWebsiteAssignment } from './website-work.js';
-import { bad, forbidden, notFound, toId, text, optId, optDate, oneOf, isDate, placeholders, addDays, parseJSON } from './util.js';
-import { loadUser, atLeast, visibleVerticalIds, canView } from './access.js';
-import { initExistingWork, workId, workTotals, addWorkNote, startInterval, stopInterval } from './work-tracking.js';
-import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers, WEBSITE_STAGES } from './project-services.js';
+import { REPORTING_DEPARTMENTS, defaultReportingDepartment, projectReportingDepartment, rowReportingDepartment, reportingAccess, canReadWork, canManageReport, reportingPath } from '../services/reporting-access.js';
+import { assertWebsiteAssignment } from '../services/website-work.js';
+import { bad, forbidden, notFound, toId, text, optId, optDate, oneOf, isDate, placeholders, addDays, parseJSON } from '../services/util.js';
+import { loadUser, atLeast, visibleVerticalIds, canView } from '../models/access.js';
+import { initExistingWork, workId, workTotals, addWorkNote, startInterval, stopInterval } from '../services/work-tracking.js';
+import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers, WEBSITE_STAGES } from '../services/project-services.js';
 export const DAILY_STATUSES=['Not Started','In Process','Paused','Done'];
 export const WORK_TYPES={social:['Video','Still','Carousel','Animation','Editing','Graphic'],website:['Design','Development','Content','Testing','Maintenance'],software:['Design','Development','Testing','Launch'],seo:['On-page SEO','Off-page SEO','Technical SEO','Content','Reporting'],ads:['Creative','Campaign setup','Optimisation','Tracking','Reporting'],other:['Graphic','Video','Editing','Presentation','Print','Website','Other']};
 export function importLegacyDailyRows(db) {

@@ -4,7 +4,7 @@ import { useApp } from '../store.jsx';
 import { api } from '../api.js';
 import { Logo } from '../Layout.jsx';
 import { Avatar, Field } from '../ui.jsx';
-import { WEBSITE_DEMO_PEOPLE, websiteDemoEmail } from '../../../shared/website-demo.js';
+import { WEBSITE_DEMO_PEOPLE, websiteDemoEmail } from '../../../backend/seeds/website-demo.js';
 
 const QUICK_ACCOUNTS = [
   { label: 'Admin · all verticals', email: 'rajiv.malhotra@brainadz.com' },

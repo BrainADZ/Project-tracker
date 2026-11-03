@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openDb } from '../server/db.js';
-import { migrate, seedBasics } from '../shared/setup.js';
-import { SCHEMA_VERSION } from '../shared/schema.js';
-import { handle } from '../shared/api.js';
-import { loadUser } from '../shared/access.js';
-import { canChooseWorkContact } from '../shared/project-services.js';
+import { openDb } from '../backend/models/db.js';
+import { migrate, seedBasics } from '../backend/schema/setup.js';
+import { SCHEMA_VERSION } from '../backend/schema/schema.js';
+import { handle } from '../backend/controllers/api.js';
+import { loadUser } from '../backend/models/access.js';
+import { canChooseWorkContact } from '../backend/services/project-services.js';
 
 function fixture() {
   const db = openDb(':memory:');
@@ -126,7 +126,7 @@ test('upgrade from version 5 preserves existing project data', async () => {
 });
 
 test('clean Marketing demo contains four clients, four staff and no reporting clutter',async()=>{
-  const {seedMarketingDemo}=await import('../shared/marketing-demo.js');
+  const {seedMarketingDemo}=await import('../backend/seeds/marketing-demo.js');
   const f=fixture();
   try{
     const old=f.db.run("INSERT INTO users (name,email,role) VALUES ('Old Marketing','kavita.rao@brainadz.com','member')").id;
@@ -555,7 +555,7 @@ test('website heads reassign main tasks and developers add only their own linked
 });
 
 test('website demo is additive, repeatable and connects its four people to reporting',async()=>{
-  const {seedWebsiteDemo,WEBSITE_DEMO_PEOPLE,websiteDemoEmail}=await import('../shared/website-demo.js');
+  const {seedWebsiteDemo,WEBSITE_DEMO_PEOPLE,websiteDemoEmail}=await import('../backend/seeds/website-demo.js');
   const f=fixture();
   try{
     const kept=await f.call(f.manager,'POST','/projects',{vertical_id:f.mk,name:'Keep existing social',service_type:'social',service_details:{monthly_target:15}});
@@ -724,7 +724,7 @@ test('website head only sees assigned projects across boards, search, dashboard,
   assert.deepEqual((await f.call(f.head,'GET','/tasks',{}, {scope:'all'})).items.map(t=>t.id),[work.id]);
   const assets=await f.call(f.head,'GET','/files');
   assert.equal(assets.total,1);assert.deepEqual(assets.items.map(x=>x.id),[asset.id]);
-  const {fileForDownload}=await import('../shared/api.js');
+  const {fileForDownload}=await import('../backend/controllers/api.js');
   assert.throws(()=>fileForDownload({db:f.db,user:loadUser(f.db,f.head)},hiddenAsset.id),e=>e.status===404);
   assert.equal(fileForDownload({db:f.db,user:loadUser(f.db,f.head)},asset.id).id,asset.id);
   assert.equal((await f.call(f.head,'GET','/search',{}, {q:'Private'})).results.length,0);

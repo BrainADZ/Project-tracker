@@ -1,4 +1,4 @@
-import { isDevelopmentProject, SERVICE_TYPES } from '../../../shared/project-services.js';
+import { isDevelopmentProject, SERVICE_TYPES } from '../../../backend/services/project-services.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Pencil, Copy, Trash2, CheckCircle2, PauseCircle, RotateCcw, Ban, LayoutTemplate, Download, Plus, Diamond, MapPin,

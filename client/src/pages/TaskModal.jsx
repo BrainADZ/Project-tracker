@@ -1,4 +1,4 @@
-import { isDevelopmentProject } from '../../../shared/project-services.js';
+import { isDevelopmentProject } from '../../../backend/services/project-services.js';
 import WebsiteTaskReview from './WebsiteTaskReview.jsx';
 import { useEffect, useState } from 'react';
 import { X, Trash2, Check, Plus, Paperclip, Lock } from 'lucide-react';

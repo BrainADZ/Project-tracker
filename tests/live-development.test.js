@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {openDb} from '../server/db.js';
-import {migrate,seedBasics} from '../shared/setup.js';
-import {handle} from '../shared/api.js';
-import {loadUser} from '../shared/access.js';
-import {usesDailyReporting} from '../shared/reporting-audience.js';
+import {openDb} from '../backend/models/db.js';
+import {migrate,seedBasics} from '../backend/schema/setup.js';
+import {handle} from '../backend/controllers/api.js';
+import {loadUser} from '../backend/models/access.js';
+import {usesDailyReporting} from '../backend/services/reporting-audience.js';
 
 function fixture(){
  const db=openDb(':memory:');migrate(db);seedBasics(db);

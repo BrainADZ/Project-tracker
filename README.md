@@ -45,6 +45,11 @@ Verticals are not hard-coded. An admin can add a new one under **Settings → Ve
 
 You need Node.js 22.13 or newer.
 
+Copy `.env.example` to `.env` and set `DATABASE_URL` to your PostgreSQL
+connection. The start, seed and test commands load `.env` when present. `.env`
+is ignored by Git. The server requires PostgreSQL; its project data no longer
+uses the SQLite file.
+
 ```bash
 npm run setup          # install client/server dependencies and build the client
 npm start              # http://localhost:7125
@@ -108,25 +113,15 @@ Run `npm test` for integration checks. Schema updates apply on the next server s
 
 ## Host it from this repository
 
-### GitHub Pages (demo only)
-
-`docs/index.html` is the one-file browser demo. GitHub can serve it straight from this repository:
-
-1. On GitHub, open **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
-3. Pick the branch that holds this code and the **/docs** folder, then press **Save**.
-4. After a minute the site is live at `https://<github-user>.github.io/<repo-name>/`.
-
-Every visitor gets their own copy of the sample data, kept in their browser. Use it for showing the app, not for real work. After changing the code, run `npm run build:pages` and commit `docs/` to update it.
-
 ### Hosting the server
 
-On a Node.js 22 host, run `npm ci --include=dev && npm run build` and then `npm start`. Set `DATA_DIR` to persistent storage for the database and uploads.
+On a Node.js 22 host, run `npm ci --include=dev && npm run build` and then `npm start`. Set `DATABASE_URL` to a persistent PostgreSQL database and `DATA_DIR` to persistent storage for uploads.
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `7125` | Port to listen on |
-| `DATA_DIR` | `./data` | Database and uploaded files. Back up this folder. |
+| `DATABASE_URL` | required | PostgreSQL connection string. Back up this database. |
+| `DATA_DIR` | `./data` | Uploaded files and migration backup. Back up this folder. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | generated | First admin account (first start only) |
 | `SECURE_COOKIES` | off | Set to `1` behind HTTPS |
 | `MAX_UPLOAD_MB` | `200` | Largest file someone can upload |
@@ -140,21 +135,20 @@ Once the app is hosted on an HTTPS address, each person can install it from that
 - **iPhone and iPad:** open the address in Safari, choose **Add to Home Screen** in the profile menu for the steps, or tap **Share → Add to Home Screen** directly.
 - **Windows and Mac (Chrome, Edge):** choose **Install app** in the profile menu, or the install icon in the address bar.
 
-The installed app always shows the latest version: it checks the server first and only falls back to the saved copy when there is no connection, and it never saves project data on the device. The browser demo is a single file, so it cannot be installed.
-
-## Browser demo
-
-`npm run build:demo` produces `dist-demo/brainadz-projects.html`, a single file that runs the same API against an in-browser copy of SQLite with the sample data. It has a person switcher so you can see how access changes between verticals. Data in the demo stays in that browser, so use the server version for real work.
+The installed app always shows the latest version: it checks the server first and only falls back to the saved copy when there is no connection, and it never saves project data on the device.
 
 ## How the code is organised
 
 ```
 client/         React app, Vite config, app icons and service worker
-server/         Express API, sign-in, sessions, uploads and static files
-shared/         API rules, schema and demo data used by server and browser demo
-scripts/        demo and GitHub Pages build helpers
-docs/           generated GitHub Pages demo (refresh with npm run build:pages)
+backend/        HTTP routes, controllers, models, schema, services and demo seeds
 ```
+
+The server uses **PostgreSQL** through the `pg` client and requires
+`DATABASE_URL`. Existing SQLite server data can be copied once with
+`npm run db:migrate`; this creates a consistent SQLite backup under
+`data/backups/` and verifies every table's row count before committing.
+See [backend/README.md](backend/README.md).
 
 Security notes: passwords are hashed with scrypt; sessions are http-only cookies; every write needs a custom header so other sites cannot submit forms on your behalf; repeated failed sign-ins are slowed down; and uploaded files are served as downloads with a locked-down content policy. Run `npm audit` for the current dependency advisories.
 

@@ -1,9 +1,9 @@
 
 import { websiteTaskReview } from './website-task-review.js';
-import { bad, forbidden, notFound, toId, text, optDate } from './util.js';
-import { canView, atLeast, projectVisibilitySql } from './access.js';
-import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers } from './project-services.js';
-import { addWorkNote } from './work-tracking.js';
+import { bad, forbidden, notFound, toId, text, optDate } from '../services/util.js';
+import { canView, atLeast, projectVisibilitySql } from '../models/access.js';
+import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers } from '../services/project-services.js';
+import { addWorkNote } from '../services/work-tracking.js';
 
 function openProject(ctx,id){
  const p=ctx.db.get("SELECT * FROM projects WHERE id=? AND service_type IN ('website','software')",toId(id,'Development project'));

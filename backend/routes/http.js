@@ -3,10 +3,10 @@ import multer from 'multer';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, unlink } from 'node:fs';
 import path from 'node:path';
-import { handle, fileForDownload } from '../shared/api.js';
-import { loadUser } from '../shared/access.js';
-import { HttpError, todayIn } from '../shared/util.js';
-import { hashPassword, verifyPassword, newToken, loginGuard } from './auth.js';
+import { handle, fileForDownload } from '../controllers/api.js';
+import { loadUser } from '../models/access.js';
+import { HttpError, todayIn } from '../services/util.js';
+import { hashPassword, verifyPassword, newToken, loginGuard } from '../services/auth.js';
 
 const COOKIE = 'bpm_session';
 const SESSION_DAYS = 30;

@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 
-// Thin wrapper over node:sqlite with the interface shared/api.js expects.
+// Thin wrapper over node:sqlite with the interface controllers/api.js expects.
 export function openDb(file) {
   const raw = new DatabaseSync(file);
   raw.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');

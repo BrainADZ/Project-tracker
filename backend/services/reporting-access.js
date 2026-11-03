@@ -1,5 +1,5 @@
 import { parseJSON, placeholders } from './util.js';
-import { atLeast, canManageVertical, visibleVerticalIds, canView } from './access.js';
+import { atLeast, canManageVertical, visibleVerticalIds, canView } from '../models/access.js';
 import { isDevelopmentProject, canChooseWorkContact, websiteDevelopers } from './project-services.js';
 
 export const REPORTING_DEPARTMENTS={social:'Social Media Reporting',development:'Development Reporting',other:'Project Reporting'};

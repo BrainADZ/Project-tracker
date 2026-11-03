@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openDb } from '../server/db.js';
-import { migrate, seedBasics } from '../shared/setup.js';
-import { handle } from '../shared/api.js';
-import { loadUser } from '../shared/access.js';
+import { openDb } from '../backend/models/db.js';
+import { migrate, seedBasics } from '../backend/schema/setup.js';
+import { handle } from '../backend/controllers/api.js';
+import { loadUser } from '../backend/models/access.js';
 
 test('employee profile fields save, load, and reject duplicate email and manager', async () => {
   const db = openDb(':memory:');

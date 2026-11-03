@@ -1,4 +1,4 @@
-import { SERVICE_TYPES } from '../../../shared/project-services.js';
+import { SERVICE_TYPES } from '../../../backend/services/project-services.js';
 import { useMemo, useState } from 'react';
 import { Plus, LayoutList, Columns3, ChartGantt, Search, Download, Diamond, FolderKanban, X } from 'lucide-react';
 import { useApp, useLoad, usePref } from '../store.jsx';

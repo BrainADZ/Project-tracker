@@ -3,16 +3,16 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openDb } from './db.js';
-import { migrate, seedBasics } from '../shared/setup.js';
-import { seedDemo, DEMO_PASSWORD, DEMO_ACCOUNTS, demoEmail } from '../shared/demo-seed.js';
-import { hashPassword } from './auth.js';
-import { todayIn } from '../shared/util.js';
+import { openPostgres } from '../models/postgres.js';
+import { migrate, seedBasics } from '../schema/setup.js';
+import { seedDemo, DEMO_PASSWORD, DEMO_ACCOUNTS, demoEmail } from './demo-seed.js';
+import { hashPassword } from '../services/auth.js';
+import { todayIn } from '../services/util.js';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dataDir = path.resolve(root, process.env.DATA_DIR || 'data');
 mkdirSync(dataDir, { recursive: true });
-const db = openDb(path.join(dataDir, 'projects.db'));
+const db = openPostgres(process.env.DATABASE_URL);
 migrate(db);
 seedBasics(db);
 const done = seedDemo(db, { today: todayIn(process.env.TIMEZONE || 'Asia/Kolkata'), passwordHash: await hashPassword(DEMO_PASSWORD) });

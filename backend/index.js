@@ -2,17 +2,17 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
-import { openDb } from './db.js';
-import { createApp } from './app.js';
-import { migrate, seedBasics } from '../shared/setup.js';
-import { hashPassword } from './auth.js';
+import { openPostgres } from './models/postgres.js';
+import { createApp } from './routes/http.js';
+import { migrate, seedBasics } from './schema/setup.js';
+import { hashPassword } from './services/auth.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const env = process.env;
 const dataDir = path.resolve(root, env.DATA_DIR || 'data');
 mkdirSync(dataDir, { recursive: true });
 
-const db = openDb(path.join(dataDir, 'projects.db'));
+const db = openPostgres(env.DATABASE_URL);
 migrate(db);
 seedBasics(db);
 
