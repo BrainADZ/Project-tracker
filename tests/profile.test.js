@@ -5,6 +5,60 @@ import { migrate, seedBasics } from "../shared/setup.js";
 import { handle } from "../shared/api.js";
 import { loadUser } from "../shared/access.js";
 import { ensureUserIdentity } from "../shared/profile.js";
+import { profileFor } from "../shared/profile.js";
+
+test("merged profile migrations repair both version-15 and version-16 database layouts", () => {
+  for (const branch of ["identity", "photo"]) {
+    const db = openDb(":memory:");
+    migrate(db);
+    seedBasics(db);
+    try {
+      const id = db.run(
+        "INSERT INTO users(name,email,password_hash,profile_json,profile_data) VALUES ('Existing','merged@test.local','saved-hash',?,?)",
+        JSON.stringify({ about: "Current bio" }),
+        JSON.stringify({
+          address: "Saved address",
+          working_place: "Office",
+          joining_date: "2025-06-01",
+        }),
+      ).id;
+      if (branch === "identity")
+        db.exec(
+          "ALTER TABLE users DROP COLUMN photo; ALTER TABLE users DROP COLUMN profile_data;",
+        );
+      else
+        db.exec(
+          "DROP INDEX idx_users_username; DROP INDEX idx_users_employee_code; ALTER TABLE users DROP COLUMN username; ALTER TABLE users DROP COLUMN employee_code; ALTER TABLE users DROP COLUMN profile_json;",
+        );
+      db.run(
+        "UPDATE settings SET value=? WHERE key='schema_version'",
+        branch === "identity" ? "15" : "16",
+      );
+      migrate(db);
+      migrate(db);
+      const row = db.get("SELECT * FROM users WHERE id=?", id);
+      assert.equal(row.password_hash, "saved-hash");
+      assert.ok(
+        [
+          "username",
+          "employee_code",
+          "profile_json",
+          "photo",
+          "profile_data",
+        ].every((key) => Object.hasOwn(row, key)),
+      );
+      const profile = profileFor(row);
+      if (branch === "identity") assert.equal(profile.about, "Current bio");
+      else {
+        assert.equal(profile.address, "Saved address");
+        assert.equal(profile.work_place, "Office");
+        assert.equal(profile.join_date, "2025-06-01");
+      }
+    } finally {
+      db.close();
+    }
+  }
+});
 
 test("existing version 14 accounts retain login and contact data through the profile upgrade", () => {
   const db = openDb(":memory:");
@@ -33,7 +87,7 @@ test("existing version 14 accounts retain login and contact data through the pro
   }
 });
 
-test("profile edits preserve fixed login IDs and members cannot change credentials", async () => {
+test("profile edits preserve fixed login IDs and native account access", async () => {
   const db = openDb(":memory:");
   migrate(db);
   seedBasics(db);
@@ -65,7 +119,6 @@ test("profile edits preserve fixed login IDs and members cannot change credentia
     let me = (await call(member, "GET", "/bootstrap")).me;
     assert.equal(me.username, "NehaBZM002");
     assert.equal(me.employee_code, "BZ002");
-    assert.equal(me.can_manage_credentials, false);
     me = await call(member, "PATCH", "/me", {
       name: "Neha Changed",
       phone: "123456789",
@@ -86,20 +139,13 @@ test("profile edits preserve fixed login IDs and members cannot change credentia
     assert.equal(me.username, "NehaBZM002");
     assert.equal(me.profile.about, "Frontend developer");
     assert.equal(me.profile.certifications[0].issuer, "Academy");
-    for (const body of [
-      { email: "changed@test.local" },
-      { username: "newLogin" },
-      { password: "newPassword123" },
-      { profile: { manager_id: admin } },
-      { profile: { employment_type: "Full-time" } },
-    ])
-      await assert.rejects(
-        call(member, "PATCH", "/me", body),
-        (e) => e.status === 403,
-      );
-    await assert.rejects(
-      call(member, "POST", "/me/password", { next: "newPassword123" }),
-      (e) => e.status === 403,
+    await call(member, "POST", "/me/password", {
+      current: "ExistingPassword",
+      next: "ChangedPassword123",
+    });
+    assert.equal(
+      (await call(member, "GET", "/bootstrap")).me.must_change_password,
+      false,
     );
     await assert.rejects(
       call(member, "PATCH", "/admin/users/" + member, {
@@ -115,7 +161,7 @@ test("profile edits preserve fixed login IDs and members cannot change credentia
     me = (await call(member, "GET", "/bootstrap")).me;
     assert.equal(me.email, "updated@test.local");
     assert.equal(me.username, "NehaBZM002New");
-    assert.equal(me.must_change_password, false);
+    assert.equal(me.must_change_password, true);
     assert.equal(me.employee_code, "BZ002");
     const hash = db.get(
       "SELECT password_hash FROM users WHERE id=?",

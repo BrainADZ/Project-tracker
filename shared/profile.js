@@ -1,6 +1,4 @@
-import { bad, forbidden, text, optDate, parseJSON } from "./util.js";
-
-export const canManageCredentials = (user) => user?.role === "admin";
+import { bad, text, optDate, parseJSON } from "./util.js";
 
 // Store these once: changing a display name or vertical must not change a login.
 export function ensureUserIdentity(db, id) {
@@ -40,27 +38,74 @@ export function ensureUserIdentity(db, id) {
   return { ...user, username, employee_code: code };
 }
 
-export const profileFor = (user) => parseJSON(user?.profile_json, {}) || {};
-
-export function readProfile(body, user) {
-  if (!body || typeof body !== "object" || Array.isArray(body))
-    throw bad("Invalid profile");
-  const result = {};
-  const jobFields = [
+export function profileFor(user) {
+  const legacy = parseJSON(user?.profile_data, {}) || {};
+  const allowed = [
+    "about",
+    "address",
+    "emergency_contact",
+    "skills",
+    "dob",
     "department",
     "employment_type",
     "work_place",
     "location",
     "join_date",
     "manager_id",
+    "certifications",
   ];
+  const profile = Object.fromEntries(
+    allowed
+      .filter((key) => legacy[key] !== undefined)
+      .map((key) => [key, legacy[key]]),
+  );
+  for (const [oldKey, key] of Object.entries({
+    reporting_manager_id: "manager_id",
+    working_place: "work_place",
+    assigned_branch: "location",
+    joining_date: "join_date",
+  })) {
+    if (legacy[oldKey] !== undefined)
+      profile[key] =
+        key === "manager_id" ? Number(legacy[oldKey]) || null : legacy[oldKey];
+  }
+  if (user?.photo) profile.photo = user.photo;
+  const canonical = parseJSON(user?.profile_json, {}) || {};
+  return {
+    ...profile,
+    ...Object.fromEntries(
+      [...allowed, "photo"]
+        .filter((key) => canonical[key] !== undefined)
+        .map((key) => [key, canonical[key]]),
+    ),
+  };
+}
+
+export function readProfile(body, user) {
+  if (!body || typeof body !== "object" || Array.isArray(body))
+    throw bad("Invalid profile");
+  const result = {};
   if (
-    !canManageCredentials(user) &&
-    jobFields.some((k) => body[k] !== undefined)
+    Object.keys(body).some(
+      (key) =>
+        ![
+          "about",
+          "address",
+          "dob",
+          "emergency_contact",
+          "skills",
+          "certifications",
+          "photo",
+          "department",
+          "employment_type",
+          "work_place",
+          "location",
+          "join_date",
+          "manager_id",
+        ].includes(key),
+    )
   )
-    throw forbidden(
-      "Only CEO / IT administrators can change employment details",
-    );
+    throw bad("Unsupported profile field");
   for (const key of [
     "about",
     "address",

@@ -24,7 +24,7 @@ import {
   canEditProject, canContribute, permissionsFor, LEVELS,
 } from './access.js';
 import { FILE_CATEGORIES } from './schema.js';
-import {canManageCredentials,ensureUserIdentity,profileFor,readProfile} from './profile.js';
+import {ensureUserIdentity,profileFor,readProfile} from './profile.js';
 
 export const PROJECT_STATUSES = ['planning', 'active', 'on_hold', 'ready', 'completed', 'cancelled'];
 export const OPEN_STATUSES = ['planning', 'active', 'on_hold', 'ready'];
@@ -379,20 +379,15 @@ route('GET', '/bootstrap', (ctx) => {
 
 function meShape(user) {
   return {
-    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color, photo: user.photo || '', created_at: user.created_at, profile: parseJSON(user.profile_data, {}),
+    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color, photo: profileFor(user).photo || user.photo || '',
     role: user.role, must_change_password: !!user.must_change_password,
-    username:user.username,employee_code:user.employee_code,profile:profileFor(user),created_at:user.created_at,can_manage_credentials:canManageCredentials(user),
+    username:user.username,employee_code:user.employee_code,profile:profileFor(user),created_at:user.created_at,
     access: Object.fromEntries(user.access),
   };
 }
 
 route('PATCH', '/me', (ctx) => {
   const b = ctx.body;
-<<<<<<< HEAD
-  if(['email','username','password','password_hash','employee_code'].some(k=>b[k]!==undefined))throw forbidden('Login email, username and password are managed by CEO / IT in Team & Access');
-=======
-  const profileKeys = ['first_name', 'last_name', 'gender', 'dob', 'employee_id', 'vertical', 'department', 'designation', 'grade', 'reporting_manager_id', 'employment_type', 'working_place', 'assigned_branch', 'joining_date', 'annual_ctc', 'monthly_tds', 'pan', 'uan', 'bank_name', 'account_number', 'ifsc', 'address', 'emergency_contact', 'skills', 'about'];
->>>>>>> c25c949c1075155405d2a71e6fcbdea89bcc4bd1
   const f = {
     name: text(b.name, { max: 120, label: 'Name' }),
     title: text(b.title, { max: 120, label: 'Title' }),
@@ -401,38 +396,12 @@ route('PATCH', '/me', (ctx) => {
     photo: b.photo === undefined ? undefined : typeof b.photo === 'string' && (b.photo === '' || (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.photo) && b.photo.length <= 300000)) ? b.photo : undefined,
   };
   if (f.name === '') throw bad('Name is required');
-<<<<<<< HEAD
+  if (b.photo !== undefined && f.photo === undefined) throw bad('Choose a JPG, PNG or WebP photo under 220 KB');
   if(b.profile!==undefined){
     const details=readProfile(b.profile,ctx.user);
     if(details.manager_id===uid(ctx))throw bad('You cannot report to yourself');
     if(details.manager_id&&!ctx.db.get('SELECT id FROM users WHERE id=? AND active=1',details.manager_id))throw bad('Choose an active reporting manager');
     f.profile_json=JSON.stringify({...profileFor(ctx.user),...details});
-=======
-  if (b.photo !== undefined && f.photo === undefined) throw bad('Choose a JPG, PNG or WebP photo under 220 KB');
-  if (b.email !== undefined) {
-    const email = String(b.email).trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw bad('Enter a valid work email');
-    if (ctx.db.get('SELECT id FROM users WHERE email = ? AND id != ?', email, uid(ctx))) throw bad('This email is already in use');
-    f.email = email;
-  }
-  if (b.profile !== undefined) {
-    if (!b.profile || typeof b.profile !== 'object' || Array.isArray(b.profile)) throw bad('Invalid profile details');
-    const saved = parseJSON(ctx.user.profile_data, {});
-    for (const key of profileKeys) if (Object.hasOwn(b.profile, key)) {
-      const value = b.profile[key];
-      if (typeof value !== 'string' || value.length > (key === 'about' || key === 'address' ? 2000 : 250)) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
-      saved[key] = value.trim();
-    }
-    if (Object.hasOwn(b.profile, 'employee_id') && !saved.employee_id) saved.employee_id = `BZ${String(uid(ctx)).padStart(3, '0')}`;
-    if (saved.employee_id) {
-      const taken = ctx.db.all('SELECT id, profile_data FROM users WHERE id != ?', uid(ctx)).some((row) => parseJSON(row.profile_data, {}).employee_id?.toLowerCase() === saved.employee_id.toLowerCase());
-      if (taken) throw bad('This employee ID is already in use');
-    }
-    if (saved.reporting_manager_id && (!/^\d+$/.test(saved.reporting_manager_id) || Number(saved.reporting_manager_id) === uid(ctx) || !ctx.db.get('SELECT 1 AS x FROM users WHERE id = ? AND active = 1', Number(saved.reporting_manager_id)))) throw bad('Choose a valid reporting manager');
-    for (const key of ['annual_ctc', 'monthly_tds']) if (saved[key] && (!/^\d+(\.\d{1,2})?$/.test(saved[key]) || Number(saved[key]) > 1000000000)) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
-    for (const key of ['dob', 'joining_date']) if (saved[key] && !isDate(saved[key])) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
-    f.profile_data = JSON.stringify(saved);
->>>>>>> c25c949c1075155405d2a71e6fcbdea89bcc4bd1
   }
   const sets = Object.entries(f).filter(([, v]) => v !== undefined);
   if (sets.length) ctx.db.run(`UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, ...sets.map(([, v]) => v), uid(ctx));
@@ -440,7 +409,6 @@ route('PATCH', '/me', (ctx) => {
 });
 
 route('POST', '/me/password', async (ctx) => {
-  if(!canManageCredentials(ctx.user))throw forbidden('Only CEO / IT administrators can change passwords');
   const { current, next } = ctx.body;
   const row = ctx.db.get('SELECT password_hash FROM users WHERE id = ?', uid(ctx));
   if (!ctx.user.must_change_password || current) {
@@ -1885,10 +1853,10 @@ function requireAdmin(ctx) {
 }
 
 function adminUser(db, id) {
-  const u = db.get('SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password, profile_json FROM users WHERE id = ?', id);
+  const u = db.get('SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password, profile_json,profile_data,photo FROM users WHERE id = ?', id);
   if (!u) return null;
   Object.assign(u,ensureUserIdentity(db,id));
-  u.profile=profileFor(u);delete u.profile_json;
+  u.profile=profileFor(u);delete u.profile_json;delete u.profile_data;
   u.access = Object.fromEntries(db.all('SELECT vertical_id, level FROM user_verticals WHERE user_id = ?', id).map((r) => [r.vertical_id, r.level]));
   u.open_tasks = db.get(`SELECT COUNT(*) AS n FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.assignee_id = ? AND t.status != 'done' AND p.status IN ${OPEN_IN}`, id).n;
   return u;
@@ -1939,7 +1907,7 @@ route('POST', '/admin/users', async (ctx) => {
   return db.tx(() => {
     const { id } = db.run(
       'INSERT INTO users (name, email, password_hash, role, title, phone, color, active, must_change_password, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      f.name, f.email, hash, f.role || 'member', f.title || '', f.phone || '', f.color || PALETTE[count % PALETTE.length], 1, f.role==='admin'?1:0, ctx.now,
+      f.name, f.email, hash, f.role || 'member', f.title || '', f.phone || '', f.color || PALETTE[count % PALETTE.length], 1, 1, ctx.now,
     );
     writeAccess(db, id, body.access || {});
     return adminUser(db, id);
@@ -1973,7 +1941,7 @@ route('PATCH', '/admin/users/:id', async (ctx) => {
   if (body.password) {
     if (String(body.password).length < 8) throw bad('Use at least 8 characters for the password');
     f.password_hash = await ctx.services.hashPassword(String(body.password));
-    f.must_change_password = id!==uid(ctx)&&(f.role||u.role)==='admin'?1:0;
+    f.must_change_password = 1;
   }
   return db.tx(() => {
     const sets = Object.entries(f).filter(([, v]) => v !== undefined);

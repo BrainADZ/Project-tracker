@@ -73,7 +73,7 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               <option value="admin">Admin</option>
             </select>
           </Field>
-          <Field label={editing ? 'Reset password' : 'Password'} htmlFor="pp-pass" hint={demo ? 'Passwords are not used in the demo.' : editing ? 'Leave empty to keep the current password.' : 'Login credentials are managed by the CEO / IT team.'}>
+          <Field label={editing ? 'Reset password' : 'Temporary password'} htmlFor="pp-pass" hint={demo ? 'Passwords are not used in the demo.' : editing ? 'Leave empty to keep the current password.' : 'They will be asked to change it after signing in.'}>
             <input id="pp-pass" className="input" type="text" value={f.password} onChange={set('password')} minLength={8} required={!editing && !demo} placeholder={demo ? 'demo1234' : 'At least 8 characters'} autoComplete="new-password" />
           </Field>
           {!editing&&<div className="form-section">Vertical access</div>}
