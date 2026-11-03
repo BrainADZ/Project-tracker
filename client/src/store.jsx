@@ -1,6 +1,17 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { api, setUnauthorizedHandler } from './api.js';
-import { defaultReportingDepartment, reportingPath } from '../../backend/services/reporting-access.js';
+import {
+  defaultReportingDepartment,
+  reportingPath,
+} from '../../backend/services/reporting-access.js';
 import { usesDailyReporting } from '../../backend/services/reporting-audience.js';
 
 const AppCtx = createContext(null);
@@ -23,10 +34,13 @@ export function writePref(key, value) {
 }
 export const usePref = (key, fallback) => {
   const [v, setV] = useState(() => readPref(key, fallback));
-  const set = useCallback((x) => {
-    setV(x);
-    writePref(key, x);
-  }, [key]);
+  const set = useCallback(
+    (x) => {
+      setV(x);
+      writePref(key, x);
+    },
+    [key],
+  );
   return [v, set];
 };
 
@@ -70,10 +84,16 @@ export function AppProvider({ children }) {
   const toast = useCallback((message, type = '') => {
     const id = Math.random().toString(36).slice(2);
     setToasts((t) => [...t.slice(-3), { id, message, type }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), type === 'error' ? 6000 : 3500);
+    setTimeout(
+      () => setToasts((t) => t.filter((x) => x.id !== id)),
+      type === 'error' ? 6000 : 3500,
+    );
   }, []);
 
-  const confirm = useCallback((opts) => new Promise((resolve) => setConfirmState({ ...opts, resolve })), []);
+  const confirm = useCallback(
+    (opts) => new Promise((resolve) => setConfirmState({ ...opts, resolve })),
+    [],
+  );
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
   const bumpCounts = useCallback(() => setCountsVersion((v) => v + 1), []);
   // Records that I have opened a tab, so its count turns from red to grey.
@@ -94,30 +114,68 @@ export function AppProvider({ children }) {
     const verticalById = (id) => verticals.find((v) => v.id === id);
     const levelIn = (vid) => me?.access?.[vid] || null;
     return {
-      boot, bootError, loadBoot, setBoot,
-      me, users, verticals, today: boot?.today, categories: boot?.categories || [], templates: boot?.templates || [],
+      boot,
+      bootError,
+      loadBoot,
+      setBoot,
+      me,
+      users,
+      verticals,
+      today: boot?.today,
+      categories: boot?.categories || [],
+      templates: boot?.templates || [],
       company: boot?.settings?.company_name || 'BrainADZ',
       isAdmin: me?.role === 'admin',
       dailyReportingOnly: usesDailyReporting(me),
-      reportingAccess: boot?.reporting_access || {departments:[defaultReportingDepartment(me)]},
-      defaultReportingPath: reportingPath(boot?.reporting_access?.default_department || defaultReportingDepartment(me)),
-      reportingDepartment: boot?.reporting_access?.default_department || defaultReportingDepartment(me),
-      vertical, setVertical,
-      userById, verticalById, levelIn,
+      reportingAccess: boot?.reporting_access || { departments: [defaultReportingDepartment(me)] },
+      defaultReportingPath: reportingPath(
+        boot?.reporting_access?.default_department || defaultReportingDepartment(me),
+      ),
+      reportingDepartment:
+        boot?.reporting_access?.default_department || defaultReportingDepartment(me),
+      vertical,
+      setVertical,
+      userById,
+      verticalById,
+      levelIn,
       canManage: (vid) => me?.role === 'admin' || levelIn(vid) === 'manager',
-      manageableVerticals: verticals.filter((v) => me?.role === 'admin' || levelIn(v.id) === 'manager'),
+      manageableVerticals: verticals.filter(
+        (v) => me?.role === 'admin' || levelIn(v.id) === 'manager',
+      ),
       // People who can be assigned work in a vertical.
-      assignable: (vid) => users.filter((u) => u.role === 'admin' || RANK[u.access?.[vid]] >= RANK.member),
-      toast, confirm, version, refresh, countsVersion, bumpCounts, markSeen,
+      assignable: (vid) =>
+        users.filter((u) => u.role === 'admin' || RANK[u.access?.[vid]] >= RANK.member),
+      toast,
+      confirm,
+      version,
+      refresh,
+      countsVersion,
+      bumpCounts,
+      markSeen,
     };
-  }, [boot, bootError, loadBoot, vertical, setVertical, toast, confirm, version, refresh, countsVersion, bumpCounts, markSeen]);
+  }, [
+    boot,
+    bootError,
+    loadBoot,
+    vertical,
+    setVertical,
+    toast,
+    confirm,
+    version,
+    refresh,
+    countsVersion,
+    bumpCounts,
+    markSeen,
+  ]);
 
   return (
     <AppCtx.Provider value={value}>
       {children}
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.type}`}>{t.message}</div>
+          <div key={t.id} className={`toast ${t.type}`}>
+            {t.message}
+          </div>
         ))}
       </div>
       {confirmState && <ConfirmDialog state={confirmState} close={() => setConfirmState(null)} />}
@@ -133,15 +191,32 @@ function ConfirmDialog({ state, close }) {
     close();
   };
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && done(false)} onKeyDown={(e) => e.key === 'Escape' && done(false)}>
+    <div
+      className="overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && done(false)}
+      onKeyDown={(e) => e.key === 'Escape' && done(false)}
+    >
       <div className="modal narrow" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
         <div className="modal-body">
-          <h3 id="confirm-title" style={{ fontSize: 18 }}>{state.title}</h3>
-          {state.message && <p className="muted mt-8" style={{ lineHeight: 1.5 }}>{state.message}</p>}
+          <h3 id="confirm-title" style={{ fontSize: 18 }}>
+            {state.title}
+          </h3>
+          {state.message && (
+            <p className="muted mt-8" style={{ lineHeight: 1.5 }}>
+              {state.message}
+            </p>
+          )}
         </div>
         <div className="modal-foot">
-          <button type="button" className="btn" onClick={() => done(false)}>Cancel</button>
-          <button ref={btn} type="button" className={`btn ${state.danger ? 'solid-red' : 'primary'}`} onClick={() => done(true)}>
+          <button type="button" className="btn" onClick={() => done(false)}>
+            Cancel
+          </button>
+          <button
+            ref={btn}
+            type="button"
+            className={`btn ${state.danger ? 'solid-red' : 'primary'}`}
+            onClick={() => done(true)}
+          >
             {state.confirmLabel || 'Confirm'}
           </button>
         </div>
@@ -173,6 +248,9 @@ export function useLoad(fn, deps = []) {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, version]);
-  const setData = useCallback((upd) => setState((s) => ({ ...s, data: typeof upd === 'function' ? upd(s.data) : upd })), []);
+  const setData = useCallback(
+    (upd) => setState((s) => ({ ...s, data: typeof upd === 'function' ? upd(s.data) : upd })),
+    [],
+  );
   return { ...state, reload, setData };
 }

@@ -13,6 +13,9 @@
     "dev:api": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning --watch backend/index.js",
     "dev:client": "vite --config client/vite.config.js",
     "build": "vite build --config client/vite.config.js",
+    "format": "prettier --write \"backend/**/*.{js,json,md}\" \"client/**/*.{js,jsx,css,json,html,webmanifest}\" \"tests/**/*.{js,jsx}\" \"*.{js,json,md}\"",
+    "format:check": "prettier --check \"backend/**/*.{js,json,md}\" \"client/**/*.{js,jsx,css,json,html,webmanifest}\" \"tests/**/*.{js,jsx}\" \"*.{js,json,md}\"",
+    "lint": "eslint backend client/src client/public/sw.js tests eslint.config.js",
     "start": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/index.js",
     "db:migrate": "node --env-file=.env --no-warnings=ExperimentalWarning backend/schema/migrate-sqlite-to-postgres.js",
     "seed:demo": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/seeds/seed-demo.js",
@@ -22,15 +25,24 @@
   },
   "dependencies": {
     "express": "4.22.3",
-    "multer": "2.4.0",
+    "multer": "^2.5.0",
     "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "4.3.4",
+    "@eslint/js": "^9.39.5",
+    "@vitejs/plugin-react": "^6.2.1",
     "concurrently": "9.1.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
     "lucide-react": "0.468.0",
+    "prettier": "^3.9.10",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "vite": "5.4.21"
+    "vite": "^8.3.5"
+  },
+  "overrides": {
+    "minimatch": "11.0.1"
   }
 }

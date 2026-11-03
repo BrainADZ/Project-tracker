@@ -1,1 +1,1 @@
-export {ProfileEditor as default} from './ProfileScreen.jsx';
+export { ProfileEditor as default } from './ProfileScreen.jsx';

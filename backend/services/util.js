@@ -8,7 +8,8 @@ export class HttpError extends Error {
 
 export const bad = (msg) => new HttpError(400, msg, 'bad_request');
 export const notFound = (what = 'Item') => new HttpError(404, `${what} not found`, 'not_found');
-export const forbidden = (msg = 'You do not have permission to do this') => new HttpError(403, msg, 'forbidden');
+export const forbidden = (msg = 'You do not have permission to do this') =>
+  new HttpError(403, msg, 'forbidden');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -76,7 +77,12 @@ export function daysBetween(a, b) {
 export function todayIn(timeZone = 'Asia/Kolkata', at = new Date()) {
   try {
     // en-CA formats as YYYY-MM-DD
-    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(at);
   } catch {
     return at.toISOString().slice(0, 10);
   }

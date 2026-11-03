@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  X, Flag, Loader2, MoreHorizontal, FileText, FileImage, FileVideo, FileSpreadsheet, FileArchive, File as FileIco,
-  Link2, Presentation, Inbox,
+  X,
+  Flag,
+  Loader2,
+  MoreHorizontal,
+  FileText,
+  FileImage,
+  FileVideo,
+  FileSpreadsheet,
+  FileArchive,
+  File as FileIco,
+  Link2,
+  Presentation,
+  Inbox,
 } from 'lucide-react';
 import { initials, fmtDate, MONTHS } from './format.js';
 import { api } from './api.js';
@@ -56,8 +67,25 @@ export function ink(hex) {
 
 export function Avatar({ name, color = '#1f2b7b', photo, size = 32, title }) {
   return (
-    <span className="avatar" title={title ?? name} style={{ width: size, height: size, background: color, fontSize: Math.max(10, Math.round(size * 0.38)) }}>
-      {photo ? <img src={photo} alt="" style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} /> : initials(name || '?')}
+    <span
+      className="avatar"
+      title={title ?? name}
+      style={{
+        width: size,
+        height: size,
+        background: color,
+        fontSize: Math.max(10, Math.round(size * 0.38)),
+      }}
+    >
+      {photo ? (
+        <img
+          src={photo}
+          alt=""
+          style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }}
+        />
+      ) : (
+        initials(name || '?')
+      )}
     </span>
   );
 }
@@ -66,8 +94,14 @@ export function AvatarStack({ people = [], max = 4, size = 28 }) {
   const shown = people.slice(0, max);
   return (
     <span className="avatar-stack">
-      {shown.map((p) => <Avatar key={p.id} name={p.name} color={p.color} size={size} />)}
-      {people.length > max && <span className="avatar more" style={{ width: size, height: size }}>+{people.length - max}</span>}
+      {shown.map((p) => (
+        <Avatar key={p.id} name={p.name} color={p.color} size={size} />
+      ))}
+      {people.length > max && (
+        <span className="avatar more" style={{ width: size, height: size }}>
+          +{people.length - max}
+        </span>
+      )}
     </span>
   );
 }
@@ -87,7 +121,10 @@ export function Person({ name, color, sub, size = 34 }) {
 export function VChip({ name, color, small }) {
   if (!name) return null;
   return (
-    <span className={`vchip ${small ? 'sm' : ''}`} style={{ background: alpha(color, 0.14), color: ink(color) }}>
+    <span
+      className={`vchip ${small ? 'sm' : ''}`}
+      style={{ background: alpha(color, 0.14), color: ink(color) }}
+    >
       {name}
     </span>
   );
@@ -96,7 +133,11 @@ export function VChip({ name, color, small }) {
 // readyLabel: the vertical's name for its "ready" column, e.g. Ready for Event / Exhibition.
 export function StatusBadge({ status, readyLabel }) {
   const s = PROJECT_STATUS[status] || PROJECT_STATUS.planning;
-  return <span className={`badge ${s.cls}`}>{status === 'ready' && readyLabel ? readyLabel : s.label}</span>;
+  return (
+    <span className={`badge ${s.cls}`}>
+      {status === 'ready' && readyLabel ? readyLabel : s.label}
+    </span>
+  );
 }
 
 export function HealthBadge({ health, compact }) {
@@ -129,7 +170,11 @@ export function PriorityFlag({ priority, label = false }) {
 export function CountPill({ n, fresh = 0, style }) {
   if (n === undefined || n === null) return null;
   return (
-    <span className={`pill-num ${fresh > 0 ? 'alert' : ''}`} style={style} title={fresh > 0 ? `${fresh} new since you last looked` : undefined}>
+    <span
+      className={`pill-num ${fresh > 0 ? 'alert' : ''}`}
+      style={style}
+      title={fresh > 0 ? `${fresh} new since you last looked` : undefined}
+    >
       {n}
     </span>
   );
@@ -141,8 +186,20 @@ export function NewTag() {
 
 export function Progress({ value = 0, color, height = 8 }) {
   return (
-    <div className="progress" style={{ height }} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
-      <i style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color || 'var(--blue)' }} />
+    <div
+      className="progress"
+      style={{ height }}
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <i
+        style={{
+          width: `${Math.max(0, Math.min(100, value))}%`,
+          background: color || 'var(--blue)',
+        }}
+      />
     </div>
   );
 }
@@ -151,20 +208,53 @@ export function Ring({ value = 0, size = 64, stroke = 7, color = 'var(--blue)' }
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${value}% complete`}>
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={`${value}% complete`}
+    >
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#edf1f7" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
-        strokeDasharray={`${(c * value) / 100} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontSize={size * 0.24} fontWeight="700" fill="var(--text)">{value}%</text>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={`${(c * value) / 100} ${c}`}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text
+        x="50%"
+        y="50%"
+        dominantBaseline="central"
+        textAnchor="middle"
+        fontSize={size * 0.24}
+        fontWeight="700"
+        fill="var(--text)"
+      >
+        {value}%
+      </text>
     </svg>
   );
 }
 
 export function DateBox({ date, color }) {
-  if (!date) return <div className="date-box"><span>—</span></div>;
+  if (!date)
+    return (
+      <div className="date-box">
+        <span>—</span>
+      </div>
+    );
   const [, m, d] = date.split('-').map(Number);
   return (
-    <div className="date-box" style={color ? { borderColor: alpha(color, 0.5), background: alpha(color, 0.06) } : undefined}>
+    <div
+      className="date-box"
+      style={color ? { borderColor: alpha(color, 0.5), background: alpha(color, 0.06) } : undefined}
+    >
       <b>{d}</b>
       <span>{MONTHS[m - 1]}</span>
     </div>
@@ -173,7 +263,10 @@ export function DateBox({ date, color }) {
 
 export function Loading({ label = 'Loading…' }) {
   return (
-    <div className="loading"><Loader2 size={18} className="spin" />{label}</div>
+    <div className="loading">
+      <Loader2 size={18} className="spin" />
+      {label}
+    </div>
   );
 }
 
@@ -181,8 +274,16 @@ export function Empty({ icon: Icon = Inbox, title, children, action }) {
   return (
     <div className="empty">
       <Icon size={34} />
-      {title && <div className="b6" style={{ color: 'var(--text-2)', marginBottom: 4 }}>{title}</div>}
-      {children && <div className="small" style={{ maxWidth: 380, margin: '0 auto', lineHeight: 1.5 }}>{children}</div>}
+      {title && (
+        <div className="b6" style={{ color: 'var(--text-2)', marginBottom: 4 }}>
+          {title}
+        </div>
+      )}
+      {children && (
+        <div className="small" style={{ maxWidth: 380, margin: '0 auto', lineHeight: 1.5 }}>
+          {children}
+        </div>
+      )}
       {action && <div className="mt-12">{action}</div>}
     </div>
   );
@@ -193,7 +294,11 @@ export function ErrorNote({ error, retry }) {
   return (
     <div className="alert error mb-12">
       <span style={{ flex: 1 }}>{error.message || String(error)}</span>
-      {retry && <button type="button" className="btn xs" onClick={retry}>Try again</button>}
+      {retry && (
+        <button type="button" className="btn xs" onClick={retry}>
+          Try again
+        </button>
+      )}
     </div>
   );
 }
@@ -208,11 +313,21 @@ export function Field({ label, hint, children, className = '', htmlFor }) {
   );
 }
 
-export function Modal({ title, sub, onClose, children, footer, size = '', labelId = 'modal-title' }) {
+export function Modal({
+  title,
+  sub,
+  onClose,
+  children,
+  footer,
+  size = '',
+  labelId = 'modal-title',
+}) {
   const ref = useRef(null);
   useEffect(() => {
     const prev = document.activeElement;
-    const first = ref.current?.querySelector('input:not([type=hidden]),select,textarea,button:not(.icon-btn)');
+    const first = ref.current?.querySelector(
+      'input:not([type=hidden]),select,textarea,button:not(.icon-btn)',
+    );
     first?.focus();
     const onKey = (e) => e.key === 'Escape' && onClose?.();
     document.addEventListener('keydown', onKey);
@@ -224,13 +339,21 @@ export function Modal({ title, sub, onClose, children, footer, size = '', labelI
   }, []);
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
-      <div ref={ref} className={`modal ${size}`} role="dialog" aria-modal="true" aria-labelledby={labelId}>
+      <div
+        ref={ref}
+        className={`modal ${size}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelId}
+      >
         <div className="modal-head">
           <div style={{ minWidth: 0 }}>
             <h3 id={labelId}>{title}</h3>
             {sub && <div className="small muted mt-4">{sub}</div>}
           </div>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close"><X size={20} /></button>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+            <X size={20} />
+          </button>
         </div>
         {children}
         {footer && <div className="modal-foot">{footer}</div>}
@@ -243,8 +366,18 @@ export function Seg({ value, onChange, options, label }) {
   return (
     <div className="seg" role="radiogroup" aria-label={label}>
       {options.map((o) => (
-        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className={value === o.value ? 'on' : ''} onClick={() => onChange(o.value)} title={o.title || o.label}>
-          {o.icon && <o.icon size={15} style={{ verticalAlign: '-3px', marginRight: o.label ? 6 : 0 }} />}
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          className={value === o.value ? 'on' : ''}
+          onClick={() => onChange(o.value)}
+          title={o.title || o.label}
+        >
+          {o.icon && (
+            <o.icon size={15} style={{ verticalAlign: '-3px', marginRight: o.label ? 6 : 0 }} />
+          )}
           {o.label && <span className={o.icon ? 'hide-sm' : ''}>{o.label}</span>}
         </button>
       ))}
@@ -262,20 +395,46 @@ export function useClickOutside(onOutside) {
   return ref;
 }
 
-export function Menu({ items, label = 'More actions', icon: Icon = MoreHorizontal, buttonClass = 'btn sm ghost', align = 'right' }) {
+export function Menu({
+  items,
+  label = 'More actions',
+  icon: Icon = MoreHorizontal,
+  buttonClass = 'btn sm ghost',
+  align = 'right',
+}) {
   const [open, setOpen] = useState(false);
   const ref = useClickOutside(() => setOpen(false));
   const shown = items.filter(Boolean);
   if (!shown.length) return null;
   return (
     <div className="menu-wrap" ref={ref}>
-      <button type="button" className={buttonClass} aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className={buttonClass}
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
         <Icon size={18} />
       </button>
       {open && (
-        <div className="dropdown menu" role="menu" style={align === 'left' ? { left: 0, right: 'auto' } : undefined}>
+        <div
+          className="dropdown menu"
+          role="menu"
+          style={align === 'left' ? { left: 0, right: 'auto' } : undefined}
+        >
           {shown.map((it, i) => (
-            <button key={i} type="button" role="menuitem" className={`item ${it.danger ? 'danger' : ''}`} onClick={() => { setOpen(false); it.onClick(); }}>
+            <button
+              key={i}
+              type="button"
+              role="menuitem"
+              className={`item ${it.danger ? 'danger' : ''}`}
+              onClick={() => {
+                setOpen(false);
+                it.onClick();
+              }}
+            >
               {it.icon && <it.icon size={16} />}
               {it.label}
             </button>
@@ -286,11 +445,30 @@ export function Menu({ items, label = 'More actions', icon: Icon = MoreHorizonta
   );
 }
 
-export function UserSelect({ id, value, onChange, people, placeholder = 'Unassigned', className = 'select', disabled }) {
+export function UserSelect({
+  id,
+  value,
+  onChange,
+  people,
+  placeholder = 'Unassigned',
+  className = 'select',
+  disabled,
+}) {
   return (
-    <select id={id} className={className} value={value || ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)} disabled={disabled}>
+    <select
+      id={id}
+      className={className}
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+      disabled={disabled}
+    >
       <option value="">{placeholder}</option>
-      {people.map((u) => <option key={u.id} value={u.id}>{u.name}{u.title ? ` · ${u.title}` : ''}</option>)}
+      {people.map((u) => (
+        <option key={u.id} value={u.id}>
+          {u.name}
+          {u.title ? ` · ${u.title}` : ''}
+        </option>
+      ))}
     </select>
   );
 }
@@ -331,15 +509,39 @@ function SampleArt({ file }) {
   const sky = night ? '#1b2848' : '#eef3fb';
   const w = 40 + (seed % 25);
   return (
-    <svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-hidden="true">
+    <svg
+      viewBox="0 0 160 100"
+      preserveAspectRatio="xMidYMid slice"
+      width="100%"
+      height="100%"
+      aria-hidden="true"
+    >
       <rect width="160" height="100" fill={sky} />
       <polygon points="0,72 160,62 160,100 0,100" fill={night ? '#2d3a5f' : '#dfe6f1'} />
-      <polygon points={`${80 - w},70 ${80 + w},64 ${80 + w},30 ${80 - w},34`} fill={c} opacity="0.92" />
+      <polygon
+        points={`${80 - w},70 ${80 + w},64 ${80 + w},30 ${80 - w},34`}
+        fill={c}
+        opacity="0.92"
+      />
       <rect x={80 - w / 2} y="44" width={w * 0.9} height="9" rx="2" fill="#fff" opacity="0.85" />
-      <polygon points={`${70 - w / 3},84 ${92 + w / 3},80 ${92 + w / 3},70 ${70 - w / 3},73`} fill="#fff" opacity="0.9" />
-      <polygon points={`${70 - w / 3},84 ${92 + w / 3},80 ${92 + w / 3},83 ${70 - w / 3},87`} fill={c} opacity="0.6" />
+      <polygon
+        points={`${70 - w / 3},84 ${92 + w / 3},80 ${92 + w / 3},70 ${70 - w / 3},73`}
+        fill="#fff"
+        opacity="0.9"
+      />
+      <polygon
+        points={`${70 - w / 3},84 ${92 + w / 3},80 ${92 + w / 3},83 ${70 - w / 3},87`}
+        fill={c}
+        opacity="0.6"
+      />
       {[0, 1, 2].map((i) => (
-        <circle key={i} cx={40 + i * 40 + (seed % 9)} cy={night ? 16 : 14} r={night ? 2.2 : 0} fill="#fff7c2" />
+        <circle
+          key={i}
+          cx={40 + i * 40 + (seed % 9)}
+          cy={night ? 16 : 14}
+          r={night ? 2.2 : 0}
+          fill="#fff7c2"
+        />
       ))}
     </svg>
   );
@@ -351,15 +553,30 @@ export function FileThumb({ file }) {
   const sample = file.storage_key?.startsWith('sample:');
   useEffect(() => {
     let live = true;
-    if (isImage && !sample) api.previewUrl(file).then((u) => live && setUrl(u)).catch(() => {});
+    if (isImage && !sample)
+      api
+        .previewUrl(file)
+        .then((u) => live && setUrl(u))
+        .catch(() => {});
     return () => {
       live = false;
     };
   }, [file, isImage, sample]);
-  if (isImage && sample) return <div className="thumb"><SampleArt file={file} /></div>;
-  if (isImage && url) return <div className="thumb"><img src={url} alt="" loading="lazy" /></div>;
+  if (isImage && sample)
+    return (
+      <div className="thumb">
+        <SampleArt file={file} />
+      </div>
+    );
+  if (isImage && url)
+    return (
+      <div className="thumb">
+        <img src={url} alt="" loading="lazy" />
+      </div>
+    );
   const { Icon, color } = fileVisual(file);
-  const ext = file.kind === 'link' ? 'LINK' : (file.name.split('.').pop() || '').slice(0, 4).toUpperCase();
+  const ext =
+    file.kind === 'link' ? 'LINK' : (file.name.split('.').pop() || '').slice(0, 4).toUpperCase();
   return (
     <div className="thumb icon" style={{ background: alpha(color, 0.08), color }}>
       <Icon size={30} strokeWidth={1.6} />

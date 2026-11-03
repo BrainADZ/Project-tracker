@@ -4,7 +4,9 @@ const KEYLEN = 64;
 
 function scryptAsync(password, salt) {
   return new Promise((resolve, reject) =>
-    scrypt(password, salt, KEYLEN, { N: 16384, r: 8, p: 1 }, (err, key) => (err ? reject(err) : resolve(key))),
+    scrypt(password, salt, KEYLEN, { N: 16384, r: 8, p: 1 }, (err, key) =>
+      err ? reject(err) : resolve(key),
+    ),
   );
 }
 

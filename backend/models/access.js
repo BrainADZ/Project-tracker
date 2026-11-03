@@ -9,7 +9,8 @@ export function loadUser(db, id) {
   if (!user) return null;
   const access = new Map();
   if (user.role === 'admin') {
-    for (const v of db.all('SELECT id FROM verticals WHERE active = 1')) access.set(v.id, 'manager');
+    for (const v of db.all('SELECT id FROM verticals WHERE active = 1'))
+      access.set(v.id, 'manager');
   } else {
     for (const row of db.all(
       'SELECT uv.vertical_id, uv.level FROM user_verticals uv JOIN verticals v ON v.id = uv.vertical_id WHERE uv.user_id = ? AND v.active = 1',
@@ -19,7 +20,9 @@ export function loadUser(db, id) {
     }
   }
   user.access = access;
-  user.projectIds = new Set(db.all('SELECT p.id FROM projects p WHERE '+projectVisibilitySql(user)).map(p=>p.id));
+  user.projectIds = new Set(
+    db.all('SELECT p.id FROM projects p WHERE ' + projectVisibilitySql(user)).map((p) => p.id),
+  );
   return user;
 }
 
@@ -38,10 +41,15 @@ export function visibleVerticalIds(user) {
   return [...(user?.access?.keys() || [])];
 }
 
-export const canView = (user, project) => !!project && levelFor(user, project.vertical_id) !== null &&
-  (canManageVertical(user,project.vertical_id)||project.owner_id===user.id||user.projectIds?.has(project.id));
+export const canView = (user, project) =>
+  !!project &&
+  levelFor(user, project.vertical_id) !== null &&
+  (canManageVertical(user, project.vertical_id) ||
+    project.owner_id === user.id ||
+    user.projectIds?.has(project.id));
 
-export const canManageVertical = (user, verticalId) => isAdmin(user) || atLeast(user, verticalId, 'manager');
+export const canManageVertical = (user, verticalId) =>
+  isAdmin(user) || atLeast(user, verticalId, 'manager');
 
 // Managers of the vertical, or the project's owner (if they still work in that vertical).
 export const canEditProject = (user, project) =>
@@ -49,7 +57,8 @@ export const canEditProject = (user, project) =>
   (project.owner_id === user.id && atLeast(user, project.vertical_id, 'member'));
 
 // Tasks, files, milestones and comments.
-export const canContribute = (user, project) => isAdmin(user) || atLeast(user, project.vertical_id, 'member');
+export const canContribute = (user, project) =>
+  isAdmin(user) || atLeast(user, project.vertical_id, 'member');
 
 export function permissionsFor(user, project) {
   return {
@@ -70,15 +79,27 @@ export function projectVisibilitySql(user, alias = 'p') {
   const ids = visibleVerticalIds(user).filter(Number.isSafeInteger);
   const id = Number(user?.id);
   if (!ids.length || !Number.isSafeInteger(id) || id < 1) return '0';
-  const vertical = alias+'.vertical_id IN ('+ids.join(',')+')';
-  if (isAdmin(user)) return '('+vertical+')';
-  const managed = ids.filter(v=>canManageVertical(user,v));
+  const vertical = alias + '.vertical_id IN (' + ids.join(',') + ')';
+  if (isAdmin(user)) return '(' + vertical + ')';
+  const managed = ids.filter((v) => canManageVertical(user, v));
   const scope = [
-    ...(managed.length ? [alias+'.vertical_id IN ('+managed.join(',')+')'] : []),
-    alias+'.owner_id = '+id,
-    'EXISTS (SELECT 1 FROM project_members visibility_member WHERE visibility_member.project_id = '+alias+'.id AND visibility_member.user_id = '+id+')',
-    'EXISTS (SELECT 1 FROM tasks visibility_task WHERE visibility_task.project_id = '+alias+'.id AND visibility_task.assignee_id = '+id+')',
-    'EXISTS (SELECT 1 FROM daily_reporting visibility_report JOIN tasks visibility_work ON visibility_work.id = visibility_report.task_id WHERE visibility_work.project_id = '+alias+'.id AND visibility_report.social_id = '+id+')',
+    ...(managed.length ? [alias + '.vertical_id IN (' + managed.join(',') + ')'] : []),
+    alias + '.owner_id = ' + id,
+    'EXISTS (SELECT 1 FROM project_members visibility_member WHERE visibility_member.project_id = ' +
+      alias +
+      '.id AND visibility_member.user_id = ' +
+      id +
+      ')',
+    'EXISTS (SELECT 1 FROM tasks visibility_task WHERE visibility_task.project_id = ' +
+      alias +
+      '.id AND visibility_task.assignee_id = ' +
+      id +
+      ')',
+    'EXISTS (SELECT 1 FROM daily_reporting visibility_report JOIN tasks visibility_work ON visibility_work.id = visibility_report.task_id WHERE visibility_work.project_id = ' +
+      alias +
+      '.id AND visibility_report.social_id = ' +
+      id +
+      ')',
   ];
-  return '('+vertical+' AND ('+scope.join(' OR ')+'))';
+  return '(' + vertical + ' AND (' + scope.join(' OR ') + '))';
 }

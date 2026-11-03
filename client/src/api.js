@@ -1,5 +1,4 @@
-// One client for both modes: the real server (fetch to /api) and the browser demo,
-// which runs the same core API against SQLite in the page.
+// Browser API client for the PostgreSQL-backed server.
 
 export class ApiError extends Error {
   constructor(status, message, code) {
@@ -12,28 +11,23 @@ export class ApiError extends Error {
 let onUnauthorized = () => {};
 export const setUnauthorizedHandler = (fn) => (onUnauthorized = fn);
 
-const demo = () => window.__pmDemo;
-
 function qs(query) {
   if (!query) return '';
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(query)) if (v !== undefined && v !== null && v !== '') p.set(k, v);
+  for (const [k, v] of Object.entries(query))
+    if (v !== undefined && v !== null && v !== '') p.set(k, v);
   const s = p.toString();
   return s ? `?${s}` : '';
 }
 
 async function request(method, path, { query, body } = {}) {
-  if (demo()) {
-    try {
-      return await demo().request(method, path, { query, body });
-    } catch (e) {
-      throw new ApiError(e.status || 500, e.message || 'Something went wrong', e.code);
-    }
-  }
   const res = await fetch(`/api${path}${qs(query)}`, {
     method,
     credentials: 'same-origin',
-    headers: { 'x-bpm': '1', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+    headers: {
+      'x-bpm': '1',
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   let data = null;
@@ -56,13 +50,11 @@ export const api = {
   put: (path, body = {}) => request('PUT', path, { body }),
   del: (path) => request('DELETE', path),
 
-  isDemo: () => !!demo(),
-
   upload(projectId, file, fields = {}, onProgress) {
-    if (demo()) return demo().upload(projectId, file, fields).catch((e) => Promise.reject(new ApiError(e.status || 500, e.message, e.code)));
     return new Promise((resolve, reject) => {
       const fd = new FormData();
-      for (const [k, v] of Object.entries(fields)) if (v !== undefined && v !== null) fd.append(k, v);
+      for (const [k, v] of Object.entries(fields))
+        if (v !== undefined && v !== null) fd.append(k, v);
       fd.append('file', file);
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `/api/projects/${projectId}/upload`);
@@ -76,9 +68,13 @@ export const api = {
           /* ignore */
         }
         if (xhr.status >= 200 && xhr.status < 300) resolve(data);
-        else reject(new ApiError(xhr.status, data?.error || `Upload failed (${xhr.status})`, data?.code));
+        else
+          reject(
+            new ApiError(xhr.status, data?.error || `Upload failed (${xhr.status})`, data?.code),
+          );
       };
-      xhr.onerror = () => reject(new ApiError(0, 'Upload failed. Check your connection and try again.'));
+      xhr.onerror = () =>
+        reject(new ApiError(0, 'Upload failed. Check your connection and try again.'));
       xhr.send(fd);
     });
   },
@@ -87,7 +83,6 @@ export const api = {
   async previewUrl(file) {
     if (file.kind === 'link') return null;
     if (file.storage_key?.startsWith('sample:')) return null;
-    if (demo()) return demo().blobUrl(file);
     return `/api/files/${file.id}/download?inline=1`;
   },
 
@@ -97,9 +92,11 @@ export const api = {
       return;
     }
     if (file.storage_key?.startsWith('sample:')) {
-      throw new ApiError(404, 'This is a sample record from the demo data, so there is no file to download. Upload your own file to try it.');
+      throw new ApiError(
+        404,
+        'This is a sample record from the demo data, so there is no file to download. Upload your own file to try it.',
+      );
     }
-    if (demo()) return demo().download(file);
     const a = document.createElement('a');
     a.href = `/api/files/${file.id}/download`;
     a.rel = 'noopener';
@@ -109,7 +106,6 @@ export const api = {
   },
 
   async saveText(filename, text, type = 'text/csv') {
-    if (demo()) return demo().saveText(filename, text, type);
     const url = URL.createObjectURL(new Blob([text], { type }));
     const a = document.createElement('a');
     a.href = url;

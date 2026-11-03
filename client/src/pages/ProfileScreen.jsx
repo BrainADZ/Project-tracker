@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 import {
   Camera,
   Pencil,
@@ -11,59 +11,51 @@ import {
   X,
   ArrowLeft,
   CheckCircle2,
-} from "lucide-react";
-import { useApp } from "../store.jsx";
-import { useRouter, Link } from "../router.jsx";
-import { api } from "../api.js";
-import { Avatar, Field, VChip } from "../ui.jsx";
-import { fmtDate } from "../format.js";
-import "../profile.css";
+} from 'lucide-react';
+import { useApp } from '../store.jsx';
+import { useRouter, Link } from '../router.jsx';
+import { api } from '../api.js';
+import { Avatar, Field, VChip } from '../ui.jsx';
+import { fmtDate } from '../format.js';
+import '../profile.css';
 
 const personal = [
-  "about",
-  "address",
-  "dob",
-  "emergency_contact",
-  "skills",
-  "certifications",
-  "photo",
+  'about',
+  'address',
+  'dob',
+  'emergency_contact',
+  'skills',
+  'certifications',
+  'photo',
 ];
 const employment = [
-  "department",
-  "employment_type",
-  "work_place",
-  "location",
-  "join_date",
-  "manager_id",
+  'department',
+  'employment_type',
+  'work_place',
+  'location',
+  'join_date',
+  'manager_id',
 ];
-const date = (value) => (value ? fmtDate(value.slice(0, 10)) : "Not provided");
-const valueOrBlank = (value) => value || "";
+const date = (value) => (value ? fmtDate(value.slice(0, 10)) : 'Not provided');
+const valueOrBlank = (value) => value || '';
 async function readPhoto(file) {
   if (!file) return null;
-  if (
-    !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-    file.size > 1024 * 1024
-  )
-    throw new Error("Choose a PNG, JPEG or WebP photo under 1 MB");
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 1024 * 1024)
+    throw new Error('Choose a PNG, JPEG or WebP photo under 1 MB');
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Could not read photo"));
+    reader.onerror = () => reject(new Error('Could not read photo'));
     reader.readAsDataURL(file);
   });
 }
 function Person({ person }) {
   return (
     <div className="profile-person">
-      <Avatar
-        name={person.name}
-        color={person.color}
-        photo={person.photo}
-        size={32}
-      />
+      <Avatar name={person.name} color={person.color} photo={person.photo} size={32} />
       <div>
         <b>{person.name}</b>
-        <span>{person.title || "Team member"}</span>
+        <span>{person.title || 'Team member'}</span>
       </div>
     </div>
   );
@@ -74,7 +66,7 @@ function Details({ rows }) {
       {rows.map(([label, value]) => (
         <div key={label}>
           <dt>{label}</dt>
-          <dd>{value || "Not provided"}</dd>
+          <dd>{value || 'Not provided'}</dd>
         </div>
       ))}
     </dl>
@@ -85,9 +77,9 @@ export default function ProfileOverview({ forced = false }) {
   const { me, users, verticals, toast, loadBoot } = useApp(),
     { navigate } = useRouter();
   const [busy, setBusy] = useState(false),
-    [password, setPassword] = useState(""),
-    [again, setAgain] = useState(""),
-    [error, setError] = useState("");
+    [password, setPassword] = useState(''),
+    [again, setAgain] = useState(''),
+    [error, setError] = useState('');
   const photoRef = useRef(null),
     p = me.profile || {};
   const manager = users.find((u) => u.id === p.manager_id),
@@ -95,28 +87,26 @@ export default function ProfileOverview({ forced = false }) {
   const team = reports.length
     ? reports
     : users.filter(
-        (u) =>
-          u.id !== me.id &&
-          Object.keys(u.access || {}).some((id) => me.access?.[id]),
+        (u) => u.id !== me.id && Object.keys(u.access || {}).some((id) => me.access?.[id]),
       );
   const photo = async (file) => {
     setBusy(true);
     try {
       const data = await readPhoto(file);
       if (data) {
-        await api.patch("/me", { profile: { photo: data } });
+        await api.patch('/me', { profile: { photo: data } });
         await loadBoot();
-        toast("Photo updated", "success");
+        toast('Photo updated', 'success');
       }
     } catch (e) {
-      toast(e.message, "error");
+      toast(e.message, 'error');
     } finally {
       setBusy(false);
     }
   };
   if (forced) return <ProfilePassword forced />;
-  const skills = (p.skills || "")
-    .split(",")
+  const skills = (p.skills || '')
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
   return (
@@ -125,19 +115,10 @@ export default function ProfileOverview({ forced = false }) {
         <header className="profile-header">
           <div className="profile-photo">
             <div className="profile-photo-wrap">
-              <Avatar
-                name={me.name}
-                color={me.color}
-                photo={p.photo || me.photo}
-                size={102}
-              />
+              <Avatar name={me.name} color={me.color} photo={p.photo || me.photo} size={102} />
               <span className="profile-active" title="Active account" />
             </div>
-            <button
-              className="btn sm"
-              disabled={busy}
-              onClick={() => photoRef.current?.click()}
-            >
+            <button className="btn sm" disabled={busy} onClick={() => photoRef.current?.click()}>
               <Camera size={14} />
               Change photo
             </button>
@@ -148,7 +129,7 @@ export default function ProfileOverview({ forced = false }) {
               hidden
               onChange={(e) => {
                 photo(e.target.files[0]);
-                e.target.value = "";
+                e.target.value = '';
               }}
             />
           </div>
@@ -159,7 +140,7 @@ export default function ProfileOverview({ forced = false }) {
                   <h1>{me.name}</h1>
                   <span className="badge b-blue">{me.employee_code}</span>
                 </div>
-                <p className="muted mt-4">{me.title || "Team member"}</p>
+                <p className="muted mt-4">{me.title || 'Team member'}</p>
               </div>
               <Link className="btn primary" to="/profile/edit">
                 <Pencil size={15} />
@@ -170,14 +151,12 @@ export default function ProfileOverview({ forced = false }) {
               {verticals.map((v) => (
                 <VChip
                   key={v.id}
-                  name={v.short + (p.department ? " · " + p.department : "")}
+                  name={v.short + (p.department ? ' · ' + p.department : '')}
                   color={v.color}
                   small
                 />
               ))}
-              {p.employment_type && (
-                <span className="badge b-blue">{p.employment_type}</span>
-              )}
+              {p.employment_type && <span className="badge b-blue">{p.employment_type}</span>}
               {p.location && (
                 <span className="row gap-4 small">
                   <MapPin size={14} />
@@ -213,20 +192,20 @@ export default function ProfileOverview({ forced = false }) {
             <section className="card profile-panel">
               <h3>About</h3>
               <p className="profile-bio">
-                {p.about || "Add a short bio so your team can get to know you."}
+                {p.about || 'Add a short bio so your team can get to know you.'}
               </p>
               <Details
                 rows={[
-                  ["Reporting Manager", manager?.name || "Not assigned"],
-                  ["Employee ID", me.employee_code],
-                  ["Login username", me.username],
-                  ["Joining Date", date(p.join_date)],
-                  ["Employment Type", p.employment_type],
-                  ["Working place", p.work_place || "Not assigned"],
-                  ["Work Location", p.location],
-                  ["Date of Birth", date(p.dob)],
-                  ["Address", p.address],
-                  ["Emergency", p.emergency_contact],
+                  ['Reporting Manager', manager?.name || 'Not assigned'],
+                  ['Employee ID', me.employee_code],
+                  ['Login username', me.username],
+                  ['Joining Date', date(p.join_date)],
+                  ['Employment Type', p.employment_type],
+                  ['Working place', p.work_place || 'Not assigned'],
+                  ['Work Location', p.location],
+                  ['Date of Birth', date(p.dob)],
+                  ['Address', p.address],
+                  ['Emergency', p.emergency_contact],
                 ]}
               />
             </section>
@@ -254,9 +233,7 @@ export default function ProfileOverview({ forced = false }) {
                       {c.name}
                       {c.issuer && <span className="muted"> · {c.issuer}</span>}
                     </div>
-                    {c.issued && (
-                      <small className="muted">Issued {date(c.issued)}</small>
-                    )}
+                    {c.issued && <small className="muted">Issued {date(c.issued)}</small>}
                   </div>
                 ))
               ) : (
@@ -290,9 +267,7 @@ export default function ProfileOverview({ forced = false }) {
                       ))}
                     </div>
                     {reports.length > 4 && (
-                      <p className="small muted mt-8">
-                        +{reports.length - 4} more
-                      </p>
+                      <p className="small muted mt-8">+{reports.length - 4} more</p>
                     )}
                   </>
                 )}
@@ -305,16 +280,16 @@ export default function ProfileOverview({ forced = false }) {
               </Link>
               <Details
                 rows={[
-                  ["Employee ID", me.employee_code],
-                  ["Login username", me.username],
-                  ["Work email", me.email],
-                  ["Password", "••••••••"],
+                  ['Employee ID', me.employee_code],
+                  ['Login username', me.username],
+                  ['Work email', me.email],
+                  ['Password', '••••••••'],
                 ]}
               />
               <p className="profile-login-note">
                 <Lock size={14} />
-                Use Change password to update your password. An administrator
-                manages other login details.
+                Use Change password to update your password. An administrator manages other login
+                details.
               </p>
             </section>
             <section className="card profile-panel">
@@ -326,9 +301,7 @@ export default function ProfileOverview({ forced = false }) {
                   </div>
                 ))
               ) : (
-                <p className="small muted mt-12">
-                  No colleagues in your vertical yet.
-                </p>
+                <p className="small muted mt-12">No colleagues in your vertical yet.</p>
               )}
             </section>
           </div>
@@ -346,30 +319,30 @@ export function ProfileEditor() {
     canEmployment = true;
   const [form, setForm] = useState(() => ({
     name: me.name,
-    title: me.title || "",
-    phone: me.phone || "",
+    title: me.title || '',
+    phone: me.phone || '',
     color: me.color,
     ...Object.fromEntries(
       [...personal, ...employment].map((key) => [
         key,
-        key === "certifications" ? p[key] || [] : valueOrBlank(p[key]),
+        key === 'certifications' ? p[key] || [] : valueOrBlank(p[key]),
       ]),
     ),
   }));
   const [saving, setSaving] = useState(false),
     [reading, setReading] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState('');
   const set = (key) => (e) => setForm((v) => ({ ...v, [key]: e.target.value }));
-  const field = (key, label, type = "text", readOnly = false) => (
-    <Field label={label} htmlFor={"profile-" + key} key={key}>
+  const field = (key, label, type = 'text', readOnly = false) => (
+    <Field label={label} htmlFor={'profile-' + key} key={key}>
       <input
-        id={"profile-" + key}
+        id={'profile-' + key}
         className="input"
         type={type}
         readOnly={readOnly}
-        maxLength={key === "name" || key === "title" ? 120 : 1000}
-        required={key === "name"}
-        value={form[key] || ""}
+        maxLength={key === 'name' || key === 'title' ? 120 : 1000}
+        required={key === 'name'}
+        value={form[key] || ''}
         onChange={set(key)}
       />
     </Field>
@@ -377,23 +350,20 @@ export function ProfileEditor() {
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setError("");
+    setError('');
     try {
-      await api.patch("/me", {
+      await api.patch('/me', {
         name: form.name,
         title: form.title,
         phone: form.phone,
         color: form.color,
         profile: Object.fromEntries(
-          [...personal, ...(canEmployment ? employment : [])].map((key) => [
-            key,
-            form[key],
-          ]),
+          [...personal, ...(canEmployment ? employment : [])].map((key) => [key, form[key]]),
         ),
       });
       await loadBoot();
-      toast("Profile saved", "success");
-      navigate("/profile");
+      toast('Profile saved', 'success');
+      navigate('/profile');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -409,9 +379,7 @@ export function ProfileEditor() {
       <div className="page-head">
         <div>
           <h1>Edit Profile</h1>
-          <p className="sub">
-            Update your personal profile and contact information.
-          </p>
+          <p className="sub">Update your personal profile and contact information.</p>
         </div>
       </div>
       <form onSubmit={save} className="card profile-editor">
@@ -421,12 +389,7 @@ export function ProfileEditor() {
           </div>
         )}
         <div className="row gap-12 mb-16">
-          <Avatar
-            name={form.name}
-            color={form.color}
-            photo={form.photo || me.photo}
-            size={72}
-          />
+          <Avatar name={form.name} color={form.color} photo={form.photo || me.photo} size={72} />
           <button
             type="button"
             className="btn"
@@ -443,9 +406,9 @@ export function ProfileEditor() {
             accept="image/png,image/jpeg,image/webp"
             onChange={async (e) => {
               const file = e.target.files[0];
-              e.target.value = "";
+              e.target.value = '';
               setReading(true);
-              setError("");
+              setError('');
               try {
                 const photo = await readPhoto(file);
                 if (photo) setForm((v) => ({ ...v, photo }));
@@ -458,10 +421,10 @@ export function ProfileEditor() {
           />
         </div>
         <div className="form-grid">
-          {field("name", "Full name")}
-          {field("title", "Job title", "text", !canEmployment)}
-          {field("phone", "Phone", "tel")}
-          {field("dob", "Date of birth", "date")}
+          {field('name', 'Full name')}
+          {field('title', 'Job title', 'text', !canEmployment)}
+          {field('phone', 'Phone', 'tel')}
+          {field('dob', 'Date of birth', 'date')}
           <Field label="About" htmlFor="profile-about" className="full">
             <textarea
               id="profile-about"
@@ -469,7 +432,7 @@ export function ProfileEditor() {
               rows={3}
               maxLength={4000}
               value={form.about}
-              onChange={set("about")}
+              onChange={set('about')}
             />
           </Field>
           <Field label="Address" htmlFor="profile-address" className="full">
@@ -478,28 +441,28 @@ export function ProfileEditor() {
               className="textarea"
               maxLength={1000}
               value={form.address}
-              onChange={set("address")}
+              onChange={set('address')}
             />
           </Field>
-          {field("emergency_contact", "Emergency contact")}
-          {field("skills", "Skills (comma separated)")}
+          {field('emergency_contact', 'Emergency contact')}
+          {field('skills', 'Skills (comma separated)')}
           <div className="full">
             <h3>Certifications</h3>
             {form.certifications.map((cert, i) => (
               <div className="profile-cert-edit" key={i}>
                 {[
-                  ["name", "Certification name", "text"],
-                  ["issuer", "Issuer", "text"],
-                  ["issued", "Issue date", "date"],
+                  ['name', 'Certification name', 'text'],
+                  ['issuer', 'Issuer', 'text'],
+                  ['issued', 'Issue date', 'date'],
                 ].map(([key, label, type]) => (
                   <input
                     key={key}
-                    aria-label={label + " " + (i + 1)}
+                    aria-label={label + ' ' + (i + 1)}
                     className="input"
                     type={type}
-                    required={key === "name"}
+                    required={key === 'name'}
                     maxLength={200}
-                    value={cert[key] || ""}
+                    value={cert[key] || ''}
                     onChange={(e) =>
                       setForm((v) => ({
                         ...v,
@@ -513,13 +476,11 @@ export function ProfileEditor() {
                 <button
                   type="button"
                   className="icon-btn"
-                  aria-label={"Remove certification " + (i + 1)}
+                  aria-label={'Remove certification ' + (i + 1)}
                   onClick={() =>
                     setForm((v) => ({
                       ...v,
-                      certifications: v.certifications.filter(
-                        (_, j) => j !== i,
-                      ),
+                      certifications: v.certifications.filter((_, j) => j !== i),
                     }))
                   }
                 >
@@ -534,10 +495,7 @@ export function ProfileEditor() {
               onClick={() =>
                 setForm((v) => ({
                   ...v,
-                  certifications: [
-                    ...v.certifications,
-                    { name: "", issuer: "", issued: "" },
-                  ],
+                  certifications: [...v.certifications, { name: '', issuer: '', issued: '' }],
                 }))
               }
             >
@@ -546,21 +504,21 @@ export function ProfileEditor() {
             </button>
           </div>
           <div className="form-section">
-            Employment details {canEmployment ? "" : "· read-only"}
+            Employment details {canEmployment ? '' : '· read-only'}
           </div>
           {employment
-            .filter((k) => k !== "manager_id")
+            .filter((k) => k !== 'manager_id')
             .map((key) =>
               field(
                 key,
                 {
-                  department: "Department",
-                  employment_type: "Employment type",
-                  work_place: "Working place",
-                  location: "Work location",
-                  join_date: "Joining date",
+                  department: 'Department',
+                  employment_type: 'Employment type',
+                  work_place: 'Working place',
+                  location: 'Work location',
+                  join_date: 'Joining date',
                 }[key],
-                key === "join_date" ? "date" : "text",
+                key === 'join_date' ? 'date' : 'text',
                 !canEmployment,
               ),
             )}
@@ -570,7 +528,7 @@ export function ProfileEditor() {
               className="select"
               disabled={!canEmployment}
               value={form.manager_id}
-              onChange={set("manager_id")}
+              onChange={set('manager_id')}
             >
               <option value="">Not assigned</option>
               {users
@@ -584,17 +542,16 @@ export function ProfileEditor() {
           </Field>
           <div className="form-section">Login details</div>
           {[
-            ["Employee ID", me.employee_code],
-            ["Login username", me.username],
-            ["Work email", me.email],
+            ['Employee ID', me.employee_code],
+            ['Login username', me.username],
+            ['Work email', me.email],
           ].map(([label, value]) => (
             <Field label={label} key={label}>
-              <input className="input" readOnly value={value || ""} />
+              <input className="input" readOnly value={value || ''} />
             </Field>
           ))}
           <p className="small muted full">
-            Your employee ID stays fixed. An administrator manages account
-            details.
+            Your employee ID stays fixed. An administrator manages account details.
           </p>
         </div>
         <div className="row gap-8 mt-16">
@@ -602,12 +559,12 @@ export function ProfileEditor() {
             className="btn"
             type="button"
             disabled={saving}
-            onClick={() => navigate("/profile")}
+            onClick={() => navigate('/profile')}
           >
             Cancel
           </button>
           <button className="btn primary" disabled={saving || reading}>
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </form>
@@ -618,24 +575,24 @@ export function ProfileEditor() {
 export function ProfilePassword({ forced = false }) {
   const { toast, loadBoot } = useApp(),
     { navigate } = useRouter();
-  const [current, setCurrent] = useState(""),
-    [next, setNext] = useState(""),
-    [again, setAgain] = useState(""),
-    [error, setError] = useState(""),
+  const [current, setCurrent] = useState(''),
+    [next, setNext] = useState(''),
+    [again, setAgain] = useState(''),
+    [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   return (
     <form
       className="card profile-password"
       onSubmit={async (e) => {
         e.preventDefault();
-        setError("");
-        if (next !== again) return setError("Passwords do not match");
+        setError('');
+        if (next !== again) return setError('Passwords do not match');
         setBusy(true);
         try {
-          await api.post("/me/password", { current, next });
+          await api.post('/me/password', { current, next });
           await loadBoot();
-          toast("Password changed", "success");
-          if (!forced) navigate("/profile");
+          toast('Password changed', 'success');
+          if (!forced) navigate('/profile');
         } catch (e) {
           setError(e.message);
         } finally {
@@ -643,7 +600,7 @@ export function ProfilePassword({ forced = false }) {
         }
       }}
     >
-      <h2>{forced ? "Set your password" : "Change password"}</h2>
+      <h2>{forced ? 'Set your password' : 'Change password'}</h2>
       {error && (
         <p className="alert error" role="alert">
           {error}

@@ -15,7 +15,11 @@ parentPort.on('message', async ({ sql, params, buffer, mode }) => {
     const query = Array.isArray(response) ? response.at(-1) : response;
     let id = null;
     if (mode === 'run' && /^\s*INSERT\b/i.test(sql) && query.rowCount) {
-      try { id = Number((await client.query('SELECT lastval() AS id')).rows[0].id); } catch { /* table has no identity */ }
+      try {
+        id = Number((await client.query('SELECT lastval() AS id')).rows[0].id);
+      } catch {
+        /* table has no identity */
+      }
     }
     result = { rows: query.rows, changes: query.rowCount || 0, id };
   } catch (error) {
@@ -23,7 +27,9 @@ parentPort.on('message', async ({ sql, params, buffer, mode }) => {
   }
   const encoded = new TextEncoder().encode(JSON.stringify(result));
   if (encoded.length > bytes.length) {
-    const fallback = new TextEncoder().encode(JSON.stringify({ error: 'Database result exceeds adapter buffer' }));
+    const fallback = new TextEncoder().encode(
+      JSON.stringify({ error: 'Database result exceeds adapter buffer' }),
+    );
     bytes.set(fallback);
     Atomics.store(state, 1, fallback.length);
   } else {

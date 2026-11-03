@@ -13,10 +13,14 @@ export function openDb(file) {
     }
     return s;
   };
-  const clean = (params) => params.map((v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v));
+  const clean = (params) =>
+    params.map((v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v));
   let depth = 0;
   return {
-    all: (sql, ...p) => prep(sql).all(...clean(p)).map((r) => ({ ...r })),
+    all: (sql, ...p) =>
+      prep(sql)
+        .all(...clean(p))
+        .map((r) => ({ ...r })),
     get: (sql, ...p) => {
       const r = prep(sql).get(...clean(p));
       return r ? { ...r } : undefined;

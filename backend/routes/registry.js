@@ -1,13 +1,15 @@
 import { HttpError } from '../services/util.js';
 
-// Shared by the HTTP server and the in-browser demo. Dispatch stays synchronous
-// so related controller calls can run inside the same database transaction.
+// Dispatch stays synchronous so related controller calls can run inside the
+// same database transaction.
 export function createRouteRegistry() {
   const routes = [];
 
   function route(method, pattern, handler) {
     const keys = [];
-    const re = new RegExp('^' + pattern.replace(/:(\w+)/g, (_, k) => (keys.push(k), '([^/]+)')) + '/?$');
+    const re = new RegExp(
+      '^' + pattern.replace(/:(\w+)/g, (_, k) => (keys.push(k), '([^/]+)')) + '/?$',
+    );
     routes.push({ method, re, keys, handler });
   }
 

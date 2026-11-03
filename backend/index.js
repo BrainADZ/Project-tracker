@@ -22,11 +22,18 @@ if (db.get('SELECT COUNT(*) AS n FROM users').n === 0) {
   const password = env.ADMIN_PASSWORD || randomBytes(6).toString('base64url');
   db.run(
     "INSERT INTO users (name, email, password_hash, role, title, color, active, must_change_password, created_at) VALUES (?,?,?,'admin',?,?,1,?,?)",
-    env.ADMIN_NAME || 'Admin', email, await hashPassword(password), 'Administrator', '#1f2b7b', env.ADMIN_PASSWORD ? 0 : 1, new Date().toISOString(),
+    env.ADMIN_NAME || 'Admin',
+    email,
+    await hashPassword(password),
+    'Administrator',
+    '#1f2b7b',
+    env.ADMIN_PASSWORD ? 0 : 1,
+    new Date().toISOString(),
   );
   console.log('\n  First admin account created');
   console.log(`  Email:    ${email}`);
-  if (!env.ADMIN_PASSWORD) console.log(`  Password: ${password}   (you will be asked to change it after signing in)`);
+  if (!env.ADMIN_PASSWORD)
+    console.log(`  Password: ${password}   (you will be asked to change it after signing in)`);
   console.log('');
 }
 

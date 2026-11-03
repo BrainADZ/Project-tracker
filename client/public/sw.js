@@ -1,7 +1,15 @@
 // Keeps the app's own files on the phone so the installed app opens fast, even on a weak
 // connection. Project data (/api) always comes live from the server and is never stored here.
 const CACHE = 'bpm-shell-v2';
-const SHELL = ['/', '/manifest.webmanifest', '/icons/brand-icon-512.png', '/main-logo.png', '/exhibits-optimized.webp', '/live-optimized.webp', '/marketing-optimized.webp'];
+const SHELL = [
+  '/',
+  '/manifest.webmanifest',
+  '/icons/brand-icon-512.png',
+  '/main-logo.png',
+  '/exhibits-optimized.webp',
+  '/live-optimized.webp',
+  '/marketing-optimized.webp',
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
@@ -9,7 +17,11 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
+  e.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))),
+  );
   self.clients.claim();
 });
 
@@ -25,7 +37,11 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   if (req.mode === 'navigate') {
     // The page itself: fresh when online, the stored copy when not.
-    e.respondWith(fetch(req).then((res) => keep(new Request('/'), res)).catch(() => caches.match('/')));
+    e.respondWith(
+      fetch(req)
+        .then((res) => keep(new Request('/'), res))
+        .catch(() => caches.match('/')),
+    );
     return;
   }
   if (url.pathname.startsWith('/assets/')) {
@@ -33,5 +49,9 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => keep(req, res))));
     return;
   }
-  e.respondWith(fetch(req).then((res) => keep(req, res)).catch(() => caches.match(req)));
+  e.respondWith(
+    fetch(req)
+      .then((res) => keep(req, res))
+      .catch(() => caches.match(req)),
+  );
 });

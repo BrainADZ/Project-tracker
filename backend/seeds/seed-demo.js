@@ -15,7 +15,10 @@ mkdirSync(dataDir, { recursive: true });
 const db = openPostgres(process.env.DATABASE_URL);
 migrate(db);
 seedBasics(db);
-const done = seedDemo(db, { today: todayIn(process.env.TIMEZONE || 'Asia/Kolkata'), passwordHash: await hashPassword(DEMO_PASSWORD) });
+const done = seedDemo(db, {
+  today: todayIn(process.env.TIMEZONE || 'Asia/Kolkata'),
+  passwordHash: await hashPassword(DEMO_PASSWORD),
+});
 if (!done) {
   console.log('The database already has projects, so demo data was not added.');
 } else {

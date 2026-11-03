@@ -12,7 +12,18 @@ import { hashPassword, verifyPassword, newToken, loginGuard } from '../services/
 const COOKIE = 'bpm_session';
 const SESSION_DAYS = 30;
 // Types the browser may show inline. Everything else downloads as a file.
-const INLINE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/mp4', 'text/plain']);
+const INLINE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'video/mp4',
+  'video/webm',
+  'audio/mpeg',
+  'audio/mp4',
+  'text/plain',
+]);
 
 function readCookie(req, name) {
   const header = req.headers.cookie || '';
@@ -32,13 +43,21 @@ function flatQuery(q) {
   return out;
 }
 
-export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', secureCookies = false, maxUploadMb = 200 }) {
+export function createApp({
+  db,
+  dataDir,
+  distDir,
+  timeZone = 'Asia/Kolkata',
+  secureCookies = false,
+  maxUploadMb = 200,
+}) {
   const uploadsDir = path.join(dataDir, 'uploads');
   mkdirSync(uploadsDir, { recursive: true });
 
   const storagePath = (key) => {
     const p = path.resolve(uploadsDir, key);
-    if (!p.startsWith(path.resolve(uploadsDir) + path.sep)) throw new HttpError(400, 'Invalid file path');
+    if (!p.startsWith(path.resolve(uploadsDir) + path.sep))
+      throw new HttpError(400, 'Invalid file path');
     return p;
   };
 
@@ -79,27 +98,42 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
   });
 
   const send = (res, err) => {
-    if (err instanceof HttpError) return res.status(err.status).json({ error: err.message, code: err.code });
-    if (err?.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: `Files can be up to ${maxUploadMb} MB`, code: 'too_large' });
+    if (err instanceof HttpError)
+      return res.status(err.status).json({ error: err.message, code: err.code });
+    if (err?.code === 'LIMIT_FILE_SIZE')
+      return res
+        .status(413)
+        .json({ error: `Files can be up to ${maxUploadMb} MB`, code: 'too_large' });
     console.error(err);
-    return res.status(500).json({ error: 'Something went wrong on the server', code: 'server_error' });
+    return res
+      .status(500)
+      .json({ error: 'Something went wrong on the server', code: 'server_error' });
   };
 
   // ---------------------------------------------------------------- auth
 
   app.get('/api/auth/config', (req, res) => {
-    const name = db.get("SELECT value FROM settings WHERE key = 'company_name'")?.value || 'BrainADZ';
+    const name =
+      db.get("SELECT value FROM settings WHERE key = 'company_name'")?.value || 'BrainADZ';
     res.json({ company_name: name });
   });
 
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const email = String(req.body?.email || '').trim().toLowerCase();
+      const email = String(req.body?.email || '')
+        .trim()
+        .toLowerCase();
       const password = String(req.body?.password || '');
       const key = `${req.ip}|${email}`;
-      if (loginGuard.blocked(key)) throw new HttpError(429, 'Too many attempts. Try again in 10 minutes.');
-      for(const user of db.all("SELECT id FROM users WHERE username IS NULL OR username=''"))ensureUserIdentity(db,user.id);
-      const row = db.get('SELECT id, password_hash, active FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)', email,email);
+      if (loginGuard.blocked(key))
+        throw new HttpError(429, 'Too many attempts. Try again in 10 minutes.');
+      for (const user of db.all("SELECT id FROM users WHERE username IS NULL OR username=''"))
+        ensureUserIdentity(db, user.id);
+      const row = db.get(
+        'SELECT id, password_hash, active FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)',
+        email,
+        email,
+      );
       if (!row || !row.active || !(await verifyPassword(password, row.password_hash))) {
         loginGuard.failed(key);
         throw new HttpError(401, 'Incorrect email or password', 'bad_login');
@@ -108,10 +142,22 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
       const token = newToken();
       const now = new Date();
       const expires = new Date(now.getTime() + SESSION_DAYS * 86400000);
-      db.run('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?,?,?,?)', token, row.id, now.toISOString(), expires.toISOString());
+      db.run(
+        'INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?,?,?,?)',
+        token,
+        row.id,
+        now.toISOString(),
+        expires.toISOString(),
+      );
       db.run('UPDATE users SET last_login_at = ? WHERE id = ?', now.toISOString(), row.id);
       db.run('DELETE FROM sessions WHERE expires_at < ?', now.toISOString());
-      res.cookie(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: secureCookies, expires, path: '/' });
+      res.cookie(COOKIE, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: secureCookies,
+        expires,
+        path: '/',
+      });
       res.json({ ok: true });
     } catch (e) {
       send(res, e);
@@ -135,7 +181,14 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
     next();
   });
 
-  const ctxFor = (req, extra = {}) => ({ db, user: req.user, query: flatQuery(req.query), body: req.body || {}, services, ...extra });
+  const ctxFor = (req, extra = {}) => ({
+    db,
+    user: req.user,
+    query: flatQuery(req.query),
+    body: req.body || {},
+    services,
+    ...extra,
+  });
 
   // ---------------------------------------------------------------- files
 
@@ -163,7 +216,9 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
       const name = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
       try {
         const out = await handle(
-          ctxFor(req, { upload: { storage_key, name, mime: req.file.mimetype, size: req.file.size } }),
+          ctxFor(req, {
+            upload: { storage_key, name, mime: req.file.mimetype, size: req.file.size },
+          }),
           'POST',
           `/projects/${req.params.id}/files`,
         );
@@ -179,14 +234,27 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
     try {
       const f = fileForDownload(ctxFor(req), req.params.id);
       if (f.kind === 'link') return res.redirect(f.url);
-      if (!f.storage_key || f.storage_key.startsWith('sample:')) throw new HttpError(404, 'This is a sample record from the demo data. It has no file attached.');
+      if (!f.storage_key || f.storage_key.startsWith('sample:'))
+        throw new HttpError(
+          404,
+          'This is a sample record from the demo data. It has no file attached.',
+        );
       const p = storagePath(f.storage_key);
       if (!existsSync(p)) throw new HttpError(404, 'The stored file is missing');
       const inline = req.query.inline === '1' && INLINE_TYPES.has(f.mime);
       const encoded = encodeURIComponent(f.name).replace(/['()]/g, escape);
-      res.setHeader('Content-Type', inline ? f.mime : f.mime && INLINE_TYPES.has(f.mime) ? f.mime : 'application/octet-stream');
-      res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${f.name.replace(/[^\x20-\x7e]|"/g, '_')}"; filename*=UTF-8''${encoded}`);
-      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox");
+      res.setHeader(
+        'Content-Type',
+        inline ? f.mime : f.mime && INLINE_TYPES.has(f.mime) ? f.mime : 'application/octet-stream',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `${inline ? 'inline' : 'attachment'}; filename="${f.name.replace(/[^\x20-\x7e]|"/g, '_')}"; filename*=UTF-8''${encoded}`,
+      );
+      res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox",
+      );
       res.setHeader('Cache-Control', 'private, max-age=3600');
       res.sendFile(p);
     } catch (e) {
@@ -208,18 +276,28 @@ export function createApp({ db, dataDir, distDir, timeZone = 'Asia/Kolkata', sec
   // ---------------------------------------------------------------- web app
 
   if (distDir && existsSync(distDir)) {
-    app.use(express.static(distDir, {
-      index: false,
-      maxAge: '1h',
-      // The installed app checks these for updates, so they must never be served stale.
-      setHeaders: (res, file) => {
-        if (/(sw\.js|manifest\.webmanifest)$/.test(file)) res.setHeader('Cache-Control', 'no-cache');
-        if (file.endsWith('.webmanifest')) res.setHeader('Content-Type', 'application/manifest+json');
-      },
-    }));
+    app.use(
+      express.static(distDir, {
+        index: false,
+        maxAge: '1h',
+        // The installed app checks these for updates, so they must never be served stale.
+        setHeaders: (res, file) => {
+          if (/(sw\.js|manifest\.webmanifest)$/.test(file))
+            res.setHeader('Cache-Control', 'no-cache');
+          if (file.endsWith('.webmanifest'))
+            res.setHeader('Content-Type', 'application/manifest+json');
+        },
+      }),
+    );
     app.get('*', (req, res) => res.sendFile(path.join(distDir, 'index.html')));
   } else {
-    app.get('/', (req, res) => res.type('text').send('API is running. Build the web app with `npm run build`, or use `npm run dev` during development.'));
+    app.get('/', (req, res) =>
+      res
+        .type('text')
+        .send(
+          'API is running. Build the web app with `npm run build`, or use `npm run dev` during development.',
+        ),
+    );
   }
 
   return { app, services };

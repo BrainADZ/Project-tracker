@@ -6,7 +6,8 @@ const parse = (d) => new Date(d + 'T00:00:00Z');
 export function fmtDate(d, { year = 'auto', today } = {}) {
   if (!d) return '';
   const [y, m, day] = d.slice(0, 10).split('-').map(Number);
-  const showYear = year === true || (year === 'auto' && (!today || String(y) !== today.slice(0, 4)));
+  const showYear =
+    year === true || (year === 'auto' && (!today || String(y) !== today.slice(0, 4)));
   return `${day} ${MONTHS[m - 1]}${showYear ? ' ' + y : ''}`;
 }
 
@@ -49,7 +50,12 @@ export function fmtTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 export function timeAgo(iso) {

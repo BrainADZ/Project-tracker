@@ -1,7 +1,7 @@
 import { TRACKING_SCHEMA } from '../services/work-tracking.js';
 import { MARKETING_SCHEMA } from './marketing-schema.js';
-// Canonical schema definition for the offline demo and the PostgreSQL schema
-// converter. Existing SQLite databases are read only by the migration tool.
+// Canonical schema definition used by the PostgreSQL schema converter and
+// legacy SQLite migration tests.
 
 export const SCHEMA_VERSION = 19;
 
@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS ${name} (
 `;
 }
 
-export const SCHEMA = `
+export const SCHEMA =
+  `
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT
@@ -239,7 +240,9 @@ CREATE TABLE IF NOT EXISTS group_messages (
   delete_decided_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_group_messages_project ON group_messages(project_id, id);
-` + MARKETING_SCHEMA + TRACKING_SCHEMA;
+` +
+  MARKETING_SCHEMA +
+  TRACKING_SCHEMA;
 
 export const FILE_CATEGORIES = [
   'Brief',
@@ -254,9 +257,34 @@ export const FILE_CATEGORIES = [
 ];
 
 export const DEFAULT_VERTICALS = [
-  { name: 'BrainADZ Live', short: 'Live', code: 'LIV', tagline: 'From Vision to Visibility', color: '#E5243B', key_date_label: 'Event date', sort: 1 },
-  { name: 'BrainADZ Marketing', short: 'Marketing', code: 'MKT', tagline: 'Ideas That Spark Momentum', color: '#1FB2D6', key_date_label: 'Launch date', sort: 2 },
-  { name: 'BrainADZ Exhibits', short: 'Exhibits', code: 'EXH', tagline: 'Where Elegance Meets Execution', color: '#8CC63F', key_date_label: 'Show opens', ready_label: 'Ready for Event / Exhibition', sort: 3 },
+  {
+    name: 'BrainADZ Live',
+    short: 'Live',
+    code: 'LIV',
+    tagline: 'From Vision to Visibility',
+    color: '#E5243B',
+    key_date_label: 'Event date',
+    sort: 1,
+  },
+  {
+    name: 'BrainADZ Marketing',
+    short: 'Marketing',
+    code: 'MKT',
+    tagline: 'Ideas That Spark Momentum',
+    color: '#1FB2D6',
+    key_date_label: 'Launch date',
+    sort: 2,
+  },
+  {
+    name: 'BrainADZ Exhibits',
+    short: 'Exhibits',
+    code: 'EXH',
+    tagline: 'Where Elegance Meets Execution',
+    color: '#8CC63F',
+    key_date_label: 'Show opens',
+    ready_label: 'Ready for Event / Exhibition',
+    sort: 3,
+  },
 ];
 
 // Starter templates. Task offsets are days relative to the project's key date
@@ -275,15 +303,35 @@ export const DEFAULT_TEMPLATES = {
         { title: 'Client report shared', offset: 10 },
       ],
       tasks: [
-        { title: 'Client brief and objectives call', stage: 'Brief', offset: -45, priority: 'high' },
+        {
+          title: 'Client brief and objectives call',
+          stage: 'Brief',
+          offset: -45,
+          priority: 'high',
+        },
         { title: 'Venue recce and shortlist', stage: 'Brief', offset: -40 },
-        { title: 'Creative concept deck', stage: 'Concept & Budget', offset: -38, priority: 'high' },
-        { title: 'Costing sheet and budget approval', stage: 'Concept & Budget', offset: -35, priority: 'high' },
+        {
+          title: 'Creative concept deck',
+          stage: 'Concept & Budget',
+          offset: -38,
+          priority: 'high',
+        },
+        {
+          title: 'Costing sheet and budget approval',
+          stage: 'Concept & Budget',
+          offset: -35,
+          priority: 'high',
+        },
         { title: 'Vendor quotes: AV, stage, decor', stage: 'Pre-production', offset: -28 },
         { title: 'Artist and emcee bookings', stage: 'Pre-production', offset: -25 },
         { title: 'Stage and backdrop design files', stage: 'Pre-production', offset: -18 },
         { title: 'Invites and RSVP tracking', stage: 'Pre-production', offset: -15 },
-        { title: 'Permissions and licences (PPL, police, fire)', stage: 'Pre-production', offset: -12, priority: 'high' },
+        {
+          title: 'Permissions and licences (PPL, police, fire)',
+          stage: 'Pre-production',
+          offset: -12,
+          priority: 'high',
+        },
         { title: 'Run-of-show and cue sheet', stage: 'Pre-production', offset: -5 },
         { title: 'Technical rehearsal', stage: 'Event day', offset: -1, priority: 'high' },
         { title: 'Event day execution', stage: 'Event day', offset: 0, priority: 'urgent' },
@@ -302,9 +350,19 @@ export const DEFAULT_TEMPLATES = {
         { title: 'Show day', offset: 0 },
       ],
       tasks: [
-        { title: 'Artist availability and contract', stage: 'Planning', offset: -60, priority: 'high' },
+        {
+          title: 'Artist availability and contract',
+          stage: 'Planning',
+          offset: -60,
+          priority: 'high',
+        },
         { title: 'Ticketing partner set-up', stage: 'Planning', offset: -45 },
-        { title: 'Police, fire and excise permissions', stage: 'Permissions', offset: -20, priority: 'urgent' },
+        {
+          title: 'Police, fire and excise permissions',
+          stage: 'Permissions',
+          offset: -20,
+          priority: 'urgent',
+        },
         { title: 'Crowd management and security plan', stage: 'Permissions', offset: -15 },
         { title: 'Stage, sound and lights production', stage: 'Production', offset: -7 },
         { title: 'Show day execution', stage: 'Show day', offset: 0, priority: 'urgent' },
@@ -346,7 +404,12 @@ export const DEFAULT_TEMPLATES = {
         { title: 'Monthly report', offset: 30 },
       ],
       tasks: [
-        { title: 'Content calendar for the month', stage: 'Calendar', offset: -25, priority: 'high' },
+        {
+          title: 'Content calendar for the month',
+          stage: 'Calendar',
+          offset: -25,
+          priority: 'high',
+        },
         { title: 'Design and copy for posts', stage: 'Production', offset: -12 },
         { title: 'Reels shoot and edit', stage: 'Production', offset: -8 },
         { title: 'Schedule posts', stage: 'Publishing', offset: -1 },
@@ -368,16 +431,31 @@ export const DEFAULT_TEMPLATES = {
         { title: 'Show opens', offset: 0 },
       ],
       tasks: [
-        { title: 'Client brief, stall size and hall plan', stage: 'Brief', offset: -50, priority: 'high' },
+        {
+          title: 'Client brief, stall size and hall plan',
+          stage: 'Brief',
+          offset: -50,
+          priority: 'high',
+        },
         { title: '3D design, first draft', stage: 'Design', offset: -42, priority: 'high' },
         { title: 'Design revisions', stage: 'Design', offset: -35 },
         { title: 'Costing and BOQ', stage: 'Approval', offset: -32, priority: 'high' },
-        { title: 'Client sign-off on design and cost', stage: 'Approval', offset: -30, priority: 'urgent' },
+        {
+          title: 'Client sign-off on design and cost',
+          stage: 'Approval',
+          offset: -30,
+          priority: 'urgent',
+        },
         { title: 'Structural drawings to organiser', stage: 'Approval', offset: -21 },
         { title: 'Graphics and branding artwork', stage: 'Fabrication', offset: -14 },
         { title: 'Fabrication at workshop', stage: 'Fabrication', offset: -6 },
         { title: 'Logistics to venue', stage: 'Installation', offset: -4 },
-        { title: 'On-site build and electricals', stage: 'Installation', offset: -2, priority: 'high' },
+        {
+          title: 'On-site build and electricals',
+          stage: 'Installation',
+          offset: -2,
+          priority: 'high',
+        },
         { title: 'Handover walk-through', stage: 'Installation', offset: -1, priority: 'high' },
         { title: 'Show-time support', stage: 'Show', offset: 0 },
         { title: 'Dismantle and material return', stage: 'Dismantle', offset: 4 },

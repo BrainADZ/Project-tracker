@@ -14,7 +14,7 @@ import Archive from './pages/Archive.jsx';
 import Team from './pages/Team.jsx';
 import Settings from './pages/Settings.jsx';
 import Profile from './pages/ProfileScreen.jsx';
-import {ProfileEditor as ProfileEdit,ProfilePassword} from './pages/ProfileScreen.jsx';
+import { ProfileEditor as ProfileEdit, ProfilePassword } from './pages/ProfileScreen.jsx';
 import Teams from './pages/Teams.jsx';
 import DailyReporting from './pages/DailyReporting.jsx';
 
@@ -22,21 +22,25 @@ function Routes() {
   const { path, navigate } = useRouter();
   const { dailyReportingOnly, defaultReportingPath, reportingDepartment } = useApp();
   useEffect(() => {
-    if ((path === '/my' && dailyReportingOnly)||path==='/daily-reporting') navigate(defaultReportingPath, { replace: true });
+    if ((path === '/my' && dailyReportingOnly) || path === '/daily-reporting')
+      navigate(defaultReportingPath, { replace: true });
   }, [path, dailyReportingOnly, defaultReportingPath, navigate]);
   let m;
   if (path === '/' || path === '') return <Dashboard />;
   if (path === '/my') return dailyReportingOnly ? <DailyReporting /> : <MyWork />;
   if (path === '/projects') return <Projects />;
-  if ((m = match('/projects/:id/tasks/:taskId', path))) return <Project id={m.id} tab="tasks" taskId={m.taskId} />;
+  if ((m = match('/projects/:id/tasks/:taskId', path)))
+    return <Project id={m.id} tab="tasks" taskId={m.taskId} />;
   if ((m = match('/projects/:id/:tab', path))) return <Project id={m.id} tab={m.tab} />;
   if ((m = match('/projects/:id', path))) return <Project id={m.id} />;
-  if (path === '/daily-reporting/social' || path === '/marketing') return <DailyReporting key="social" department="social" />;
-  if (path === '/daily-reporting/development') return <DailyReporting key="development" department="development" />;
+  if (path === '/daily-reporting/social' || path === '/marketing')
+    return <DailyReporting key="social" department="social" />;
+  if (path === '/daily-reporting/development')
+    return <DailyReporting key="development" department="development" />;
   if (path === '/daily-reporting/other') return <DailyReporting key="other" department="other" />;
   if (path === '/daily-reporting') return <DailyReporting department={reportingDepartment} />;
   if ((m = match('/daily-reporting/:id', path))) return <DailyReporting projectId={m.id} />;
-  if ((m = match('/marketing/:id', path))) return <DailyReporting />;
+  if (match('/marketing/:id', path)) return <DailyReporting />;
   if (path === '/teams') return <Teams />;
   if ((m = match('/teams/:id', path))) return <Teams id={m.id} />;
   if (path === '/assets') return <Assets />;
@@ -47,7 +51,13 @@ function Routes() {
   if (path === '/profile') return <Profile />;
   if (path === '/profile/edit') return <ProfileEdit />;
   if (path === '/profile/password') return <ProfilePassword />;
-  return <div className="card"><Empty title="Page not found">That link does not lead anywhere. Use the menu to find your way.</Empty></div>;
+  return (
+    <div className="card">
+      <Empty title="Page not found">
+        That link does not lead anywhere. Use the menu to find your way.
+      </Empty>
+    </div>
+  );
 }
 
 function Boot({ label }) {
@@ -69,7 +79,9 @@ export default function App() {
       <div className="demo-boot">
         <b>Could not reach the server</b>
         <span>{bootError}</span>
-        <button type="button" className="btn primary" onClick={loadBoot}>Try again</button>
+        <button type="button" className="btn primary" onClick={loadBoot}>
+          Try again
+        </button>
       </div>
     );
   }
@@ -77,13 +89,12 @@ export default function App() {
   if (boot === false) return <Login />;
 
   const signOut = async () => {
-    if (api.isDemo()) window.__pmDemo.signOut();
-    else await api.post('/auth/logout').catch(() => {});
+    await api.post('/auth/logout').catch(() => {});
     navigate('/', { replace: true });
     setBoot(false);
   };
 
-  if (me.must_change_password && !api.isDemo()) {
+  if (me.must_change_password) {
     return (
       <Layout onSignOut={signOut}>
         <Profile forced />

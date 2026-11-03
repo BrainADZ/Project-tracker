@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Search, Bell, Menu as MenuIcon, LogOut, KeyRound, UserRound, ChevronDown, ChevronLeft, FileText, FolderOpen, CheckCircle2,
-  Smartphone, Share, SquarePlus,
+  Search,
+  Bell,
+  Menu as MenuIcon,
+  LogOut,
+  KeyRound,
+  UserRound,
+  ChevronDown,
+  ChevronLeft,
+  FileText,
+  FolderOpen,
+  CheckCircle2,
+  Smartphone,
+  Share,
+  SquarePlus,
 } from 'lucide-react';
 import { useNavItems, isActivePath, navCount, CountBadge } from './nav.jsx';
 import { FloatingNav } from './FloatingNav.jsx';
@@ -14,7 +26,6 @@ import { Avatar, useClickOutside, alpha, Modal } from './ui.jsx';
 import { useInstallApp } from './installApp.js';
 import { brand } from './brand.js';
 import { timeAgo } from './format.js';
-
 
 export function Logo({ size = '' }) {
   return (
@@ -40,12 +51,23 @@ function Leaf() {
 function VerticalLogo({ v, active, onClick }) {
   const logo = brand.verticals[v.short] || brand.verticals[v.name];
   return (
-    <button type="button" className={`vlogo ${active ? 'active' : ''}`} onClick={onClick} aria-pressed={active}
-      title={active ? `Showing ${v.name} only. Click to show all your verticals.` : `Show ${v.name} only`}>
-      {logo ? <img className="vertical-brand-logo" src={logo} alt={v.name} /> : (
+    <button
+      type="button"
+      className={`vlogo ${active ? 'active' : ''}`}
+      onClick={onClick}
+      aria-pressed={active}
+      title={
+        active ? `Showing ${v.name} only. Click to show all your verticals.` : `Show ${v.name} only`
+      }
+    >
+      {logo ? (
+        <img className="vertical-brand-logo" src={logo} alt={v.name} />
+      ) : (
         <>
           <span className="b">BrainADZ</span>
-          <span className="n" style={{ color: v.color }}>{v.short}</span>
+          <span className="n" style={{ color: v.color }}>
+            {v.short}
+          </span>
           <span className="t">{v.tagline}</span>
         </>
       )}
@@ -101,34 +123,75 @@ function Sidebar({ open, onClose, counts, mini, onToggleMini, onFloat }) {
       {open && <div className="scrim" onClick={onClose} />}
       <aside ref={asideRef} className={`sidebar ${open ? 'open' : ''} ${mini ? 'mini' : ''}`}>
         <div className="brand">
-          <div className="brand-full"><Logo /></div>
-          <button type="button" className="brand-mono" onClick={onToggleMini} tabIndex={mini ? 0 : -1} aria-hidden={!mini} title="Expand the menu">
+          <div className="brand-full">
+            <Logo />
+          </div>
+          <button
+            type="button"
+            className="brand-mono"
+            onClick={onToggleMini}
+            tabIndex={mini ? 0 : -1}
+            aria-hidden={!mini}
+            title="Expand the menu"
+          >
             <Monogram size={42} />
           </button>
         </div>
-        <button type="button" className="side-toggle" onClick={onToggleMini} aria-expanded={!mini}
-          aria-label={mini ? 'Expand the menu' : 'Collapse the menu'} title={`${mini ? 'Expand' : 'Collapse'} the menu  [`}>
+        <button
+          type="button"
+          className="side-toggle"
+          onClick={onToggleMini}
+          aria-expanded={!mini}
+          aria-label={mini ? 'Expand the menu' : 'Collapse the menu'}
+          title={`${mini ? 'Expand' : 'Collapse'} the menu  [`}
+        >
           <ChevronLeft size={15} strokeWidth={2.4} />
         </button>
         <nav className="nav" aria-label="Main">
           {items.map((n) => (
-            <Link key={n.to} to={n.to} className={isActive(n) ? 'active' : ''} onClick={onClose} aria-current={isActive(n) ? 'page' : undefined}
+            <Link
+              key={n.to}
+              to={n.to}
+              className={isActive(n) ? 'active' : ''}
+              onClick={onClose}
+              aria-current={isActive(n) ? 'page' : undefined}
               aria-label={mini ? n.label : undefined}
-              onMouseEnter={(e) => showTip(e, n.label)} onMouseLeave={() => setTip(null)} onFocus={(e) => showTip(e, n.label)} onBlur={() => setTip(null)}>
+              onMouseEnter={(e) => showTip(e, n.label)}
+              onMouseLeave={() => setTip(null)}
+              onFocus={(e) => showTip(e, n.label)}
+              onBlur={() => setTip(null)}
+            >
               <n.icon size={26} />
               <span className="lbl">{n.label}</span>
               <CountBadge c={navCount(n, counts)} />
             </Link>
           ))}
           {/* Hide this menu and use the draggable Br button instead. */}
-          <button type="button" className="nav-act" onClick={() => { onClose(); onFloat(); }} aria-label={mini ? 'Floating menu' : undefined}
+          <button
+            type="button"
+            className="nav-act"
+            onClick={() => {
+              onClose();
+              onFloat();
+            }}
+            aria-label={mini ? 'Floating menu' : undefined}
             title="Hide the menu and use a floating Br button you can drag anywhere"
-            onMouseEnter={(e) => showTip(e, 'Floating menu')} onMouseLeave={() => setTip(null)} onFocus={(e) => showTip(e, 'Floating menu')} onBlur={() => setTip(null)}>
-            <span className="nav-act-ic"><Monogram size={15} color="#fff" title="" /></span>
+            onMouseEnter={(e) => showTip(e, 'Floating menu')}
+            onMouseLeave={() => setTip(null)}
+            onFocus={(e) => showTip(e, 'Floating menu')}
+            onBlur={() => setTip(null)}
+          >
+            <span className="nav-act-ic">
+              <Monogram size={15} color="#fff" title="" />
+            </span>
             <span className="lbl">Floating menu</span>
           </button>
         </nav>
-        {mini && tip && <div className="side-tip" style={{ top: tip.top }} role="tooltip">{tip.label}</div>}
+        {mini && tip && (
+          <div className="side-tip" style={{ top: tip.top }} role="tooltip">
+            {tip.label}
+          </div>
+        )}
         <div className="leaf-card">
           <b>Great Projects Start With a Clear Plan</b>
           <i />
@@ -153,7 +216,10 @@ function SearchBox() {
     if (term.length < 2) return setResults([]);
     let live = true;
     const t = setTimeout(() => {
-      api.get('/search', { q: term }).then((r) => live && (setResults(r.results), setFocus(0))).catch(() => {});
+      api
+        .get('/search', { q: term })
+        .then((r) => live && (setResults(r.results), setFocus(0)))
+        .catch(() => {});
     }, 200);
     return () => {
       live = false;
@@ -178,7 +244,8 @@ function SearchBox() {
         onChange={(e) => (setQ(e.target.value), setOpen(true))}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') (e.preventDefault(), setFocus((f) => Math.min(f + 1, results.length - 1)));
+          if (e.key === 'ArrowDown')
+            (e.preventDefault(), setFocus((f) => Math.min(f + 1, results.length - 1)));
           if (e.key === 'ArrowUp') (e.preventDefault(), setFocus((f) => Math.max(f - 1, 0)));
           if (e.key === 'Enter' && results[focus]) go(results[focus]);
           if (e.key === 'Escape') setOpen(false);
@@ -190,11 +257,24 @@ function SearchBox() {
           {results.map((r, i) => {
             const Ic = icon[r.type];
             return (
-              <div key={`${r.type}-${r.id}`} className={`item ${i === focus ? 'focus' : ''}`} onMouseDown={() => go(r)} onMouseEnter={() => setFocus(i)}>
-                <span className="file-ic sm" style={{ background: alpha(r.color, 0.14), color: r.color }}><Ic size={15} /></span>
+              <div
+                key={`${r.type}-${r.id}`}
+                className={`item ${i === focus ? 'focus' : ''}`}
+                onMouseDown={() => go(r)}
+                onMouseEnter={() => setFocus(i)}
+              >
+                <span
+                  className="file-ic sm"
+                  style={{ background: alpha(r.color, 0.14), color: r.color }}
+                >
+                  <Ic size={15} />
+                </span>
                 <div style={{ minWidth: 0 }}>
                   <div className="b6 ellipsis">{r.title}</div>
-                  <div className="xs muted ellipsis">{r.type === 'project' ? 'Project' : r.type === 'task' ? 'Task' : 'File'} · {r.sub}</div>
+                  <div className="xs muted ellipsis">
+                    {r.type === 'project' ? 'Project' : r.type === 'task' ? 'Task' : 'File'} ·{' '}
+                    {r.sub}
+                  </div>
                 </div>
               </div>
             );
@@ -211,7 +291,10 @@ function Notifications() {
   const close = useCallback(() => setOpen(false), []);
   const ref = useClickOutside(close);
   const { navigate } = useRouter();
-  const { data, reload } = useLoad(() => (open ? api.get('/notifications') : Promise.resolve(null)), [open]);
+  const { data, reload } = useLoad(
+    () => (open ? api.get('/notifications') : Promise.resolve(null)),
+    [open],
+  );
   const unread = data?.unread ?? boot?.unread ?? 0;
 
   const openItem = async (n) => {
@@ -219,7 +302,10 @@ function Notifications() {
     if (!n.read) await api.post('/notifications/read', { id: n.id }).catch(() => {});
     loadBoot();
     if (n.link) navigate(n.link);
-    else if (n.project_id) navigate(n.task_id ? `/projects/${n.project_id}/tasks/${n.task_id}` : `/projects/${n.project_id}`);
+    else if (n.project_id)
+      navigate(
+        n.task_id ? `/projects/${n.project_id}/tasks/${n.task_id}` : `/projects/${n.project_id}`,
+      );
   };
   const readAll = async () => {
     await api.post('/notifications/read', {});
@@ -228,7 +314,12 @@ function Notifications() {
   };
   return (
     <div className="menu-wrap" ref={ref}>
-      <button type="button" className="icon-btn" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`} onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className="icon-btn"
+        aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
+        onClick={() => setOpen((o) => !o)}
+      >
         <Bell size={21} />
         {unread > 0 && <span className="badge-dot">{unread > 99 ? '99+' : unread}</span>}
       </button>
@@ -236,16 +327,36 @@ function Notifications() {
         <div className="dropdown notif">
           <div className="head">
             Notifications
-            {unread > 0 && <button type="button" className="link" onClick={readAll}>Mark all read</button>}
+            {unread > 0 && (
+              <button type="button" className="link" onClick={readAll}>
+                Mark all read
+              </button>
+            )}
           </div>
           <div className="notif-list">
             {!data && <div className="item muted">Loading…</div>}
             {data?.items.length === 0 && <div className="item muted">You are all caught up.</div>}
             {data?.items.map((n) => (
-              <div key={n.id} className={`item ${n.read ? '' : 'unread'}`} onClick={() => openItem(n)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && openItem(n)}>
-                <span className="dot" style={{ background: n.vertical_color || 'var(--blue)', marginTop: 6, alignSelf: 'flex-start' }} />
+              <div
+                key={n.id}
+                className={`item ${n.read ? '' : 'unread'}`}
+                onClick={() => openItem(n)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && openItem(n)}
+              >
+                <span
+                  className="dot"
+                  style={{
+                    background: n.vertical_color || 'var(--blue)',
+                    marginTop: 6,
+                    alignSelf: 'flex-start',
+                  }}
+                />
                 <div style={{ minWidth: 0 }}>
-                  <div className="small" style={{ lineHeight: 1.4 }}>{n.text}</div>
+                  <div className="small" style={{ lineHeight: 1.4 }}>
+                    {n.text}
+                  </div>
                   <div className="xs muted mt-4">{timeAgo(n.created_at)}</div>
                 </div>
               </div>
@@ -260,12 +371,41 @@ function Notifications() {
 // How to add the app to an iPhone's home screen (Safari has no install button).
 function IPhoneInstall({ onClose }) {
   return (
-    <Modal title="Add BrainADZ to your home screen" sub="It opens full screen, like any other app" onClose={onClose}
-      footer={<button type="button" className="btn primary" onClick={onClose}>Got it</button>}>
+    <Modal
+      title="Add BrainADZ to your home screen"
+      sub="It opens full screen, like any other app"
+      onClose={onClose}
+      footer={
+        <button type="button" className="btn primary" onClick={onClose}>
+          Got it
+        </button>
+      }
+    >
       <ol className="modal-body install-steps">
-        <li><span className="step-ic"><Share size={18} /></span><span>In Safari, tap the <b>Share</b> button at the bottom of the screen.</span></li>
-        <li><span className="step-ic"><SquarePlus size={18} /></span><span>Scroll down and tap <b>Add to Home Screen</b>.</span></li>
-        <li><span className="step-ic"><Monogram size={18} color="#fff" title="" /></span><span>Tap <b>Add</b>. BrainADZ appears on your home screen with the Br icon.</span></li>
+        <li>
+          <span className="step-ic">
+            <Share size={18} />
+          </span>
+          <span>
+            In Safari, tap the <b>Share</b> button at the bottom of the screen.
+          </span>
+        </li>
+        <li>
+          <span className="step-ic">
+            <SquarePlus size={18} />
+          </span>
+          <span>
+            Scroll down and tap <b>Add to Home Screen</b>.
+          </span>
+        </li>
+        <li>
+          <span className="step-ic">
+            <Monogram size={18} color="#fff" title="" />
+          </span>
+          <span>
+            Tap <b>Add</b>. BrainADZ appears on your home screen with the Br icon.
+          </span>
+        </li>
       </ol>
     </Modal>
   );
@@ -279,10 +419,19 @@ function UserMenu({ onSignOut }) {
   const close = useCallback(() => setOpen(false), []);
   const ref = useClickOutside(close);
   const { navigate } = useRouter();
-  const role = me.role === 'admin' ? 'Admin · all verticals' : verticals.map((v) => v.short).join(' · ') || 'No verticals yet';
+  const role =
+    me.role === 'admin'
+      ? 'Admin · all verticals'
+      : verticals.map((v) => v.short).join(' · ') || 'No verticals yet';
   return (
     <div className="menu-wrap" ref={ref}>
-      <button type="button" className="user-chip" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+      <button
+        type="button"
+        className="user-chip"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
         <Avatar name={me.name} color={me.color} photo={me.photo} size={40} />
         <span className="who">
           <div className="nm">{me.name}</div>
@@ -294,20 +443,57 @@ function UserMenu({ onSignOut }) {
         <div className="dropdown menu" role="menu">
           <div className="head" style={{ display: 'block' }}>
             <div className="b6">{me.name}</div>
-            <div className="xs muted" style={{ fontWeight: 500 }}>{me.email}</div>
+            <div className="xs muted" style={{ fontWeight: 500 }}>
+              {me.email}
+            </div>
           </div>
-          <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate('/profile'))}><UserRound size={16} />My profile</button>
-          {!api.isDemo() && <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate('/profile/password'))}><KeyRound size={16} />Change password</button>}
+          <button
+            type="button"
+            className="item"
+            role="menuitem"
+            onClick={() => (close(), navigate('/profile'))}
+          >
+            <UserRound size={16} />
+            My profile
+          </button>
+          <button
+            type="button"
+            className="item"
+            role="menuitem"
+            onClick={() => (close(), navigate('/profile/password'))}
+          >
+            <KeyRound size={16} />
+            Change password
+          </button>
           {installApp && (
-            <button type="button" className="item" role="menuitem" onClick={() => { close(); if (installApp.kind === 'ios') setIphoneHelp(true); else installApp.install(); }}>
-              <Smartphone size={16} />{installApp.kind === 'ios' ? 'Add to Home Screen' : 'Install app'}
+            <button
+              type="button"
+              className="item"
+              role="menuitem"
+              onClick={() => {
+                close();
+                if (installApp.kind === 'ios') setIphoneHelp(true);
+                else installApp.install();
+              }}
+            >
+              <Smartphone size={16} />
+              {installApp.kind === 'ios' ? 'Add to Home Screen' : 'Install app'}
             </button>
           )}
-          <button type="button" className="item danger" role="menuitem" onClick={() => (close(), onSignOut())}><LogOut size={16} />{api.isDemo() ? 'Switch person' : 'Sign out'}</button>
+          <button
+            type="button"
+            className="item danger"
+            role="menuitem"
+            onClick={() => (close(), onSignOut())}
+          >
+            <LogOut size={16} />
+            Sign out
+          </button>
         </div>
       )}
       {/* At page level: the top bar's blur would otherwise trap the window inside the bar. */}
-      {iphoneHelp && createPortal(<IPhoneInstall onClose={() => setIphoneHelp(false)} />, document.body)}
+      {iphoneHelp &&
+        createPortal(<IPhoneInstall onClose={() => setIphoneHelp(false)} />, document.body)}
     </div>
   );
 }
@@ -315,7 +501,13 @@ function UserMenu({ onSignOut }) {
 export function Layout({ children, onSignOut }) {
   const { verticals, vertical, setVertical, version, countsVersion, me } = useApp();
   const [open, setOpen] = useState(false);
-  const [counts, setCounts] = useState({ my: 0, myNew: 0, projectsNew: 0, groups: 0, groupsUnread: 0 });
+  const [counts, setCounts] = useState({
+    my: 0,
+    myNew: 0,
+    projectsNew: 0,
+    groups: 0,
+    groupsUnread: 0,
+  });
   const [miniPref, setMini] = usePref('bpm.sidebarMini', false);
   // Floating: the side menu hides and a draggable Br button opens the menu instead.
   // Phones start with it (like a mobile app); anyone can switch either way and that sticks.
@@ -351,14 +543,21 @@ export function Layout({ children, onSignOut }) {
 
   // Group chats change without anyone here clicking, so check the counts every half minute.
   useEffect(() => {
-    const t = setInterval(() => document.visibilityState === 'visible' && setTick((n) => n + 1), 30000);
+    const t = setInterval(
+      () => document.visibilityState === 'visible' && setTick((n) => n + 1),
+      30000,
+    );
     return () => clearInterval(t);
   }, []);
 
   // Sidebar counts: red while something new is waiting, grey once you have looked.
   useEffect(() => {
     let live = true;
-    Promise.all([api.get('/tasks', { assignee: 'me', scope: 'open' }), api.get('/projects'), api.get('/groups')])
+    Promise.all([
+      api.get('/tasks', { assignee: 'me', scope: 'open' }),
+      api.get('/projects'),
+      api.get('/groups'),
+    ])
       .then(([t, p, g]) => {
         if (!live) return;
         const mine = g.items.filter((x) => x.member);
@@ -378,21 +577,46 @@ export function Layout({ children, onSignOut }) {
 
   return (
     <div className={`app ${floating ? 'menu-floating' : ''}`}>
-      <Sidebar open={open} onClose={() => setOpen(false)} counts={counts} mini={mini} onToggleMini={toggleMini} onFloat={goFloating} />
+      <Sidebar
+        open={open}
+        onClose={() => setOpen(false)}
+        counts={counts}
+        mini={mini}
+        onToggleMini={toggleMini}
+        onFloat={goFloating}
+      />
       {floating && <FloatingNav counts={counts} onDock={dock} focusOnMount={focusFloat} />}
       <div className="main">
         <header className="topbar">
-          <button type="button" className="icon-btn burger" aria-label="Open menu" onClick={() => setOpen(true)}><MenuIcon size={22} /></button>
-          {floating && <span className="app-mark"><Monogram size={30} title="BrainADZ Projects" /></span>}
+          <button
+            type="button"
+            className="icon-btn burger"
+            aria-label="Open menu"
+            onClick={() => setOpen(true)}
+          >
+            <MenuIcon size={22} />
+          </button>
+          {floating && (
+            <span className="app-mark">
+              <Monogram size={30} title="BrainADZ Projects" />
+            </span>
+          )}
           {verticals.length > 1 && (
             <div className="verticals" role="group" aria-label="Filter by vertical">
               {verticals.map((v) => (
-                <VerticalLogo key={v.id} v={v} active={vertical === v.id} onClick={() => setVertical(vertical === v.id ? null : v.id)} />
+                <VerticalLogo
+                  key={v.id}
+                  v={v}
+                  active={vertical === v.id}
+                  onClick={() => setVertical(vertical === v.id ? null : v.id)}
+                />
               ))}
             </div>
           )}
           {verticals.length === 1 && (
-            <div className="verticals"><VerticalLogo v={verticals[0]} active onClick={() => {}} /></div>
+            <div className="verticals">
+              <VerticalLogo v={verticals[0]} active onClick={() => {}} />
+            </div>
           )}
           <div className="spacer" />
           <SearchBox />
@@ -401,9 +625,22 @@ export function Layout({ children, onSignOut }) {
         </header>
         {verticals.length > 1 && (
           <div className="vfilter-sm" role="group" aria-label="Filter by vertical">
-            <button type="button" className={`pick-chip ${!vertical ? 'on' : ''}`} onClick={() => setVertical(null)}>All</button>
+            <button
+              type="button"
+              className={`pick-chip ${!vertical ? 'on' : ''}`}
+              onClick={() => setVertical(null)}
+            >
+              All
+            </button>
             {verticals.map((v) => (
-              <button key={v.id} type="button" className={`pick-chip ${vertical === v.id ? 'on' : ''}`} onClick={() => setVertical(vertical === v.id ? null : v.id)}>{v.short}</button>
+              <button
+                key={v.id}
+                type="button"
+                className={`pick-chip ${vertical === v.id ? 'on' : ''}`}
+                onClick={() => setVertical(vertical === v.id ? null : v.id)}
+              >
+                {v.short}
+              </button>
             ))}
           </div>
         )}

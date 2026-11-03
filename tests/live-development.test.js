@@ -1,112 +1,363 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {openDb} from '../backend/models/db.js';
-import {migrate,seedBasics} from '../backend/schema/setup.js';
-import {handle} from '../backend/controllers/api.js';
-import {loadUser} from '../backend/models/access.js';
-import {usesDailyReporting} from '../backend/services/reporting-audience.js';
+import { openDb } from '../backend/models/db.js';
+import { migrate, seedBasics } from '../backend/schema/setup.js';
+import { handle } from '../backend/controllers/api.js';
+import { loadUser } from '../backend/models/access.js';
+import { usesDailyReporting } from '../backend/services/reporting-audience.js';
 
-function fixture(){
- const db=openDb(':memory:');migrate(db);seedBasics(db);
- const live=db.get("SELECT id FROM verticals WHERE code='LIV'").id,marketing=db.get("SELECT id FROM verticals WHERE code='MKT'").id;
- const add=(name,vertical,level='member',role='member')=>{
-  const {id}=db.run('INSERT INTO users(name,email,title,role) VALUES (?,?,?,?)',name,name.replaceAll(' ','')+'@test.local',name,role);
-  if(vertical)db.run('INSERT INTO user_verticals(user_id,vertical_id,level) VALUES (?,?,?)',id,vertical,level);
-  return id;
- };
- const manager=add('Live Manager',live,'manager'),head=add('Software Head',live),dev=add('Software Engineer',live),dev2=add('Developer Two',live),sales=add('Live Sales',live),unrelated=add('Other Live Employee',live),mkt=add('Marketing Manager',marketing,'manager'),ceo=add('CEO',null,'member','admin');
- let now='2026-10-30T04:30:00.000Z',today='2026-10-30';
- const call=(id,method,path,body={},query={})=>handle({db,user:loadUser(db,id),body,query,services:{today:()=>today,now:()=>now}},method,path);
- const details={head_id:head,developer_ids:[dev,dev2],sales_id:sales,application_type:'Internal web application',technology:'React + Node.js'};
- return {db,live,marketing,manager,head,dev,dev2,sales,unrelated,mkt,ceo,call,details,time:v=>now=v,day:v=>today=v};
+function fixture() {
+  const db = openDb(':memory:');
+  migrate(db);
+  seedBasics(db);
+  const live = db.get("SELECT id FROM verticals WHERE code='LIV'").id,
+    marketing = db.get("SELECT id FROM verticals WHERE code='MKT'").id;
+  const add = (name, vertical, level = 'member', role = 'member') => {
+    const { id } = db.run(
+      'INSERT INTO users(name,email,title,role) VALUES (?,?,?,?)',
+      name,
+      name.replaceAll(' ', '') + '@test.local',
+      name,
+      role,
+    );
+    if (vertical)
+      db.run(
+        'INSERT INTO user_verticals(user_id,vertical_id,level) VALUES (?,?,?)',
+        id,
+        vertical,
+        level,
+      );
+    return id;
+  };
+  const manager = add('Live Manager', live, 'manager'),
+    head = add('Software Head', live),
+    dev = add('Software Engineer', live),
+    dev2 = add('Developer Two', live),
+    sales = add('Live Sales', live),
+    unrelated = add('Other Live Employee', live),
+    mkt = add('Marketing Manager', marketing, 'manager'),
+    ceo = add('CEO', null, 'member', 'admin');
+  let now = '2026-10-30T04:30:00.000Z',
+    today = '2026-10-30';
+  const call = (id, method, path, body = {}, query = {}) =>
+    handle(
+      { db, user: loadUser(db, id), body, query, services: { today: () => today, now: () => now } },
+      method,
+      path,
+    );
+  const details = {
+    head_id: head,
+    developer_ids: [dev, dev2],
+    sales_id: sales,
+    application_type: 'Internal web application',
+    technology: 'React + Node.js',
+  };
+  return {
+    db,
+    live,
+    marketing,
+    manager,
+    head,
+    dev,
+    dev2,
+    sales,
+    unrelated,
+    mkt,
+    ceo,
+    call,
+    details,
+    time: (v) => (now = v),
+    day: (v) => (today = v),
+  };
 }
-test('Live software uses head tasks, private daily modules, continuation, review and automatic progress',async()=>{
- const f=fixture();
- try{
-  const p=await f.call(f.manager,'POST','/projects',{vertical_id:f.live,name:'Client operations software',client:'Client',service_type:'software',status:'active',service_details:f.details,member_ids:[f.unrelated]});
-  assert.match(p.code,/^LIV-/);assert.equal(p.service_type,'software');assert.equal(p.owner_id,f.head);
-  assert.equal(p.service_details.application_type,'Internal web application');assert.equal(p.service_details.technology,'React + Node.js');
-  assert.deepEqual(p.stages,['Design','Development','Testing','Launch']);assert.equal(p.progress,0);
-  const project=await f.call(f.head,'GET','/projects/'+p.id);
-  assert.deepEqual(project.members.map(u=>u.id).sort((a,b)=>a-b),[f.head,f.dev,f.dev2,f.sales].sort((a,b)=>a-b));
-  for(const user of [f.head,f.dev,f.dev2,f.sales,f.ceo])assert.ok(await f.call(user,'GET','/groups/'+p.id));
-  await assert.rejects(f.call(f.unrelated,'GET','/projects/'+p.id),e=>e.status===404);
-  await assert.rejects(f.call(f.mkt,'GET','/projects/'+p.id),e=>e.status===404);
-  const a=await f.call(f.head,'POST','/projects/'+p.id+'/tasks',{title:'User management',assignee_id:f.dev,stage:'Development',due_date:'2026-11-03'});
-  const b=await f.call(f.head,'POST','/projects/'+p.id+'/tasks',{title:'Admin dashboard',assignee_id:f.dev2,stage:'Design'});
-  await assert.rejects(f.call(f.dev,'POST','/projects/'+p.id+'/tasks',{title:'Own main task',assignee_id:f.dev}),e=>e.status===403);
-  await assert.rejects(f.call(f.dev,'PATCH','/tasks/'+a.id,{status:'done'}),e=>e.status===403);
-  assert.deepEqual((await f.call(f.dev,'GET','/projects/'+p.id+'/tasks')).items.map(t=>t.id),[a.id]);
-  assert.deepEqual((await f.call(f.dev,'GET','/development-reporting/options')).projects[0].tasks.map(t=>t.id),[a.id]);
-  assert.equal((await f.call(f.dev,'GET','/bootstrap')).reporting_access.default_department,'development');
-  assert.ok(usesDailyReporting(loadUser(f.db,f.dev)));assert.ok(usesDailyReporting(loadUser(f.db,f.head)));
-  const d=await f.call(f.dev,'POST','/development-reporting',{project_id:p.id,parent_task_id:a.id,title:'Login and role permissions'});
-  const other=await f.call(f.dev2,'POST','/daily-reporting',{project_id:p.id,parent_task_id:b.id,title:'Dashboard navigation',reporting_team:'development'});
-  await assert.rejects(f.call(f.dev2,'GET','/daily-reporting/'+d.id),e=>e.status===404);
-  await f.call(f.dev,'POST','/daily-reporting/'+d.id+'/action',{action:'start'});
-  f.time('2026-10-30T05:00:00Z');await f.call(f.dev,'POST','/daily-reporting/'+d.id+'/action',{action:'pause'});
-  f.time('2026-10-30T05:15:00Z');await f.call(f.dev,'POST','/daily-reporting/'+d.id+'/action',{action:'resume'});
-  f.time('2026-10-30T05:30:00Z');await f.call(f.dev,'POST','/daily-reporting/'+d.id+'/action',{action:'under_process'});
-  await f.call(f.dev,'POST','/daily-reporting/'+d.id+'/notes',{note:'Finish role validation tomorrow'});
-  assert.equal((await f.call(f.head,'GET','/projects/'+p.id)).website.paused,1);
-  const own=await f.call(f.dev,'GET','/daily-reporting',{}, {department:'development'});
-  assert.deepEqual(own.items.map(r=>r.id),[d.id]);assert.equal(own.can_view_team,false);
-  assert.equal((await f.call(f.head,'GET','/daily-reporting',{}, {department:'development'})).items.length,2);
-  assert.equal((await f.call(f.dev,'GET','/daily-reporting',{}, {department:'social'})).items.length,0);
-  await assert.rejects(f.call(f.dev,'GET','/daily-reporting',{}, {department:'social',project:p.id}),e=>e.status===400);
-  f.day('2026-10-31');f.time('2026-10-31T04:30:00Z');
-  assert.ok((await f.call(f.dev,'GET','/development-reporting/pending')).items.some(r=>r.id===d.id));
-  const continuation=await f.call(f.dev,'POST','/development-reporting/'+d.id+'/continue');
-  await f.call(f.dev,'POST','/daily-reporting/'+continuation.id+'/action',{action:'start'});
-  f.time('2026-10-31T05:00:00Z');await f.call(f.dev,'POST','/daily-reporting/'+continuation.id+'/action',{action:'done'});
-  const task=await f.call(f.dev,'GET','/tasks/'+a.id);
-  assert.equal(task.status,'in_progress');assert.equal(task.review.can_submit,true);
-  assert.equal((await f.call(f.head,'GET','/projects/'+p.id+'/tasks')).items.find(t=>t.id===a.id).elapsed_ms,75*60000);
-  assert.equal((await f.call(f.dev,'GET','/daily-reporting/'+d.id)).last_note,'Finish role validation tomorrow');
-  let submission=await f.call(f.dev,'POST','/tasks/'+a.id+'/submit-review',{all_modules_complete:true,note:'Login and permissions tested',preview_url:'https://preview.example/software'});
-  assert.equal((await f.call(f.head,'GET','/projects/'+p.id)).website.ready_for_review,1);
-  await assert.rejects(f.call(f.sales,'POST','/tasks/'+a.id+'/review',{review_id:submission.review_id,decision:'approve'}),e=>e.status===403);
-  await f.call(f.head,'POST','/tasks/'+a.id+'/review',{review_id:submission.review_id,decision:'changes_required',feedback:'Add validation for inactive users'});
-  await f.call(f.dev,'POST','/daily-reporting/'+continuation.id+'/action',{action:'reopen',note:'Add inactive user validation'});
-  f.time('2026-10-31T05:15:00Z');await f.call(f.dev,'POST','/daily-reporting/'+continuation.id+'/action',{action:'done'});
-  submission=await f.call(f.dev,'POST','/tasks/'+a.id+'/submit-review',{all_modules_complete:true,note:'Validation completed'});
-  await f.call(f.head,'POST','/tasks/'+a.id+'/review',{review_id:submission.review_id,decision:'approve'});
-  assert.equal((await f.call(f.head,'GET','/projects/'+p.id)).progress,50);
-  const finished=await f.call(f.dev,'GET','/tasks/'+a.id);
-  assert.equal(finished.status,'done');assert.equal(finished.review.history.length,2);
-  assert.equal((await f.call(f.head,'GET','/projects/'+p.id+'/tasks')).items.find(t=>t.id===a.id).elapsed_ms,90*60000);
-  assert.equal((await f.call(f.dev2,'GET','/daily-reporting/'+other.id)).status,'Not Started');
-  assert.equal(f.db.get('PRAGMA foreign_key_check'),undefined);
- }finally{f.db.close();}
+test('Live software uses head tasks, private daily modules, continuation, review and automatic progress', async () => {
+  const f = fixture();
+  try {
+    const p = await f.call(f.manager, 'POST', '/projects', {
+      vertical_id: f.live,
+      name: 'Client operations software',
+      client: 'Client',
+      service_type: 'software',
+      status: 'active',
+      service_details: f.details,
+      member_ids: [f.unrelated],
+    });
+    assert.match(p.code, /^LIV-/);
+    assert.equal(p.service_type, 'software');
+    assert.equal(p.owner_id, f.head);
+    assert.equal(p.service_details.application_type, 'Internal web application');
+    assert.equal(p.service_details.technology, 'React + Node.js');
+    assert.deepEqual(p.stages, ['Design', 'Development', 'Testing', 'Launch']);
+    assert.equal(p.progress, 0);
+    const project = await f.call(f.head, 'GET', '/projects/' + p.id);
+    assert.deepEqual(
+      project.members.map((u) => u.id).sort((a, b) => a - b),
+      [f.head, f.dev, f.dev2, f.sales].sort((a, b) => a - b),
+    );
+    for (const user of [f.head, f.dev, f.dev2, f.sales, f.ceo])
+      assert.ok(await f.call(user, 'GET', '/groups/' + p.id));
+    await assert.rejects(f.call(f.unrelated, 'GET', '/projects/' + p.id), (e) => e.status === 404);
+    await assert.rejects(f.call(f.mkt, 'GET', '/projects/' + p.id), (e) => e.status === 404);
+    const a = await f.call(f.head, 'POST', '/projects/' + p.id + '/tasks', {
+      title: 'User management',
+      assignee_id: f.dev,
+      stage: 'Development',
+      due_date: '2026-11-03',
+    });
+    const b = await f.call(f.head, 'POST', '/projects/' + p.id + '/tasks', {
+      title: 'Admin dashboard',
+      assignee_id: f.dev2,
+      stage: 'Design',
+    });
+    await assert.rejects(
+      f.call(f.dev, 'POST', '/projects/' + p.id + '/tasks', {
+        title: 'Own main task',
+        assignee_id: f.dev,
+      }),
+      (e) => e.status === 403,
+    );
+    await assert.rejects(
+      f.call(f.dev, 'PATCH', '/tasks/' + a.id, { status: 'done' }),
+      (e) => e.status === 403,
+    );
+    assert.deepEqual(
+      (await f.call(f.dev, 'GET', '/projects/' + p.id + '/tasks')).items.map((t) => t.id),
+      [a.id],
+    );
+    assert.deepEqual(
+      (await f.call(f.dev, 'GET', '/development-reporting/options')).projects[0].tasks.map(
+        (t) => t.id,
+      ),
+      [a.id],
+    );
+    assert.equal(
+      (await f.call(f.dev, 'GET', '/bootstrap')).reporting_access.default_department,
+      'development',
+    );
+    assert.ok(usesDailyReporting(loadUser(f.db, f.dev)));
+    assert.ok(usesDailyReporting(loadUser(f.db, f.head)));
+    const d = await f.call(f.dev, 'POST', '/development-reporting', {
+      project_id: p.id,
+      parent_task_id: a.id,
+      title: 'Login and role permissions',
+    });
+    const other = await f.call(f.dev2, 'POST', '/daily-reporting', {
+      project_id: p.id,
+      parent_task_id: b.id,
+      title: 'Dashboard navigation',
+      reporting_team: 'development',
+    });
+    await assert.rejects(
+      f.call(f.dev2, 'GET', '/daily-reporting/' + d.id),
+      (e) => e.status === 404,
+    );
+    await f.call(f.dev, 'POST', '/daily-reporting/' + d.id + '/action', { action: 'start' });
+    f.time('2026-10-30T05:00:00Z');
+    await f.call(f.dev, 'POST', '/daily-reporting/' + d.id + '/action', { action: 'pause' });
+    f.time('2026-10-30T05:15:00Z');
+    await f.call(f.dev, 'POST', '/daily-reporting/' + d.id + '/action', { action: 'resume' });
+    f.time('2026-10-30T05:30:00Z');
+    await f.call(f.dev, 'POST', '/daily-reporting/' + d.id + '/action', {
+      action: 'under_process',
+    });
+    await f.call(f.dev, 'POST', '/daily-reporting/' + d.id + '/notes', {
+      note: 'Finish role validation tomorrow',
+    });
+    assert.equal((await f.call(f.head, 'GET', '/projects/' + p.id)).website.paused, 1);
+    const own = await f.call(f.dev, 'GET', '/daily-reporting', {}, { department: 'development' });
+    assert.deepEqual(
+      own.items.map((r) => r.id),
+      [d.id],
+    );
+    assert.equal(own.can_view_team, false);
+    assert.equal(
+      (await f.call(f.head, 'GET', '/daily-reporting', {}, { department: 'development' })).items
+        .length,
+      2,
+    );
+    assert.equal(
+      (await f.call(f.dev, 'GET', '/daily-reporting', {}, { department: 'social' })).items.length,
+      0,
+    );
+    await assert.rejects(
+      f.call(f.dev, 'GET', '/daily-reporting', {}, { department: 'social', project: p.id }),
+      (e) => e.status === 400,
+    );
+    f.day('2026-10-31');
+    f.time('2026-10-31T04:30:00Z');
+    assert.ok(
+      (await f.call(f.dev, 'GET', '/development-reporting/pending')).items.some(
+        (r) => r.id === d.id,
+      ),
+    );
+    const continuation = await f.call(
+      f.dev,
+      'POST',
+      '/development-reporting/' + d.id + '/continue',
+    );
+    await f.call(f.dev, 'POST', '/daily-reporting/' + continuation.id + '/action', {
+      action: 'start',
+    });
+    f.time('2026-10-31T05:00:00Z');
+    await f.call(f.dev, 'POST', '/daily-reporting/' + continuation.id + '/action', {
+      action: 'done',
+    });
+    const task = await f.call(f.dev, 'GET', '/tasks/' + a.id);
+    assert.equal(task.status, 'in_progress');
+    assert.equal(task.review.can_submit, true);
+    assert.equal(
+      (await f.call(f.head, 'GET', '/projects/' + p.id + '/tasks')).items.find((t) => t.id === a.id)
+        .elapsed_ms,
+      75 * 60000,
+    );
+    assert.equal(
+      (await f.call(f.dev, 'GET', '/daily-reporting/' + d.id)).last_note,
+      'Finish role validation tomorrow',
+    );
+    let submission = await f.call(f.dev, 'POST', '/tasks/' + a.id + '/submit-review', {
+      all_modules_complete: true,
+      note: 'Login and permissions tested',
+      preview_url: 'https://preview.example/software',
+    });
+    assert.equal((await f.call(f.head, 'GET', '/projects/' + p.id)).website.ready_for_review, 1);
+    await assert.rejects(
+      f.call(f.sales, 'POST', '/tasks/' + a.id + '/review', {
+        review_id: submission.review_id,
+        decision: 'approve',
+      }),
+      (e) => e.status === 403,
+    );
+    await f.call(f.head, 'POST', '/tasks/' + a.id + '/review', {
+      review_id: submission.review_id,
+      decision: 'changes_required',
+      feedback: 'Add validation for inactive users',
+    });
+    await f.call(f.dev, 'POST', '/daily-reporting/' + continuation.id + '/action', {
+      action: 'reopen',
+      note: 'Add inactive user validation',
+    });
+    f.time('2026-10-31T05:15:00Z');
+    await f.call(f.dev, 'POST', '/daily-reporting/' + continuation.id + '/action', {
+      action: 'done',
+    });
+    submission = await f.call(f.dev, 'POST', '/tasks/' + a.id + '/submit-review', {
+      all_modules_complete: true,
+      note: 'Validation completed',
+    });
+    await f.call(f.head, 'POST', '/tasks/' + a.id + '/review', {
+      review_id: submission.review_id,
+      decision: 'approve',
+    });
+    assert.equal((await f.call(f.head, 'GET', '/projects/' + p.id)).progress, 50);
+    const finished = await f.call(f.dev, 'GET', '/tasks/' + a.id);
+    assert.equal(finished.status, 'done');
+    assert.equal(finished.review.history.length, 2);
+    assert.equal(
+      (await f.call(f.head, 'GET', '/projects/' + p.id + '/tasks')).items.find((t) => t.id === a.id)
+        .elapsed_ms,
+      90 * 60000,
+    );
+    assert.equal(
+      (await f.call(f.dev2, 'GET', '/daily-reporting/' + other.id)).status,
+      'Not Started',
+    );
+    assert.equal(f.db.get('PRAGMA foreign_key_check'), undefined);
+  } finally {
+    f.db.close();
+  }
 });
-test('Live software validation and scope preserve Marketing development and Live event workflows',async()=>{
- const f=fixture();
- try{
-  const body={vertical_id:f.live,name:'Software',service_type:'software',service_details:f.details};
-  await assert.rejects(f.call(f.manager,'POST','/projects',{...body,service_details:{...f.details,developer_ids:[]}}),e=>e.status===400);
-  await assert.rejects(f.call(f.manager,'POST','/projects',{...body,service_details:{...f.details,developer_ids:[f.mkt]}}),e=>e.status===400);
-  await assert.rejects(f.call(f.mkt,'POST','/projects',{...body,vertical_id:f.marketing}),e=>e.status===400);
-  const software=await f.call(f.manager,'POST','/projects',body);
-  const social=await f.call(f.mkt,'POST','/projects',{vertical_id:f.marketing,name:'Social',service_type:'social',service_details:{monthly_target:15}});
-  const website=await f.call(f.mkt,'POST','/projects',{vertical_id:f.marketing,name:'Website',service_type:'website',service_details:{head_id:f.mkt,developer_ids:[f.mkt]}});
-  const event=await f.call(f.manager,'POST','/projects',{vertical_id:f.live,name:'Dealer meet',member_ids:[f.unrelated]});
-  const t=await f.call(f.manager,'POST','/projects/'+event.id+'/tasks',{title:'Venue booking',assignee_id:f.unrelated,stage:'Plan'});
-  await f.call(f.unrelated,'PATCH','/tasks/'+t.id,{status:'done'});
-  assert.equal((await f.call(f.unrelated,'GET','/tasks/'+t.id)).status,'done');
-  assert.deepEqual((await f.call(f.manager,'GET','/projects/'+event.id)).stages,['Plan','Execute','Deliver','Close']);
-  assert.equal((await f.call(f.manager,'GET','/projects/'+event.id)).website,undefined);
-  assert.deepEqual((await f.call(f.head,'GET','/projects',{},{scope:'all'})).items.map(p=>p.id),[software.id]);
-  const liveIds=(await f.call(f.manager,'GET','/projects',{},{scope:'all'})).items.map(p=>p.id);
-  assert.ok(liveIds.includes(software.id)&&liveIds.includes(event.id));assert.ok(!liveIds.includes(social.id)&&!liveIds.includes(website.id));
-  const mktOptions=(await f.call(f.mkt,'GET','/development-reporting/options')).projects.map(p=>p.id);
-  assert.deepEqual(mktOptions,[website.id]);
-  assert.deepEqual((await f.call(f.dev,'GET','/development-reporting/options')).projects.map(p=>p.id),[software.id]);
-  const ceoOptions=(await f.call(f.ceo,'GET','/development-reporting/options')).projects.map(p=>p.id);
-  assert.ok(ceoOptions.includes(software.id)&&ceoOptions.includes(website.id));
-  await assert.rejects(f.call(f.ceo,'PATCH','/projects/'+software.id,{vertical_id:f.marketing}),e=>e.status===400);
-  await f.call(f.head,'PATCH','/projects/'+software.id,{description:'Updated software scope'});
-  const updated=await f.call(f.head,'GET','/projects/'+software.id);
-  assert.equal(updated.service_details.technology,'React + Node.js');assert.equal(updated.members.length,4);
-  assert.equal(f.db.get('PRAGMA foreign_key_check'),undefined);
- }finally{f.db.close();}
+test('Live software validation and scope preserve Marketing development and Live event workflows', async () => {
+  const f = fixture();
+  try {
+    const body = {
+      vertical_id: f.live,
+      name: 'Software',
+      service_type: 'software',
+      service_details: f.details,
+    };
+    await assert.rejects(
+      f.call(f.manager, 'POST', '/projects', {
+        ...body,
+        service_details: { ...f.details, developer_ids: [] },
+      }),
+      (e) => e.status === 400,
+    );
+    await assert.rejects(
+      f.call(f.manager, 'POST', '/projects', {
+        ...body,
+        service_details: { ...f.details, developer_ids: [f.mkt] },
+      }),
+      (e) => e.status === 400,
+    );
+    await assert.rejects(
+      f.call(f.mkt, 'POST', '/projects', { ...body, vertical_id: f.marketing }),
+      (e) => e.status === 400,
+    );
+    const software = await f.call(f.manager, 'POST', '/projects', body);
+    const social = await f.call(f.mkt, 'POST', '/projects', {
+      vertical_id: f.marketing,
+      name: 'Social',
+      service_type: 'social',
+      service_details: { monthly_target: 15 },
+    });
+    const website = await f.call(f.mkt, 'POST', '/projects', {
+      vertical_id: f.marketing,
+      name: 'Website',
+      service_type: 'website',
+      service_details: { head_id: f.mkt, developer_ids: [f.mkt] },
+    });
+    const event = await f.call(f.manager, 'POST', '/projects', {
+      vertical_id: f.live,
+      name: 'Dealer meet',
+      member_ids: [f.unrelated],
+    });
+    const t = await f.call(f.manager, 'POST', '/projects/' + event.id + '/tasks', {
+      title: 'Venue booking',
+      assignee_id: f.unrelated,
+      stage: 'Plan',
+    });
+    await f.call(f.unrelated, 'PATCH', '/tasks/' + t.id, { status: 'done' });
+    assert.equal((await f.call(f.unrelated, 'GET', '/tasks/' + t.id)).status, 'done');
+    assert.deepEqual((await f.call(f.manager, 'GET', '/projects/' + event.id)).stages, [
+      'Plan',
+      'Execute',
+      'Deliver',
+      'Close',
+    ]);
+    assert.equal((await f.call(f.manager, 'GET', '/projects/' + event.id)).website, undefined);
+    assert.deepEqual(
+      (await f.call(f.head, 'GET', '/projects', {}, { scope: 'all' })).items.map((p) => p.id),
+      [software.id],
+    );
+    const liveIds = (await f.call(f.manager, 'GET', '/projects', {}, { scope: 'all' })).items.map(
+      (p) => p.id,
+    );
+    assert.ok(liveIds.includes(software.id) && liveIds.includes(event.id));
+    assert.ok(!liveIds.includes(social.id) && !liveIds.includes(website.id));
+    const mktOptions = (await f.call(f.mkt, 'GET', '/development-reporting/options')).projects.map(
+      (p) => p.id,
+    );
+    assert.deepEqual(mktOptions, [website.id]);
+    assert.deepEqual(
+      (await f.call(f.dev, 'GET', '/development-reporting/options')).projects.map((p) => p.id),
+      [software.id],
+    );
+    const ceoOptions = (await f.call(f.ceo, 'GET', '/development-reporting/options')).projects.map(
+      (p) => p.id,
+    );
+    assert.ok(ceoOptions.includes(software.id) && ceoOptions.includes(website.id));
+    await assert.rejects(
+      f.call(f.ceo, 'PATCH', '/projects/' + software.id, { vertical_id: f.marketing }),
+      (e) => e.status === 400,
+    );
+    await f.call(f.head, 'PATCH', '/projects/' + software.id, {
+      description: 'Updated software scope',
+    });
+    const updated = await f.call(f.head, 'GET', '/projects/' + software.id);
+    assert.equal(updated.service_details.technology, 'React + Node.js');
+    assert.equal(updated.members.length, 4);
+    assert.equal(f.db.get('PRAGMA foreign_key_check'), undefined);
+  } finally {
+    f.db.close();
+  }
 });

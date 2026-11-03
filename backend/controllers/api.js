@@ -1,14 +1,34 @@
-import { registerWebsiteTaskReviews, websiteTaskReview, pendingWebsiteReview, canEditWebsiteTaskWork } from './website-task-review.js';
+import {
+  registerWebsiteTaskReviews,
+  websiteTaskReview,
+  pendingWebsiteReview,
+  canEditWebsiteTaskWork,
+} from './website-task-review.js';
 import { reportingAccess } from '../services/reporting-access.js';
 import { registerDevelopmentReporting } from './development-reporting.js';
-import { websiteProgressFor, websiteTaskTime, assertWebsiteAssignment } from '../services/website-work.js';
+import {
+  websiteProgressFor,
+  websiteTaskTime,
+  assertWebsiteAssignment,
+} from '../services/website-work.js';
 import { socialProgressFor } from '../services/social-progress.js';
-import { trackingTaskGuard, initSocialDailyRows, initWebsiteDailyRows } from '../services/work-tracking.js';
-import { isDevelopmentProject, serviceFields, normalizeWebsiteFields, projectRoleIds, websiteDevelopers, WEBSITE_STAGES, canChooseWorkContact } from '../services/project-services.js';
+import {
+  trackingTaskGuard,
+  initSocialDailyRows,
+  initWebsiteDailyRows,
+} from '../services/work-tracking.js';
+import {
+  isDevelopmentProject,
+  serviceFields,
+  normalizeWebsiteFields,
+  projectRoleIds,
+  websiteDevelopers,
+  WEBSITE_STAGES,
+  canChooseWorkContact,
+} from '../services/project-services.js';
 import { registerDailyReporting } from './daily-reporting.js';
 import { registerMarketing } from './marketing.js';
-// The whole project-management API as plain functions. The Node server mounts it under
-// /api, and the browser demo calls it directly against an in-browser SQLite database.
+// The project-management API as plain functions. The Node server mounts it under /api.
 //
 // handle(ctx, method, path) where ctx = { db, user, query, body, upload, services }
 //   db:       { all(sql, ...p), get(sql, ...p), run(sql, ...p) -> {id, changes}, exec(sql), tx(fn) }
@@ -16,18 +36,47 @@ import { registerMarketing } from './marketing.js';
 //   services: { today(), now(), hashPassword(pw), verifyPassword(pw, hash), removeStored(key) }
 
 import {
-  HttpError, bad, notFound, forbidden, optDate, text, oneOf, optId, toId,
-  parseJSON, addDays, daysBetween, placeholders, isDate,
+  HttpError,
+  bad,
+  notFound,
+  forbidden,
+  optDate,
+  text,
+  oneOf,
+  optId,
+  toId,
+  parseJSON,
+  addDays,
+  daysBetween,
+  placeholders,
+  isDate,
 } from '../services/util.js';
 import {
-  loadUser, isAdmin, levelFor, atLeast, visibleVerticalIds, canView, canManageVertical, projectVisibilitySql,
-  canEditProject, canContribute, permissionsFor, LEVELS,
+  loadUser,
+  isAdmin,
+  levelFor,
+  atLeast,
+  visibleVerticalIds,
+  canView,
+  canManageVertical,
+  projectVisibilitySql,
+  canEditProject,
+  canContribute,
+  permissionsFor,
+  LEVELS,
 } from '../models/access.js';
 import { FILE_CATEGORIES } from '../schema/schema.js';
 import { createRouteRegistry } from '../routes/registry.js';
 import { ensureUserIdentity, profileFor, readProfile } from '../services/profile.js';
 
-export const PROJECT_STATUSES = ['planning', 'active', 'on_hold', 'ready', 'completed', 'cancelled'];
+export const PROJECT_STATUSES = [
+  'planning',
+  'active',
+  'on_hold',
+  'ready',
+  'completed',
+  'cancelled',
+];
 export const OPEN_STATUSES = ['planning', 'active', 'on_hold', 'ready'];
 const OPEN_IN = "('planning','active','on_hold','ready')";
 // Comments can be deleted this long after posting; later a head has to approve it.
@@ -48,13 +97,21 @@ export async function handle(ctx, method, path) {
 
 const uid = (ctx) => ctx.user.id;
 function visibleUnread(ctx) {
-  return ctx.db.get(`SELECT COUNT(*) AS n FROM notifications n LEFT JOIN projects p ON p.id=n.project_id WHERE n.user_id=? AND n.read=0 AND (n.project_id IS NULL OR ${projectVisibilitySql(ctx.user)})`,uid(ctx)).n;
+  return ctx.db.get(
+    `SELECT COUNT(*) AS n FROM notifications n LEFT JOIN projects p ON p.id=n.project_id WHERE n.user_id=? AND n.read=0 AND (n.project_id IS NULL OR ${projectVisibilitySql(ctx.user)})`,
+    uid(ctx),
+  ).n;
 }
 
 function log(ctx, project_id, action, detail = '', task_id = null) {
   ctx.db.run(
     'INSERT INTO activity (project_id, task_id, user_id, action, detail, created_at) VALUES (?,?,?,?,?,?)',
-    project_id, task_id, uid(ctx), action, detail, ctx.now,
+    project_id,
+    task_id,
+    uid(ctx),
+    action,
+    detail,
+    ctx.now,
   );
 }
 
@@ -62,27 +119,37 @@ function notify(ctx, user_id, project_id, textMsg, task_id = null, link = '') {
   if (!user_id || user_id === uid(ctx)) return;
   ctx.db.run(
     'INSERT INTO notifications (user_id, project_id, task_id, text, link, created_at) VALUES (?,?,?,?,?,?)',
-    user_id, project_id, task_id, textMsg, link, ctx.now,
+    user_id,
+    project_id,
+    task_id,
+    textMsg,
+    link,
+    ctx.now,
   );
 }
 
 // People named with @First Last or @First in a message. A full name picks one person even
 // when others share the first name (@Sneha Kapoor is not Sneha Iyer).
 function mentionedUsers(db, body) {
-  const users = db.all('SELECT id, name FROM users WHERE active = 1').map((u) => ({ ...u, lower: u.name.toLowerCase() }));
+  const users = db
+    .all('SELECT id, name FROM users WHERE active = 1')
+    .map((u) => ({ ...u, lower: u.name.toLowerCase() }));
   const found = new Map();
   for (const m of String(body).matchAll(/@([a-z][\w.'’-]*)(?:\s+([a-z][\w.'’-]*))?/gi)) {
     const one = m[1].toLowerCase();
     const two = m[2] ? `${one} ${m[2].toLowerCase()}` : null;
     const full = two ? users.filter((u) => u.lower === two || u.lower.startsWith(two + ' ')) : [];
-    for (const u of full.length ? full : users.filter((x) => x.lower.split(' ')[0] === one)) found.set(u.id, u);
+    for (const u of full.length ? full : users.filter((x) => x.lower.split(' ')[0] === one))
+      found.set(u.id, u);
   }
   return [...found.values()];
 }
 
 // "Neha", "Neha and Kunal", "Neha, Kunal and Tanvi"
 function nameList(names) {
-  return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return names.length < 2
+    ? names.join('')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 // Vertical ids the request may read, narrowed by ?vertical= when given.
@@ -102,7 +169,8 @@ const PROJECT_COLS = `p.*, v.short AS vertical, v.name AS vertical_name, v.color
   (SELECT COUNT(*) FROM files f WHERE f.project_id = p.id AND f.is_final = 1) AS final_count,
   (SELECT f.id || '|' || COALESCE(f.storage_key, '') || '|' || f.mime FROM files f
     WHERE f.project_id = p.id AND f.mime LIKE 'image/%' ORDER BY f.is_final DESC, f.id DESC LIMIT 1) AS cover`;
-const PROJECT_FROM = 'FROM projects p JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users o ON o.id = p.owner_id';
+const PROJECT_FROM =
+  'FROM projects p JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users o ON o.id = p.owner_id';
 
 // "12|key|image/png" -> { id, storage_key, mime }, the image shown on board cards.
 function parseCover(c) {
@@ -120,18 +188,39 @@ function shapeProject(row, today) {
     service_details: parseJSON(row.service_details, {}),
     stages: row.service_type === 'social' ? [] : parseJSON(row.stages, []),
     stage: row.service_type === 'social' ? '' : row.stage,
-    tags: row.tags ? row.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
-    progress: row.task_total ? Math.round((row.task_done / row.task_total) * 100) : row.status === 'completed' ? 100 : 0,
+    tags: row.tags
+      ? row.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [],
+    progress: row.task_total
+      ? Math.round((row.task_done / row.task_total) * 100)
+      : row.status === 'completed'
+        ? 100
+        : 0,
     open,
     late: open && !!row.due_date && row.due_date < today,
   };
 }
 
 function attachMonthlyProgress(ctx, projects) {
-  const summaries=socialProgressFor(ctx.db,projects,ctx.today,ctx.query?.month);
-  for (const p of projects) if (summaries.has(p.id)) {p.monthly=summaries.get(p.id);p.progress=p.monthly.percent;}
-  const websites=websiteProgressFor(ctx.db,projects,ctx.today);
-  for (const p of projects) if(websites.has(p.id)){p.website=websites.get(p.id);p.progress=p.website.percent;p.task_done=p.website.done;p.task_overdue=p.website.overdue;p.stage=p.website.current_phase;p.stages=[...WEBSITE_STAGES];}
+  const summaries = socialProgressFor(ctx.db, projects, ctx.today, ctx.query?.month);
+  for (const p of projects)
+    if (summaries.has(p.id)) {
+      p.monthly = summaries.get(p.id);
+      p.progress = p.monthly.percent;
+    }
+  const websites = websiteProgressFor(ctx.db, projects, ctx.today);
+  for (const p of projects)
+    if (websites.has(p.id)) {
+      p.website = websites.get(p.id);
+      p.progress = p.website.percent;
+      p.task_done = p.website.done;
+      p.task_overdue = p.website.overdue;
+      p.stage = p.website.current_phase;
+      p.stages = [...WEBSITE_STAGES];
+    }
   return projects;
 }
 
@@ -144,7 +233,12 @@ function getProjectRaw(ctx, id) {
 
 function getProjectFull(ctx, id) {
   getProjectRaw(ctx, id);
-  return attachMonthlyProgress(ctx,[shapeProject(ctx.db.get(`SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE p.id = ?`, ctx.today, Number(id)), ctx.today)])[0];
+  return attachMonthlyProgress(ctx, [
+    shapeProject(
+      ctx.db.get(`SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE p.id = ?`, ctx.today, Number(id)),
+      ctx.today,
+    ),
+  ])[0];
 }
 
 function getTaskRaw(ctx, id) {
@@ -159,13 +253,15 @@ function getTaskRaw(ctx, id) {
 function assertAssignable(ctx, userId, verticalId) {
   if (!userId) return;
   const u = loadUser(ctx.db, userId);
-  if (!u || !atLeast(u, verticalId, 'member')) throw bad('That person does not have access to this vertical');
+  if (!u || !atLeast(u, verticalId, 'member'))
+    throw bad('That person does not have access to this vertical');
 }
 
 function assertCanSee(ctx, userId, verticalId) {
   if (!userId) return;
   const u = loadUser(ctx.db, userId);
-  if (!u || !levelFor(u, verticalId)) throw bad('That person does not have access to this vertical');
+  if (!u || !levelFor(u, verticalId))
+    throw bad('That person does not have access to this vertical');
 }
 
 function userBrief(db, id) {
@@ -176,7 +272,8 @@ function nextCode(db, vertical, dateStr) {
   const prefix = `${vertical.code}-${dateStr.slice(2, 4)}`;
   const row = db.get(
     'SELECT MAX(CAST(substr(code, ?) AS INTEGER)) AS n FROM projects WHERE code LIKE ?',
-    prefix.length + 2, prefix + '-%',
+    prefix.length + 2,
+    prefix + '-%',
   );
   let n = (row?.n || 0) + 1;
   let code;
@@ -220,8 +317,14 @@ function readProjectFields(body, { creating = false } = {}) {
     key_date: optDate(body.key_date, 'Key date'),
     venue: text(body.venue, { max: 200, label: 'Venue' }),
     city: text(body.city, { max: 80, label: 'City' }),
-    tags: body.tags === undefined ? undefined : (Array.isArray(body.tags) ? body.tags : String(body.tags || '').split(','))
-      .map((t) => String(t).trim()).filter(Boolean).slice(0, 20).join(','),
+    tags:
+      body.tags === undefined
+        ? undefined
+        : (Array.isArray(body.tags) ? body.tags : String(body.tags || '').split(','))
+            .map((t) => String(t).trim())
+            .filter(Boolean)
+            .slice(0, 20)
+            .join(','),
   };
   if (body.name !== undefined && !f.name) throw bad('Project name is required');
   if (body.budget !== undefined) {
@@ -239,7 +342,10 @@ function readProjectFields(body, { creating = false } = {}) {
   }
   if (body.stages !== undefined) {
     if (!Array.isArray(body.stages)) throw bad('Stages must be a list');
-    const stages = body.stages.map((s) => String(s).trim()).filter(Boolean).slice(0, 15);
+    const stages = body.stages
+      .map((s) => String(s).trim())
+      .filter(Boolean)
+      .slice(0, 15);
     if (!stages.length) throw bad('Add at least one stage');
     f.stages = JSON.stringify(stages);
   }
@@ -248,12 +354,15 @@ function readProjectFields(body, { creating = false } = {}) {
 
 function assertStatusFits(status, vertical) {
   if (status === 'ready' && !vertical?.ready_label) {
-    throw bad(`${vertical?.short || 'This vertical'} projects go from Active straight to Delivered`);
+    throw bad(
+      `${vertical?.short || 'This vertical'} projects go from Active straight to Delivered`,
+    );
   }
 }
 
 function checkDates(p) {
-  if (p.start_date && p.due_date && p.due_date < p.start_date) throw bad('Due date cannot be before the start date');
+  if (p.start_date && p.due_date && p.due_date < p.start_date)
+    throw bad('Due date cannot be before the start date');
 }
 
 // ---------------------------------------------------------------- "new since you last looked"
@@ -269,7 +378,9 @@ const NEW_SOURCES = [
 ];
 
 function seenAt(db, userId, scope) {
-  return db.get('SELECT seen_at FROM seen WHERE user_id = ? AND scope = ?', userId, scope)?.seen_at || '';
+  return (
+    db.get('SELECT seen_at FROM seen WHERE user_id = ? AND scope = ?', userId, scope)?.seen_at || ''
+  );
 }
 
 // { projectId: { tasks, files, discussion } } for the given projects.
@@ -283,14 +394,17 @@ function unseenByProject(ctx, ids) {
        LEFT JOIN seen s ON s.user_id = ? AND s.scope = 'project:' || x.project_id || ':${src.tab}'
        WHERE x.project_id IN (${placeholders(ids)}) AND COALESCE(x.${src.who}, 0) != ? AND x.created_at > COALESCE(s.seen_at, '')
        GROUP BY x.project_id`,
-      me, ...ids, me,
+      me,
+      ...ids,
+      me,
     );
     for (const r of rows) out.get(r.pid)[src.tab] = r.n;
   }
   return out;
 }
 
-const isNewSince = (ctx, seen, authorId, createdAt) => authorId !== uid(ctx) && !!createdAt && createdAt > seen;
+const isNewSince = (ctx, seen, authorId, createdAt) =>
+  authorId !== uid(ctx) && !!createdAt && createdAt > seen;
 
 route('POST', '/seen', (ctx) => {
   const scope = String(ctx.body.scope || '');
@@ -300,7 +414,9 @@ route('POST', '/seen', (ctx) => {
   if (m[4]) getGroup(ctx, m[4]);
   ctx.db.run(
     'INSERT INTO seen (user_id, scope, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, scope) DO UPDATE SET seen_at = excluded.seen_at',
-    uid(ctx), scope, ctx.now,
+    uid(ctx),
+    scope,
+    ctx.now,
   );
   return { ok: true };
 });
@@ -309,15 +425,20 @@ route('POST', '/seen', (ctx) => {
 
 route('GET', '/bootstrap', (ctx) => {
   const { db, user } = ctx;
-  Object.assign(user,ensureUserIdentity(db,user.id));
+  Object.assign(user, ensureUserIdentity(db, user.id));
   const vids = visibleVerticalIds(user);
   const verticals = vids.length
-    ? db.all(`SELECT * FROM verticals WHERE id IN (${placeholders(vids)}) AND active = 1 ORDER BY sort, id`, ...vids)
+    ? db.all(
+        `SELECT * FROM verticals WHERE id IN (${placeholders(vids)}) AND active = 1 ORDER BY sort, id`,
+        ...vids,
+      )
     : [];
   for (const v of verticals) v.level = levelFor(user, v.id);
 
   // Directory of people who share at least one vertical with me (admins see everyone).
-  const people = db.all('SELECT id, name, email, title, color, role, profile_json FROM users WHERE active = 1 ORDER BY name');
+  const people = db.all(
+    'SELECT id, name, email, title, color, role, profile_json FROM users WHERE active = 1 ORDER BY name',
+  );
   const accessRows = db.all('SELECT user_id, vertical_id, level FROM user_verticals');
   const allV = db.all('SELECT id FROM verticals').map((v) => v.id);
   const byUser = new Map();
@@ -327,25 +448,41 @@ route('GET', '/bootstrap', (ctx) => {
   }
   const users = [];
   for (const p of people) {
-    const acc = p.role === 'admin' ? Object.fromEntries(allV.map((id) => [id, 'manager'])) : byUser.get(p.id) || {};
+    const acc =
+      p.role === 'admin'
+        ? Object.fromEntries(allV.map((id) => [id, 'manager']))
+        : byUser.get(p.id) || {};
     const shared = Object.keys(acc).some((id) => vids.includes(Number(id)));
     if (isAdmin(user) || p.id === user.id || shared) {
       // Only reveal access for verticals the viewer can see.
-      const visibleAcc = Object.fromEntries(Object.entries(acc).filter(([id]) => vids.includes(Number(id))));
-      const {profile_json,...person}=p;
-      users.push({ ...person, manager_id:profileFor(p).manager_id||null, email: isAdmin(user) || shared ? p.email : '', access: visibleAcc });
+      const visibleAcc = Object.fromEntries(
+        Object.entries(acc).filter(([id]) => vids.includes(Number(id))),
+      );
+      const { profile_json, ...person } = p;
+      users.push({
+        ...person,
+        manager_id: profileFor(p).manager_id || null,
+        email: isAdmin(user) || shared ? p.email : '',
+        access: visibleAcc,
+      });
     }
   }
 
   const templates = vids.length
-    ? db.all(`SELECT id, vertical_id, name, description, stages FROM templates WHERE vertical_id IN (${placeholders(vids)}) ORDER BY name`, ...vids)
-      .map((t) => ({ ...t, stages: parseJSON(t.stages, []) }))
+    ? db
+        .all(
+          `SELECT id, vertical_id, name, description, stages FROM templates WHERE vertical_id IN (${placeholders(vids)}) ORDER BY name`,
+          ...vids,
+        )
+        .map((t) => ({ ...t, stages: parseJSON(t.stages, []) }))
     : [];
 
-  const settings = Object.fromEntries(db.all('SELECT key, value FROM settings').map((r) => [r.key, r.value]));
+  const settings = Object.fromEntries(
+    db.all('SELECT key, value FROM settings').map((r) => [r.key, r.value]),
+  );
   return {
     me: meShape(user),
-    reporting_access: reportingAccess(db,user),
+    reporting_access: reportingAccess(db, user),
     verticals,
     users,
     templates,
@@ -358,9 +495,19 @@ route('GET', '/bootstrap', (ctx) => {
 
 function meShape(user) {
   return {
-    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color, photo: profileFor(user).photo || user.photo || '',
-    role: user.role, must_change_password: !!user.must_change_password,
-    username:user.username,employee_code:user.employee_code,profile:profileFor(user),created_at:user.created_at,
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    title: user.title,
+    phone: user.phone,
+    color: user.color,
+    photo: profileFor(user).photo || user.photo || '',
+    role: user.role,
+    must_change_password: !!user.must_change_password,
+    username: user.username,
+    employee_code: user.employee_code,
+    profile: profileFor(user),
+    created_at: user.created_at,
     access: Object.fromEntries(user.access),
   };
 }
@@ -371,30 +518,55 @@ route('PATCH', '/me', (ctx) => {
     name: text(b.name, { max: 120, label: 'Name' }),
     title: text(b.title, { max: 120, label: 'Title' }),
     phone: text(b.phone, { max: 40, label: 'Phone' }),
-    color: b.color === undefined ? undefined : /^#[0-9a-fA-F]{6}$/.test(b.color) ? b.color : undefined,
-    photo: b.photo === undefined ? undefined : typeof b.photo === 'string' && (b.photo === '' || (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.photo) && b.photo.length <= 300000)) ? b.photo : undefined,
+    color:
+      b.color === undefined ? undefined : /^#[0-9a-fA-F]{6}$/.test(b.color) ? b.color : undefined,
+    photo:
+      b.photo === undefined
+        ? undefined
+        : typeof b.photo === 'string' &&
+            (b.photo === '' ||
+              (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.photo) &&
+                b.photo.length <= 300000))
+          ? b.photo
+          : undefined,
   };
   if (f.name === '') throw bad('Name is required');
-  if (b.photo !== undefined && f.photo === undefined) throw bad('Choose a JPG, PNG or WebP photo under 220 KB');
-  if(b.profile!==undefined){
-    const details=readProfile(b.profile,ctx.user);
-    if(details.manager_id===uid(ctx))throw bad('You cannot report to yourself');
-    if(details.manager_id&&!ctx.db.get('SELECT id FROM users WHERE id=? AND active=1',details.manager_id))throw bad('Choose an active reporting manager');
-    f.profile_json=JSON.stringify({...profileFor(ctx.user),...details});
+  if (b.photo !== undefined && f.photo === undefined)
+    throw bad('Choose a JPG, PNG or WebP photo under 220 KB');
+  if (b.profile !== undefined) {
+    const details = readProfile(b.profile, ctx.user);
+    if (details.manager_id === uid(ctx)) throw bad('You cannot report to yourself');
+    if (
+      details.manager_id &&
+      !ctx.db.get('SELECT id FROM users WHERE id=? AND active=1', details.manager_id)
+    )
+      throw bad('Choose an active reporting manager');
+    f.profile_json = JSON.stringify({ ...profileFor(ctx.user), ...details });
   }
   const sets = Object.entries(f).filter(([, v]) => v !== undefined);
-  if (sets.length) ctx.db.run(`UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, ...sets.map(([, v]) => v), uid(ctx));
-  return meShape({...loadUser(ctx.db, uid(ctx)),...ensureUserIdentity(ctx.db,uid(ctx))});
+  if (sets.length)
+    ctx.db.run(
+      `UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`,
+      ...sets.map(([, v]) => v),
+      uid(ctx),
+    );
+  return meShape({ ...loadUser(ctx.db, uid(ctx)), ...ensureUserIdentity(ctx.db, uid(ctx)) });
 });
 
 route('POST', '/me/password', async (ctx) => {
   const { current, next } = ctx.body;
   const row = ctx.db.get('SELECT password_hash FROM users WHERE id = ?', uid(ctx));
   if (!ctx.user.must_change_password || current) {
-    if (!(await ctx.services.verifyPassword(String(current || ''), row.password_hash))) throw bad('Your current password is not correct');
+    if (!(await ctx.services.verifyPassword(String(current || ''), row.password_hash)))
+      throw bad('Your current password is not correct');
   }
-  if (typeof next !== 'string' || next.length < 8) throw bad('Use at least 8 characters for the new password');
-  ctx.db.run('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?', await ctx.services.hashPassword(next), uid(ctx));
+  if (typeof next !== 'string' || next.length < 8)
+    throw bad('Use at least 8 characters for the new password');
+  ctx.db.run(
+    'UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?',
+    await ctx.services.hashPassword(next),
+    uid(ctx),
+  );
   return { ok: true };
 });
 
@@ -405,7 +577,14 @@ route('GET', '/dashboard', (ctx) => {
   const vids = scopeVerticals(ctx);
   const year = today.slice(0, 4);
   const weekEnd = addDays(today, 6);
-  const empty = { kpis: { active: 0, planning: 0, due_week: 0, overdue: 0, delivered: 0, at_risk: 0 }, my_tasks: [], attention: [], upcoming: [], by_vertical: [], activity: [] };
+  const empty = {
+    kpis: { active: 0, planning: 0, due_week: 0, overdue: 0, delivered: 0, at_risk: 0 },
+    my_tasks: [],
+    attention: [],
+    upcoming: [],
+    by_vertical: [],
+    activity: [],
+  };
   if (!vids.length) return empty;
   const inV = `p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)}`;
   const openP = `p.status IN ${OPEN_IN}`;
@@ -417,7 +596,8 @@ route('GET', '/dashboard', (ctx) => {
       SUM(CASE WHEN ${openP} AND p.health != 'on_track' THEN 1 ELSE 0 END) AS at_risk,
       SUM(CASE WHEN p.status = 'completed' AND substr(p.completed_at, 1, 4) = ? THEN 1 ELSE 0 END) AS delivered
      FROM projects p WHERE ${inV}`,
-    year, ...vids,
+    year,
+    ...vids,
   );
   const t = db.get(
     `SELECT
@@ -425,43 +605,74 @@ route('GET', '/dashboard', (ctx) => {
       SUM(CASE WHEN t.due_date < ? THEN 1 ELSE 0 END) AS overdue
      FROM tasks t JOIN projects p ON p.id = t.project_id
      WHERE ${inV} AND ${openP} AND t.status != 'done'`,
-    today, weekEnd, today, ...vids,
+    today,
+    weekEnd,
+    today,
+    ...vids,
   );
 
-  const myTasks = db.all(
-    `SELECT t.*, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical
+  const myTasks = db
+    .all(
+      `SELECT t.*, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical
      FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND ${openP} AND t.assignee_id = ? AND t.status != 'done'
      ORDER BY t.due_date IS NULL, t.due_date, t.priority = 'urgent' DESC LIMIT 8`,
-    ...vids, uid(ctx),
-  ).map((x) => shapeTask(x, today));
+      ...vids,
+      uid(ctx),
+    )
+    .map((x) => shapeTask(x, today));
 
-  const attention = db.all(
-    `SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE ${inV} AND ${openP}
+  const attention = db
+    .all(
+      `SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE ${inV} AND ${openP}
        AND (p.health != 'on_track' OR p.due_date < ? OR EXISTS (SELECT 1 FROM tasks t WHERE t.project_id = p.id AND t.status != 'done' AND t.due_date < ?))
      ORDER BY p.health = 'off_track' DESC, p.due_date LIMIT 8`,
-    today, ...vids, today, today,
-  ).map((p) => shapeProject(p, today));
+      today,
+      ...vids,
+      today,
+      today,
+    )
+    .map((p) => shapeProject(p, today));
 
-  attachMonthlyProgress(ctx,attention);
+  attachMonthlyProgress(ctx, attention);
   const horizon = addDays(today, 60);
   const upcoming = [];
   for (const p of db.all(
     `SELECT p.id, p.code, p.name, p.client, p.key_date, p.due_date, p.venue, p.city, v.short AS vertical, v.color AS vertical_color, v.key_date_label
      FROM projects p JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND ${openP} AND ((p.key_date >= ? AND p.key_date <= ?) OR (p.due_date >= ? AND p.due_date <= ?))`,
-    ...vids, today, horizon, today, horizon,
+    ...vids,
+    today,
+    horizon,
+    today,
+    horizon,
   )) {
-    if (p.key_date && p.key_date >= today && p.key_date <= horizon) upcoming.push({ type: 'key', date: p.key_date, label: p.key_date_label, project: p });
-    if (p.due_date && p.due_date >= today && p.due_date <= horizon && p.due_date !== p.key_date) upcoming.push({ type: 'due', date: p.due_date, label: 'Project due', project: p });
+    if (p.key_date && p.key_date >= today && p.key_date <= horizon)
+      upcoming.push({ type: 'key', date: p.key_date, label: p.key_date_label, project: p });
+    if (p.due_date && p.due_date >= today && p.due_date <= horizon && p.due_date !== p.key_date)
+      upcoming.push({ type: 'due', date: p.due_date, label: 'Project due', project: p });
   }
   for (const m of db.all(
     `SELECT m.*, p.code, p.name AS project_name, p.client, v.short AS vertical, v.color AS vertical_color
      FROM milestones m JOIN projects p ON p.id = m.project_id JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND ${openP} AND m.done = 0 AND m.due_date >= ? AND m.due_date <= ? AND (p.key_date IS NULL OR m.due_date != p.key_date)`,
-    ...vids, today, horizon,
+    ...vids,
+    today,
+    horizon,
   )) {
-    upcoming.push({ type: 'milestone', date: m.due_date, label: m.title, project: { id: m.project_id, code: m.code, name: m.project_name, client: m.client, vertical: m.vertical, vertical_color: m.vertical_color } });
+    upcoming.push({
+      type: 'milestone',
+      date: m.due_date,
+      label: m.title,
+      project: {
+        id: m.project_id,
+        code: m.code,
+        name: m.project_name,
+        client: m.client,
+        vertical: m.vertical,
+        vertical_color: m.vertical_color,
+      },
+    });
   }
   upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.type === 'key' ? -1 : 1));
 
@@ -474,13 +685,18 @@ route('GET', '/dashboard', (ctx) => {
       SUM(CASE WHEN p.status IN ${OPEN_IN} THEN COALESCE(p.budget, 0) ELSE 0 END) AS open_budget
      FROM verticals v LEFT JOIN projects p ON p.vertical_id = v.id AND ${projectVisibilitySql(ctx.user)}
      WHERE v.id IN (${placeholders(vids)}) AND v.active = 1 GROUP BY v.id ORDER BY v.sort, v.id`,
-    year, ...vids,
+    year,
+    ...vids,
   );
 
   return {
     kpis: {
-      active: k.active || 0, planning: k.planning || 0, at_risk: k.at_risk || 0, delivered: k.delivered || 0,
-      due_week: t.due_week || 0, overdue: t.overdue || 0,
+      active: k.active || 0,
+      planning: k.planning || 0,
+      at_risk: k.at_risk || 0,
+      delivered: k.delivered || 0,
+      due_week: t.due_week || 0,
+      overdue: t.overdue || 0,
     },
     my_tasks: myTasks,
     attention,
@@ -491,14 +707,18 @@ route('GET', '/dashboard', (ctx) => {
 });
 
 function recentActivity(ctx, vids, projectId, limit) {
-  const where = (projectId ? 'a.project_id = ?' : `p.vertical_id IN (${placeholders(vids)})`)+' AND '+projectVisibilitySql(ctx.user);
+  const where =
+    (projectId ? 'a.project_id = ?' : `p.vertical_id IN (${placeholders(vids)})`) +
+    ' AND ' +
+    projectVisibilitySql(ctx.user);
   const params = projectId ? [projectId] : vids;
   return ctx.db.all(
     `SELECT a.*, u.name AS user_name, u.color AS user_color, p.code, p.name AS project_name, v.color AS vertical_color, t.title AS task_title
      FROM activity a JOIN projects p ON p.id = a.project_id JOIN verticals v ON v.id = p.vertical_id
      LEFT JOIN users u ON u.id = a.user_id LEFT JOIN tasks t ON t.id = a.task_id
      WHERE ${where} ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
-    ...params, limit,
+    ...params,
+    limit,
   );
 }
 
@@ -508,36 +728,64 @@ route('GET', '/projects', (ctx) => {
   const { db, query: q, today } = ctx;
   const vids = scopeVerticals(ctx);
   if (!vids.length) return { items: [] };
-  const where = [`p.vertical_id IN (${placeholders(vids)})`,projectVisibilitySql(ctx.user)];
+  const where = [`p.vertical_id IN (${placeholders(vids)})`, projectVisibilitySql(ctx.user)];
   const params = [...vids];
   const scope = q.scope || 'open';
   if (scope === 'open') where.push(`p.status IN ${OPEN_IN}`);
   else if (scope === 'past') where.push(`p.status IN ('completed','cancelled')`);
-  if (q.status && PROJECT_STATUSES.includes(q.status)) { where.push('p.status = ?'); params.push(q.status); }
-  if (q.health && HEALTH.includes(q.health)) { where.push('p.health = ?'); params.push(q.health); }
-  if (q.owner) { where.push('p.owner_id = ?'); params.push(q.owner === 'me' ? uid(ctx) : Number(q.owner)); }
+  if (q.status && PROJECT_STATUSES.includes(q.status)) {
+    where.push('p.status = ?');
+    params.push(q.status);
+  }
+  if (q.health && HEALTH.includes(q.health)) {
+    where.push('p.health = ?');
+    params.push(q.health);
+  }
+  if (q.owner) {
+    where.push('p.owner_id = ?');
+    params.push(q.owner === 'me' ? uid(ctx) : Number(q.owner));
+  }
   if (q.member === 'me') {
-    where.push('(p.owner_id = ? OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = ?) OR EXISTS (SELECT 1 FROM tasks t WHERE t.project_id = p.id AND t.assignee_id = ?))');
+    where.push(
+      '(p.owner_id = ? OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = ?) OR EXISTS (SELECT 1 FROM tasks t WHERE t.project_id = p.id AND t.assignee_id = ?))',
+    );
     params.push(uid(ctx), uid(ctx), uid(ctx));
   }
-  if (q.client) { where.push('p.client = ?'); params.push(q.client); }
-  if (q.city) { where.push('p.city = ?'); params.push(q.city); }
+  if (q.client) {
+    where.push('p.client = ?');
+    params.push(q.client);
+  }
+  if (q.city) {
+    where.push('p.city = ?');
+    params.push(q.city);
+  }
   if (q.year && /^\d{4}$/.test(q.year)) {
     where.push('substr(COALESCE(p.key_date, p.due_date, p.completed_at, p.created_at), 1, 4) = ?');
     params.push(q.year);
   }
   if (q.q) {
     const like = `%${String(q.q).trim()}%`;
-    where.push('(p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ? OR p.venue LIKE ? OR p.city LIKE ?)');
+    where.push(
+      '(p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ? OR p.venue LIKE ? OR p.city LIKE ?)',
+    );
     params.push(like, like, like, like, like, like);
   }
-  const order = scope === 'past'
-    ? 'COALESCE(p.key_date, p.due_date, p.completed_at) DESC'
-    : "CASE p.status WHEN 'active' THEN 0 WHEN 'planning' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END, p.due_date IS NULL, COALESCE(p.key_date, p.due_date)";
-  const items = db.all(`SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT 500`, today, ...params)
+  const order =
+    scope === 'past'
+      ? 'COALESCE(p.key_date, p.due_date, p.completed_at) DESC'
+      : "CASE p.status WHEN 'active' THEN 0 WHEN 'planning' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END, p.due_date IS NULL, COALESCE(p.key_date, p.due_date)";
+  const items = db
+    .all(
+      `SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT 500`,
+      today,
+      ...params,
+    )
     .map((p) => shapeProject(p, today));
-  attachMonthlyProgress(ctx,items);
-  const unseen = unseenByProject(ctx, items.map((p) => p.id));
+  attachMonthlyProgress(ctx, items);
+  const unseen = unseenByProject(
+    ctx,
+    items.map((p) => p.id),
+  );
   for (const p of items) {
     p.unseen = unseen.get(p.id);
     p.new_items = p.unseen.tasks + p.unseen.files + p.unseen.discussion;
@@ -550,9 +798,23 @@ route('GET', '/projects/facets', (ctx) => {
   if (!vids.length) return { clients: [], cities: [], years: [] };
   const inV = `p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)}`;
   return {
-    clients: ctx.db.all(`SELECT client AS name, COUNT(*) AS n, MAX(COALESCE(key_date, due_date)) AS last FROM projects p WHERE ${inV} AND client != '' GROUP BY client ORDER BY client`, ...vids),
-    cities: ctx.db.all(`SELECT DISTINCT city FROM projects p WHERE ${inV} AND city != '' ORDER BY city`, ...vids).map((r) => r.city),
-    years: ctx.db.all(`SELECT DISTINCT substr(COALESCE(key_date, due_date, completed_at, created_at), 1, 4) AS y FROM projects p WHERE ${inV} ORDER BY y DESC`, ...vids).map((r) => r.y).filter(Boolean),
+    clients: ctx.db.all(
+      `SELECT client AS name, COUNT(*) AS n, MAX(COALESCE(key_date, due_date)) AS last FROM projects p WHERE ${inV} AND client != '' GROUP BY client ORDER BY client`,
+      ...vids,
+    ),
+    cities: ctx.db
+      .all(
+        `SELECT DISTINCT city FROM projects p WHERE ${inV} AND city != '' ORDER BY city`,
+        ...vids,
+      )
+      .map((r) => r.city),
+    years: ctx.db
+      .all(
+        `SELECT DISTINCT substr(COALESCE(key_date, due_date, completed_at, created_at), 1, 4) AS y FROM projects p WHERE ${inV} ORDER BY y DESC`,
+        ...vids,
+      )
+      .map((r) => r.y)
+      .filter(Boolean),
   };
 });
 
@@ -560,29 +822,47 @@ route('POST', '/projects', (ctx) => {
   const { db, body, today } = ctx;
   const verticalId = Number(body.vertical_id);
   const vertical = db.get('SELECT * FROM verticals WHERE id = ? AND active = 1', verticalId);
-  if (!vertical || !levelFor(ctx.user, verticalId)) throw bad('Choose a vertical you have access to');
-  if (!canManageVertical(ctx.user, verticalId)) throw forbidden(`Only ${vertical.short} managers can create projects`);
+  if (!vertical || !levelFor(ctx.user, verticalId))
+    throw bad('Choose a vertical you have access to');
+  if (!canManageVertical(ctx.user, verticalId))
+    throw forbidden(`Only ${vertical.short} managers can create projects`);
   const f = readProjectFields(body, { creating: true });
-  if(f.service_type==='software'&&vertical.code!=='LIV')throw bad('Software development projects belong to the Live vertical');
-  normalizeWebsiteFields(f,null,uid(ctx));
-  if (isDevelopmentProject(f) && !websiteDevelopers(f).length) throw bad('Choose at least one developer for the development project');
+  if (f.service_type === 'software' && vertical.code !== 'LIV')
+    throw bad('Software development projects belong to the Live vertical');
+  normalizeWebsiteFields(f, null, uid(ctx));
+  if (isDevelopmentProject(f) && !websiteDevelopers(f).length)
+    throw bad('Choose at least one developer for the development project');
   checkDates(f);
   assertStatusFits(f.status, vertical);
   const ownerId = f.owner_id || uid(ctx);
   assertAssignable(ctx, ownerId, verticalId);
-  for (const value of projectRoleIds(parseJSON(f.service_details,{}))) assertAssignable(ctx,value,verticalId);
+  for (const value of projectRoleIds(parseJSON(f.service_details, {})))
+    assertAssignable(ctx, value, verticalId);
 
   let template = null;
   let source = null;
   if (body.copy_from) {
     source = getProjectRaw(ctx, body.copy_from);
   } else if (body.template_id) {
-    template = db.get('SELECT * FROM templates WHERE id = ? AND vertical_id = ?', Number(body.template_id), verticalId);
+    template = db.get(
+      'SELECT * FROM templates WHERE id = ? AND vertical_id = ?',
+      Number(body.template_id),
+      verticalId,
+    );
     if (!template) throw bad('That template is not available for this vertical');
   }
-  const stages = f.service_type === 'social' ? [] : isDevelopmentProject(f) ? WEBSITE_STAGES : f.stages
-    ? JSON.parse(f.stages)
-    : source ? parseJSON(source.stages, DEFAULT_STAGES) : template ? parseJSON(template.stages, DEFAULT_STAGES) : DEFAULT_STAGES;
+  const stages =
+    f.service_type === 'social'
+      ? []
+      : isDevelopmentProject(f)
+        ? WEBSITE_STAGES
+        : f.stages
+          ? JSON.parse(f.stages)
+          : source
+            ? parseJSON(source.stages, DEFAULT_STAGES)
+            : template
+              ? parseJSON(template.stages, DEFAULT_STAGES)
+              : DEFAULT_STAGES;
 
   return db.tx(() => {
     const code = nextCode(db, vertical, f.start_date || today);
@@ -591,19 +871,55 @@ route('POST', '/projects', (ctx) => {
       `INSERT INTO projects (code, vertical_id, name, client, description, status, health, priority, stages, stage, owner_id,
         start_date, due_date, key_date, venue, city, budget, tags, template_id, completed_at, created_by, created_at, updated_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      code, verticalId, f.name, f.client || '', f.description || '', status, f.health || 'on_track', f.priority || 'medium',
-      JSON.stringify(stages), f.stage && stages.includes(f.stage) ? f.stage : stages[0] || '', ownerId,
-      f.start_date ?? today, f.due_date ?? null, f.key_date ?? null, f.venue || '', f.city || '', f.budget ?? null, f.tags || '',
-      template?.id ?? null, status === 'completed' ? ctx.now : null, uid(ctx), ctx.now, ctx.now,
+      code,
+      verticalId,
+      f.name,
+      f.client || '',
+      f.description || '',
+      status,
+      f.health || 'on_track',
+      f.priority || 'medium',
+      JSON.stringify(stages),
+      f.stage && stages.includes(f.stage) ? f.stage : stages[0] || '',
+      ownerId,
+      f.start_date ?? today,
+      f.due_date ?? null,
+      f.key_date ?? null,
+      f.venue || '',
+      f.city || '',
+      f.budget ?? null,
+      f.tags || '',
+      template?.id ?? null,
+      status === 'completed' ? ctx.now : null,
+      uid(ctx),
+      ctx.now,
+      ctx.now,
     );
-    if (f.service_type !== undefined || f.service_details !== undefined) db.run('UPDATE projects SET service_type = ?, service_details = ? WHERE id = ?', f.service_type || '', f.service_details || '{}', id);
+    if (f.service_type !== undefined || f.service_details !== undefined)
+      db.run(
+        'UPDATE projects SET service_type = ?, service_details = ? WHERE id = ?',
+        f.service_type || '',
+        f.service_details || '{}',
+        id,
+      );
     const project = db.get('SELECT * FROM projects WHERE id = ?', id);
-    const roleIds=projectRoleIds(parseJSON(f.service_details,{}));
-    const members = new Set(isDevelopmentProject(project) ? roleIds : [ownerId, ...roleIds, ...(Array.isArray(body.member_ids) ? body.member_ids.map(Number) : [])]);
-    if (source && !isDevelopmentProject(project)) for (const m of db.all('SELECT user_id FROM project_members WHERE project_id = ?', source.id)) members.add(m.user_id);
+    const roleIds = projectRoleIds(parseJSON(f.service_details, {}));
+    const members = new Set(
+      isDevelopmentProject(project)
+        ? roleIds
+        : [
+            ownerId,
+            ...roleIds,
+            ...(Array.isArray(body.member_ids) ? body.member_ids.map(Number) : []),
+          ],
+    );
+    if (source && !isDevelopmentProject(project))
+      for (const m of db.all('SELECT user_id FROM project_members WHERE project_id = ?', source.id))
+        members.add(m.user_id);
     for (const m of members) {
       const u = loadUser(db, m);
-      if (u && levelFor(u, verticalId)) db.run('INSERT OR IGNORE INTO project_members (project_id, user_id) VALUES (?, ?)', id, m);
+      if (u && levelFor(u, verticalId))
+        db.run('INSERT OR IGNORE INTO project_members (project_id, user_id) VALUES (?, ?)', id, m);
     }
 
     const newAnchor = anchorOf(project);
@@ -613,7 +929,10 @@ route('POST', '/projects', (ctx) => {
       const oldAnchor = anchorOf(source);
       const shift = oldAnchor && newAnchor ? daysBetween(oldAnchor, newAnchor) : null;
       const move = (d) => (d && shift !== null ? addDays(d, shift) : null);
-      for (const t of db.all('SELECT * FROM tasks WHERE project_id = ? ORDER BY sort, id', source.id)) {
+      for (const t of db.all(
+        'SELECT * FROM tasks WHERE project_id = ? ORDER BY sort, id',
+        source.id,
+      )) {
         let assignee = t.assignee_id;
         if (assignee) {
           const u = loadUser(db, assignee);
@@ -623,13 +942,36 @@ route('POST', '/projects', (ctx) => {
         db.run(
           `INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, assigned_at, assigned_by, stage, start_date, due_date, checklist, sort, created_by, created_at, updated_at)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-          id, t.title, t.description, 'todo', t.priority, assignee, assignee ? ctx.now : null, assignee ? uid(ctx) : null, t.stage, move(t.start_date), move(t.due_date),
-          JSON.stringify(checklist), t.sort, uid(ctx), ctx.now, ctx.now,
+          id,
+          t.title,
+          t.description,
+          'todo',
+          t.priority,
+          assignee,
+          assignee ? ctx.now : null,
+          assignee ? uid(ctx) : null,
+          t.stage,
+          move(t.start_date),
+          move(t.due_date),
+          JSON.stringify(checklist),
+          t.sort,
+          uid(ctx),
+          ctx.now,
+          ctx.now,
         );
         created++;
       }
-      for (const m of db.all('SELECT * FROM milestones WHERE project_id = ? ORDER BY sort, id', source.id)) {
-        db.run('INSERT INTO milestones (project_id, title, due_date, sort) VALUES (?,?,?,?)', id, m.title, move(m.due_date), m.sort);
+      for (const m of db.all(
+        'SELECT * FROM milestones WHERE project_id = ? ORDER BY sort, id',
+        source.id,
+      )) {
+        db.run(
+          'INSERT INTO milestones (project_id, title, due_date, sort) VALUES (?,?,?,?)',
+          id,
+          m.title,
+          move(m.due_date),
+          m.sort,
+        );
       }
       log(ctx, id, 'created', `Copied from ${source.code} · ${source.name}`);
     } else if (template) {
@@ -642,22 +984,41 @@ route('POST', '/projects', (ctx) => {
         db.run(
           `INSERT INTO tasks (project_id, title, description, status, priority, stage, due_date, sort, created_by, created_at, updated_at)
            VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-          id, t.title, t.description || '', 'todo', PRIORITIES.includes(t.priority) ? t.priority : 'medium',
-          stages.includes(t.stage) ? t.stage : stages[0], at(t.offset), i + 1, uid(ctx), ctx.now, ctx.now,
+          id,
+          t.title,
+          t.description || '',
+          'todo',
+          PRIORITIES.includes(t.priority) ? t.priority : 'medium',
+          stages.includes(t.stage) ? t.stage : stages[0],
+          at(t.offset),
+          i + 1,
+          uid(ctx),
+          ctx.now,
+          ctx.now,
         );
         created++;
       });
       parseJSON(template.milestones, []).forEach((m, i) => {
-        db.run('INSERT INTO milestones (project_id, title, due_date, sort) VALUES (?,?,?,?)', id, m.title, at(m.offset), i + 1);
+        db.run(
+          'INSERT INTO milestones (project_id, title, due_date, sort) VALUES (?,?,?,?)',
+          id,
+          m.title,
+          at(m.offset),
+          i + 1,
+        );
       });
       log(ctx, id, 'created', `From template “${template.name}”`);
     } else {
       log(ctx, id, 'created', '');
     }
-    groupEvent(ctx, id, `${ctx.user.name} started this group for everyone working on ${code} · ${f.name}.`);
+    groupEvent(
+      ctx,
+      id,
+      `${ctx.user.name} started this group for everyone working on ${code} · ${f.name}.`,
+    );
     notify(ctx, ownerId, id, `${ctx.user.name} made you the owner of ${code} · ${f.name}`);
-    if (project.service_type === 'social') initSocialDailyRows(db,ctx.now,id);
-    if (isDevelopmentProject(project)) initWebsiteDailyRows(db,ctx.now,id);
+    if (project.service_type === 'social') initSocialDailyRows(db, ctx.now, id);
+    if (isDevelopmentProject(project)) initWebsiteDailyRows(db, ctx.now, id);
     return { ...getProjectFull(ctx, id), tasks_created: created };
   });
 });
@@ -670,56 +1031,119 @@ route('GET', '/projects/:id', (ctx) => {
      WHERE pm.project_id = ? ORDER BY u.name`,
     p.id,
   );
-  const milestones = db.all('SELECT * FROM milestones WHERE project_id = ? ORDER BY due_date IS NULL, due_date, sort, id', p.id);
+  const milestones = db.all(
+    'SELECT * FROM milestones WHERE project_id = ? ORDER BY due_date IS NULL, due_date, sort, id',
+    p.id,
+  );
   const taskStats = Object.fromEntries(TASK_STATUSES.map((s) => [s, 0]));
-  for (const r of db.all('SELECT status, COUNT(*) AS n FROM tasks WHERE project_id = ? GROUP BY status', p.id)) taskStats[r.status] = r.n;
+  for (const r of db.all(
+    'SELECT status, COUNT(*) AS n FROM tasks WHERE project_id = ? GROUP BY status',
+    p.id,
+  ))
+    taskStats[r.status] = r.n;
   const stageStats = db.all(
     `SELECT stage, COUNT(*) AS total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done FROM tasks WHERE project_id = ? GROUP BY stage`,
     p.id,
   );
-  const upcoming = db.all(
-    `SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id
+  const upcoming = db
+    .all(
+      `SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id
      WHERE t.project_id = ? AND t.status != 'done' ORDER BY t.due_date IS NULL, t.due_date LIMIT 6`,
-    p.id,
-  ).map((t) => shapeTask(t, ctx.today));
+      p.id,
+    )
+    .map((t) => shapeTask(t, ctx.today));
   const created_by = userBrief(db, p.created_by);
   const unseen = unseenByProject(ctx, [p.id]).get(p.id);
   const comment_total = db.get('SELECT COUNT(*) AS n FROM comments WHERE project_id = ?', p.id).n;
   const inGroup = groupMemberIds(db, p).has(uid(ctx)) || canManageVertical(ctx.user, p.vertical_id);
-  const group = inGroup ? { unread: groupUnread(ctx, p.id), messages: db.get("SELECT COUNT(*) AS n FROM group_messages WHERE project_id = ? AND kind != 'system'", p.id).n } : null;
-  return { ...p, unseen, comment_total, group, members, milestones, task_stats: taskStats, stage_stats: stageStats, upcoming_tasks: upcoming, created_by_user: created_by, permissions: permissionsFor(ctx.user, p) };
+  const group = inGroup
+    ? {
+        unread: groupUnread(ctx, p.id),
+        messages: db.get(
+          "SELECT COUNT(*) AS n FROM group_messages WHERE project_id = ? AND kind != 'system'",
+          p.id,
+        ).n,
+      }
+    : null;
+  return {
+    ...p,
+    unseen,
+    comment_total,
+    group,
+    members,
+    milestones,
+    task_stats: taskStats,
+    stage_stats: stageStats,
+    upcoming_tasks: upcoming,
+    created_by_user: created_by,
+    permissions: permissionsFor(ctx.user, p),
+  };
 });
 
 const FIELD_LABELS = {
-  name: 'name', client: 'client', status: 'status', health: 'health', priority: 'priority', stage: 'stage',
-  owner_id: 'owner', start_date: 'start date', due_date: 'due date', key_date: 'key date', venue: 'venue',
-  city: 'city', budget: 'budget', description: 'description', tags: 'tags', stages: 'stages',
+  name: 'name',
+  client: 'client',
+  status: 'status',
+  health: 'health',
+  priority: 'priority',
+  stage: 'stage',
+  owner_id: 'owner',
+  start_date: 'start date',
+  due_date: 'due date',
+  key_date: 'key date',
+  venue: 'venue',
+  city: 'city',
+  budget: 'budget',
+  description: 'description',
+  tags: 'tags',
+  stages: 'stages',
 };
 
 route('PATCH', '/projects/:id', (ctx) => {
   const { db, body } = ctx;
   const p = getProjectRaw(ctx, ctx.params.id);
-  if (!canEditProject(ctx.user, p)) throw forbidden('Only the project owner or a vertical manager can edit this project');
+  if (!canEditProject(ctx.user, p))
+    throw forbidden('Only the project owner or a vertical manager can edit this project');
   const f = readProjectFields(body);
-  normalizeWebsiteFields(f,p,uid(ctx));
-  if (isDevelopmentProject({service_type:f.service_type || p.service_type}) && !websiteDevelopers(f).length) throw bad('Choose at least one developer for the development project');
+  normalizeWebsiteFields(f, p, uid(ctx));
+  if (
+    isDevelopmentProject({ service_type: f.service_type || p.service_type }) &&
+    !websiteDevelopers(f).length
+  )
+    throw bad('Choose at least one developer for the development project');
   if (body.vertical_id !== undefined && Number(body.vertical_id) !== p.vertical_id) {
     const nv = Number(body.vertical_id);
-    if (!canManageVertical(ctx.user, p.vertical_id) || !canManageVertical(ctx.user, nv)) throw forbidden('Only managers of both verticals can move a project');
+    if (!canManageVertical(ctx.user, p.vertical_id) || !canManageVertical(ctx.user, nv))
+      throw forbidden('Only managers of both verticals can move a project');
     f.vertical_id = nv;
   }
   const vId = f.vertical_id || p.vertical_id;
-  if((f.service_type ?? p.service_type)==='software'&&db.get('SELECT code FROM verticals WHERE id=?',vId)?.code!=='LIV')throw bad('Software development projects belong to the Live vertical');
-  for (const value of projectRoleIds(parseJSON(f.service_details,{}))) assertAssignable(ctx,value,vId);
+  if (
+    (f.service_type ?? p.service_type) === 'software' &&
+    db.get('SELECT code FROM verticals WHERE id=?', vId)?.code !== 'LIV'
+  )
+    throw bad('Software development projects belong to the Live vertical');
+  for (const value of projectRoleIds(parseJSON(f.service_details, {})))
+    assertAssignable(ctx, value, vId);
   if (f.owner_id !== undefined && f.owner_id !== p.owner_id) {
     if (!f.owner_id) throw bad('A project needs an owner');
     assertAssignable(ctx, f.owner_id, vId);
   }
-  if (['social','website','software'].includes(f.service_type || p.service_type) && (body.stage !== undefined || body.stages !== undefined)) throw bad('Project progress is automatic from daily work; use the task phase instead');
-  const merged = { ...p, ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined)) };
+  if (
+    ['social', 'website', 'software'].includes(f.service_type || p.service_type) &&
+    (body.stage !== undefined || body.stages !== undefined)
+  )
+    throw bad('Project progress is automatic from daily work; use the task phase instead');
+  const merged = {
+    ...p,
+    ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined)),
+  };
   checkDates(merged);
   if (f.status !== undefined || f.vertical_id !== undefined) {
-    assertStatusFits(merged.status, db.get('SELECT short, ready_label FROM verticals WHERE id = ?', vId));
+    assertStatusFits(
+      merged.status,
+      db.get('SELECT short, ready_label FROM verticals WHERE id = ?', vId),
+    );
   }
   if (f.stages !== undefined) {
     const st = JSON.parse(f.stages);
@@ -727,22 +1151,43 @@ route('PATCH', '/projects/:id', (ctx) => {
   } else if (f.stage !== undefined && f.stage && !parseJSON(p.stages, []).includes(f.stage)) {
     throw bad('Unknown stage');
   }
-  if (['completed','cancelled'].includes(f.status) && db.get('SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key JOIN tasks t ON t.id=w.task_id WHERE t.project_id=? AND s.ended_at IS NULL LIMIT 1',p.id)) throw bad('Ask the designer to pause running work before closing this project');
+  if (
+    ['completed', 'cancelled'].includes(f.status) &&
+    db.get(
+      'SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key JOIN tasks t ON t.id=w.task_id WHERE t.project_id=? AND s.ended_at IS NULL LIMIT 1',
+      p.id,
+    )
+  )
+    throw bad('Ask the designer to pause running work before closing this project');
   if (f.status !== undefined && f.status !== p.status) {
     f.completed_at = f.status === 'completed' ? ctx.now : null;
   }
   const sets = Object.entries(f).filter(([, v]) => v !== undefined);
   if (!sets.length) return getProjectFull(ctx, p.id);
   return db.tx(() => {
-    db.run(`UPDATE projects SET ${sets.map(([k]) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`, ...sets.map(([, v]) => v), ctx.now, p.id);
+    db.run(
+      `UPDATE projects SET ${sets.map(([k]) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`,
+      ...sets.map(([, v]) => v),
+      ctx.now,
+      p.id,
+    );
     if (isDevelopmentProject(merged)) {
-      const team=projectRoleIds(parseJSON(f.service_details,{}));
-      const outside=db.get("SELECT t.id FROM tasks t LEFT JOIN report_work w ON w.task_id=t.id WHERE t.project_id=? AND (t.status!='done' OR COALESCE(w.revision_pending,0)>0) AND t.assignee_id IS NOT NULL AND t.assignee_id NOT IN ("+placeholders(websiteDevelopers(f))+") LIMIT 1",p.id,...websiteDevelopers(f));
-      if(outside)throw bad('Reassign unfinished tasks before removing a developer');
-      db.run('DELETE FROM project_members WHERE project_id=?',p.id);
-      for(const member of team)db.run('INSERT INTO project_members (project_id,user_id) VALUES (?,?)',p.id,member);
+      const team = projectRoleIds(parseJSON(f.service_details, {}));
+      const outside = db.get(
+        "SELECT t.id FROM tasks t LEFT JOIN report_work w ON w.task_id=t.id WHERE t.project_id=? AND (t.status!='done' OR COALESCE(w.revision_pending,0)>0) AND t.assignee_id IS NOT NULL AND t.assignee_id NOT IN (" +
+          placeholders(websiteDevelopers(f)) +
+          ') LIMIT 1',
+        p.id,
+        ...websiteDevelopers(f),
+      );
+      if (outside) throw bad('Reassign unfinished tasks before removing a developer');
+      db.run('DELETE FROM project_members WHERE project_id=?', p.id);
+      for (const member of team)
+        db.run('INSERT INTO project_members (project_id,user_id) VALUES (?,?)', p.id, member);
     }
-    const changed = sets.filter(([k, v]) => k !== 'completed_at' && String(p[k] ?? '') !== String(v ?? '')).map(([k]) => k);
+    const changed = sets
+      .filter(([k, v]) => k !== 'completed_at' && String(p[k] ?? '') !== String(v ?? ''))
+      .map(([k]) => k);
     if (changed.includes('status')) {
       log(ctx, p.id, 'status', f.status);
       const readyLabel = db.get('SELECT ready_label FROM verticals WHERE id = ?', vId)?.ready_label;
@@ -753,14 +1198,22 @@ route('PATCH', '/projects/:id', (ctx) => {
     if (changed.includes('owner_id')) {
       const o = userBrief(db, f.owner_id);
       log(ctx, p.id, 'owner', o?.name || '');
-      if (OPEN_STATUSES.includes(merged.status)) groupEvent(ctx, p.id, `${ctx.user.name} made ${o?.name || 'someone'} the project owner.`);
-      notify(ctx, f.owner_id, p.id, `${ctx.user.name} made you the owner of ${p.code} · ${merged.name}`);
+      if (OPEN_STATUSES.includes(merged.status))
+        groupEvent(ctx, p.id, `${ctx.user.name} made ${o?.name || 'someone'} the project owner.`);
+      notify(
+        ctx,
+        f.owner_id,
+        p.id,
+        `${ctx.user.name} made you the owner of ${p.code} · ${merged.name}`,
+      );
     }
     if (changed.includes('vertical_id')) {
       const v = db.get('SELECT short FROM verticals WHERE id = ?', f.vertical_id);
       log(ctx, p.id, 'moved', v?.short || '');
     }
-    const other = changed.filter((k) => !['status', 'stage', 'health', 'owner_id', 'vertical_id', 'board_sort'].includes(k));
+    const other = changed.filter(
+      (k) => !['status', 'stage', 'health', 'owner_id', 'vertical_id', 'board_sort'].includes(k),
+    );
     if (other.length) log(ctx, p.id, 'updated', other.map((k) => FIELD_LABELS[k] || k).join(', '));
     return getProjectFull(ctx, p.id);
   });
@@ -768,8 +1221,14 @@ route('PATCH', '/projects/:id', (ctx) => {
 
 route('DELETE', '/projects/:id', async (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
-  if (!isAdmin(ctx.user)) throw forbidden('Only admins can delete projects. Close it instead to keep its history.');
-  const keys = ctx.db.all("SELECT storage_key FROM files WHERE project_id = ? AND kind = 'file' AND storage_key IS NOT NULL", p.id).map((r) => r.storage_key);
+  if (!isAdmin(ctx.user))
+    throw forbidden('Only admins can delete projects. Close it instead to keep its history.');
+  const keys = ctx.db
+    .all(
+      "SELECT storage_key FROM files WHERE project_id = ? AND kind = 'file' AND storage_key IS NOT NULL",
+      p.id,
+    )
+    .map((r) => r.storage_key);
   ctx.db.tx(() => {
     ctx.db.run('DELETE FROM notifications WHERE project_id = ?', p.id);
     ctx.db.run('DELETE FROM projects WHERE id = ?', p.id);
@@ -782,23 +1241,41 @@ route('PUT', '/projects/:id/members', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
   if (!canEditProject(ctx.user, p)) throw forbidden();
   const ids = [...new Set((ctx.body.user_ids || []).map(Number).filter(Boolean))];
-  if(isDevelopmentProject(p)){const expected=projectRoleIds(parseJSON(p.service_details,{}));if(ids.length!==expected.length || ids.some(id=>!expected.includes(id)))throw bad('Edit the development project to change its head, developers or sales person');}
+  if (isDevelopmentProject(p)) {
+    const expected = projectRoleIds(parseJSON(p.service_details, {}));
+    if (ids.length !== expected.length || ids.some((id) => !expected.includes(id)))
+      throw bad('Edit the development project to change its head, developers or sales person');
+  }
   for (const id of ids) assertCanSee(ctx, id, p.vertical_id);
-  const before = new Set(ctx.db.all('SELECT user_id FROM project_members WHERE project_id = ?', p.id).map((r) => r.user_id));
+  const before = new Set(
+    ctx.db
+      .all('SELECT user_id FROM project_members WHERE project_id = ?', p.id)
+      .map((r) => r.user_id),
+  );
   ctx.db.tx(() => {
     ctx.db.run('DELETE FROM project_members WHERE project_id = ?', p.id);
-    for (const id of ids) ctx.db.run('INSERT INTO project_members (project_id, user_id) VALUES (?, ?)', p.id, id);
+    for (const id of ids)
+      ctx.db.run('INSERT INTO project_members (project_id, user_id) VALUES (?, ?)', p.id, id);
     const added = ids.filter((id) => !before.has(id));
     const removed = [...before].filter((id) => !ids.includes(id));
-    for (const id of added) notify(ctx, id, p.id, `${ctx.user.name} added you to ${p.code} · ${p.name}`);
+    for (const id of added)
+      notify(ctx, id, p.id, `${ctx.user.name} added you to ${p.code} · ${p.name}`);
     if (added.length || before.size !== ids.length) log(ctx, p.id, 'team', `${ids.length} people`);
     if (OPEN_STATUSES.includes(p.status)) {
-      const names = (list) => nameList(list.map((id) => userBrief(ctx.db, id)?.name).filter(Boolean));
-      if (added.length) groupEvent(ctx, p.id, `${ctx.user.name} added ${names(added)} to the project team.`);
-      if (removed.length) groupEvent(ctx, p.id, `${ctx.user.name} removed ${names(removed)} from the project team.`);
+      const names = (list) =>
+        nameList(list.map((id) => userBrief(ctx.db, id)?.name).filter(Boolean));
+      if (added.length)
+        groupEvent(ctx, p.id, `${ctx.user.name} added ${names(added)} to the project team.`);
+      if (removed.length)
+        groupEvent(ctx, p.id, `${ctx.user.name} removed ${names(removed)} from the project team.`);
     }
   });
-  return { members: ctx.db.all('SELECT u.id, u.name, u.title, u.color, u.email FROM project_members pm JOIN users u ON u.id = pm.user_id WHERE pm.project_id = ? ORDER BY u.name', p.id) };
+  return {
+    members: ctx.db.all(
+      'SELECT u.id, u.name, u.title, u.color, u.email FROM project_members pm JOIN users u ON u.id = pm.user_id WHERE pm.project_id = ? ORDER BY u.name',
+      p.id,
+    ),
+  };
 });
 
 route('GET', '/projects/:id/activity', (ctx) => {
@@ -811,7 +1288,10 @@ route('GET', '/projects/:id/activity', (ctx) => {
   );
   const seen = seenAt(ctx.db, uid(ctx), `project:${p.id}:discussion`);
   return {
-    comments: comments.map((c) => ({ ...shapeComment(ctx, c, p), is_new: isNewSince(ctx, seen, c.user_id, c.created_at) })),
+    comments: comments.map((c) => ({
+      ...shapeComment(ctx, c, p),
+      is_new: isNewSince(ctx, seen, c.user_id, c.created_at),
+    })),
     activity: recentActivity(ctx, null, p.id, 200),
   };
 });
@@ -820,13 +1300,26 @@ route('GET', '/projects/:id/activity', (ctx) => {
 
 route('GET', '/projects/:id/tasks', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
-  const items = ctx.db.all(
-    `SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id WHERE t.project_id = ? ORDER BY t.sort, t.id`,
-    p.id,
-  ).map((t) => shapeTask(t, ctx.today));
+  const items = ctx.db
+    .all(
+      `SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id WHERE t.project_id = ? ORDER BY t.sort, t.id`,
+      p.id,
+    )
+    .map((t) => shapeTask(t, ctx.today));
   const seen = seenAt(ctx.db, uid(ctx), `project:${p.id}:tasks`);
-  for (const t of items) {t.is_new = isNewSince(ctx, seen, t.created_by, t.created_at);if(isDevelopmentProject(p))Object.assign(t,websiteTaskTime(ctx.db,t.id,ctx.now),{review:websiteTaskReview(ctx,t,p)});}
-  return { items: isDevelopmentProject(p)&&!canChooseWorkContact(ctx.user,p)?items.filter(t=>t.assignee_id===uid(ctx)):items };
+  for (const t of items) {
+    t.is_new = isNewSince(ctx, seen, t.created_by, t.created_at);
+    if (isDevelopmentProject(p))
+      Object.assign(t, websiteTaskTime(ctx.db, t.id, ctx.now), {
+        review: websiteTaskReview(ctx, t, p),
+      });
+  }
+  return {
+    items:
+      isDevelopmentProject(p) && !canChooseWorkContact(ctx.user, p)
+        ? items.filter((t) => t.assignee_id === uid(ctx))
+        : items,
+  };
 });
 
 function readTaskFields(body, { creating = false } = {}) {
@@ -849,7 +1342,10 @@ function readTaskFields(body, { creating = false } = {}) {
   if (body.checklist !== undefined) {
     if (!Array.isArray(body.checklist)) throw bad('Checklist must be a list');
     f.checklist = JSON.stringify(
-      body.checklist.slice(0, 50).map((c) => ({ text: String(c.text || '').slice(0, 300), done: !!c.done })).filter((c) => c.text.trim()),
+      body.checklist
+        .slice(0, 50)
+        .map((c) => ({ text: String(c.text || '').slice(0, 300), done: !!c.done }))
+        .filter((c) => c.text.trim()),
     );
   }
   return f;
@@ -859,50 +1355,90 @@ route('POST', '/projects/:id/tasks', (ctx) => {
   const { db } = ctx;
   const p = getProjectRaw(ctx, ctx.params.id);
   if (!canContribute(ctx.user, p)) throw forbidden('You have view-only access to this vertical');
-  if (['social','website','software'].includes(p.service_type) && ['completed','cancelled'].includes(p.status)) throw bad('Reopen the project before adding work');
+  if (
+    ['social', 'website', 'software'].includes(p.service_type) &&
+    ['completed', 'cancelled'].includes(p.status)
+  )
+    throw bad('Reopen the project before adding work');
   const f = readTaskFields(ctx.body, { creating: true });
-  if (['social','website','software'].includes(p.service_type) && f.status && f.status !== 'todo') throw bad('Work starts as Not Started; the assigned person updates status using the timer');
-  if (f.start_date && f.due_date && f.due_date < f.start_date) throw bad('Due date cannot be before the start date');
+  if (['social', 'website', 'software'].includes(p.service_type) && f.status && f.status !== 'todo')
+    throw bad('Work starts as Not Started; the assigned person updates status using the timer');
+  if (f.start_date && f.due_date && f.due_date < f.start_date)
+    throw bad('Due date cannot be before the start date');
   assertAssignable(ctx, f.assignee_id, p.vertical_id);
-  assertWebsiteAssignment(ctx,p,f.assignee_id);
-  if(isDevelopmentProject(p) && f.stage && !WEBSITE_STAGES.includes(f.stage))throw bad('Choose a development task phase');
+  assertWebsiteAssignment(ctx, p, f.assignee_id);
+  if (isDevelopmentProject(p) && f.stage && !WEBSITE_STAGES.includes(f.stage))
+    throw bad('Choose a development task phase');
   const stages = parseJSON(p.stages, []);
-  const sort = f.sort ?? (db.get('SELECT MAX(sort) AS m FROM tasks WHERE project_id = ?', p.id).m || 0) + 1;
+  const sort =
+    f.sort ?? (db.get('SELECT MAX(sort) AS m FROM tasks WHERE project_id = ?', p.id).m || 0) + 1;
   const inGroup = groupMemberIds(db, p);
   return db.tx(() => {
     const status = f.status || 'todo';
     const { id } = db.run(
       `INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, assigned_at, assigned_by, stage, start_date, due_date, checklist, sort, created_by, created_at, updated_at, completed_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      p.id, f.title, f.description || '', status, f.priority || 'medium', f.assignee_id ?? null,
-      f.assignee_id ? ctx.now : null, f.assignee_id ? uid(ctx) : null,
-      p.service_type === 'social' ? '' : f.stage && stages.includes(f.stage) ? f.stage : p.stage || stages[0] || '', f.start_date ?? null, f.due_date ?? null,
-      f.checklist || '[]', sort, uid(ctx), ctx.now, ctx.now, status === 'done' ? ctx.now : null,
+      p.id,
+      f.title,
+      f.description || '',
+      status,
+      f.priority || 'medium',
+      f.assignee_id ?? null,
+      f.assignee_id ? ctx.now : null,
+      f.assignee_id ? uid(ctx) : null,
+      p.service_type === 'social'
+        ? ''
+        : f.stage && stages.includes(f.stage)
+          ? f.stage
+          : p.stage || stages[0] || '',
+      f.start_date ?? null,
+      f.due_date ?? null,
+      f.checklist || '[]',
+      sort,
+      uid(ctx),
+      ctx.now,
+      ctx.now,
+      status === 'done' ? ctx.now : null,
     );
     log(ctx, p.id, 'task_added', f.title, id);
-    if (f.assignee_id) notify(ctx, f.assignee_id, p.id, `${ctx.user.name} assigned you “${f.title}” in ${p.code}`, id);
+    if (f.assignee_id)
+      notify(
+        ctx,
+        f.assignee_id,
+        p.id,
+        `${ctx.user.name} assigned you “${f.title}” in ${p.code}`,
+        id,
+      );
     announceJoin(ctx, p, inGroup, f.assignee_id, f.title);
-    if (p.service_type === 'social') initSocialDailyRows(db,ctx.now,p.id);
-    if (isDevelopmentProject(p)) initWebsiteDailyRows(db,ctx.now,p.id);
+    if (p.service_type === 'social') initSocialDailyRows(db, ctx.now, p.id);
+    if (isDevelopmentProject(p)) initWebsiteDailyRows(db, ctx.now, p.id);
     return taskDetail(ctx, id);
   });
 });
 
 function taskDetail(ctx, id) {
-  const t = ctx.db.get(`SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id WHERE t.id = ?`, id);
-  const shaped=shapeTask(t, ctx.today);
-  const p=ctx.db.get('SELECT * FROM projects WHERE id=?',t.project_id);
-  if(isDevelopmentProject(p))shaped.review=websiteTaskReview(ctx,t,p,{history:true});
+  const t = ctx.db.get(
+    `SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id WHERE t.id = ?`,
+    id,
+  );
+  const shaped = shapeTask(t, ctx.today);
+  const p = ctx.db.get('SELECT * FROM projects WHERE id=?', t.project_id);
+  if (isDevelopmentProject(p)) shaped.review = websiteTaskReview(ctx, t, p, { history: true });
   return shaped;
 }
 
 route('GET', '/tasks/:id', (ctx) => {
   const { task, project } = getTaskRaw(ctx, ctx.params.id);
-  const comments = ctx.db.all(
-    `SELECT ${COMMENT_COLS} FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by WHERE c.task_id = ? ORDER BY c.id`,
+  const comments = ctx.db
+    .all(
+      `SELECT ${COMMENT_COLS} FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by WHERE c.task_id = ? ORDER BY c.id`,
+      task.id,
+    )
+    .map((c) => shapeComment(ctx, c, project));
+  const files = ctx.db.all(
+    'SELECT f.*, u.name AS uploader_name FROM files f LEFT JOIN users u ON u.id = f.uploaded_by WHERE f.task_id = ? ORDER BY f.id DESC',
     task.id,
-  ).map((c) => shapeComment(ctx, c, project));
-  const files = ctx.db.all('SELECT f.*, u.name AS uploader_name FROM files f LEFT JOIN users u ON u.id = f.uploaded_by WHERE f.task_id = ? ORDER BY f.id DESC', task.id);
+  );
   const history = ctx.db.all(
     'SELECT a.*, u.name AS user_name FROM activity a LEFT JOIN users u ON u.id = a.user_id WHERE a.task_id = ? ORDER BY a.id DESC LIMIT 30',
     task.id,
@@ -910,40 +1446,124 @@ route('GET', '/tasks/:id', (ctx) => {
   const v = ctx.db.get('SELECT short, color FROM verticals WHERE id = ?', project.vertical_id);
   return {
     ...taskDetail(ctx, task.id),
-    timer_managed: isDevelopmentProject(project)?null:ctx.db.get('SELECT work_key FROM report_work WHERE task_id=?',task.id) || null,
-    comments, files, history,
+    timer_managed: isDevelopmentProject(project)
+      ? null
+      : ctx.db.get('SELECT work_key FROM report_work WHERE task_id=?', task.id) || null,
+    comments,
+    files,
+    history,
     created_by_user: userBrief(ctx.db, task.created_by),
-    project: { id: project.id, service_type:project.service_type, developer_ids:websiteDevelopers(project), code: project.code, name: project.name, vertical_id: project.vertical_id, vertical: v.short, vertical_color: v.color, stages: parseJSON(project.stages, []), status: project.status },
-    permissions: { edit: isDevelopmentProject(project)?canChooseWorkContact(ctx.user,project):canContribute(ctx.user, project), work: isDevelopmentProject(project)?canEditWebsiteTaskWork(ctx,task,project):canContribute(ctx.user, project), delete: canEditProject(ctx.user, project) || task.created_by === uid(ctx) && canContribute(ctx.user, project) },
+    project: {
+      id: project.id,
+      service_type: project.service_type,
+      developer_ids: websiteDevelopers(project),
+      code: project.code,
+      name: project.name,
+      vertical_id: project.vertical_id,
+      vertical: v.short,
+      vertical_color: v.color,
+      stages: parseJSON(project.stages, []),
+      status: project.status,
+    },
+    permissions: {
+      edit: isDevelopmentProject(project)
+        ? canChooseWorkContact(ctx.user, project)
+        : canContribute(ctx.user, project),
+      work: isDevelopmentProject(project)
+        ? canEditWebsiteTaskWork(ctx, task, project)
+        : canContribute(ctx.user, project),
+      delete:
+        canEditProject(ctx.user, project) ||
+        (task.created_by === uid(ctx) && canContribute(ctx.user, project)),
+    },
   };
 });
 
-const STATUS_WORDS = { todo: 'To do', in_progress: 'In progress', review: 'In review', blocked: 'Blocked', done: 'Done' };
+const STATUS_WORDS = {
+  todo: 'To do',
+  in_progress: 'In progress',
+  review: 'In review',
+  blocked: 'Blocked',
+  done: 'Done',
+};
 
 route('PATCH', '/tasks/:id', (ctx) => {
   const { db } = ctx;
   const { task, project } = getTaskRaw(ctx, ctx.params.id);
-  trackingTaskGuard(ctx,task);
-  if (!canContribute(ctx.user, project)) throw forbidden('You have view-only access to this vertical');
-  if (isDevelopmentProject(project) && !ctx.timerTransition && !ctx.reviewTransition && !canChooseWorkContact(ctx.user,project)) {
-    if(!canEditWebsiteTaskWork(ctx,task,project)||Object.keys(ctx.body).some(k=>!['description','checklist'].includes(k)))throw forbidden('Only the assigned developer can update work notes and checklist. Main task planning is managed by the head.');
+  trackingTaskGuard(ctx, task);
+  if (!canContribute(ctx.user, project))
+    throw forbidden('You have view-only access to this vertical');
+  if (
+    isDevelopmentProject(project) &&
+    !ctx.timerTransition &&
+    !ctx.reviewTransition &&
+    !canChooseWorkContact(ctx.user, project)
+  ) {
+    if (
+      !canEditWebsiteTaskWork(ctx, task, project) ||
+      Object.keys(ctx.body).some((k) => !['description', 'checklist'].includes(k))
+    )
+      throw forbidden(
+        'Only the assigned developer can update work notes and checklist. Main task planning is managed by the head.',
+      );
   }
-  if(isDevelopmentProject(project)&&!ctx.timerTransition&&['completed','cancelled'].includes(project.status))throw bad('Reopen the project before editing tasks');
-  if(isDevelopmentProject(project)&&!ctx.timerTransition&&(ctx.body.status!==undefined&&ctx.body.status!==task.status||ctx.body.assignee_id!==undefined&&Number(ctx.body.assignee_id)!==task.assignee_id)&&db.get('SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE s.ended_at IS NULL AND (w.task_id=? OR e.parent_task_id=?)',task.id,task.id))throw bad('Ask the developer to pause the running daily work before changing this task');
-  if(isDevelopmentProject(project)&&!ctx.reviewTransition){
-    if(ctx.body.status==='review')throw bad('The assigned developer submits this task for review');
-    if(pendingWebsiteReview(db,task.id)&&['status','assignee_id','title','description','stage','start_date','due_date','checklist'].some(k=>ctx.body[k]!==undefined))throw bad('Review pending. Approve or request changes before editing this task.');
+  if (
+    isDevelopmentProject(project) &&
+    !ctx.timerTransition &&
+    ['completed', 'cancelled'].includes(project.status)
+  )
+    throw bad('Reopen the project before editing tasks');
+  if (
+    isDevelopmentProject(project) &&
+    !ctx.timerTransition &&
+    ((ctx.body.status !== undefined && ctx.body.status !== task.status) ||
+      (ctx.body.assignee_id !== undefined && Number(ctx.body.assignee_id) !== task.assignee_id)) &&
+    db.get(
+      'SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE s.ended_at IS NULL AND (w.task_id=? OR e.parent_task_id=?)',
+      task.id,
+      task.id,
+    )
+  )
+    throw bad('Ask the developer to pause the running daily work before changing this task');
+  if (isDevelopmentProject(project) && !ctx.reviewTransition) {
+    if (ctx.body.status === 'review')
+      throw bad('The assigned developer submits this task for review');
+    if (
+      pendingWebsiteReview(db, task.id) &&
+      [
+        'status',
+        'assignee_id',
+        'title',
+        'description',
+        'stage',
+        'start_date',
+        'due_date',
+        'checklist',
+      ].some((k) => ctx.body[k] !== undefined)
+    )
+      throw bad('Review pending. Approve or request changes before editing this task.');
   }
   const f = readTaskFields(ctx.body);
-  if (f.assignee_id !== undefined && f.assignee_id !== task.assignee_id) assertAssignable(ctx, f.assignee_id, project.vertical_id);
-  if(isDevelopmentProject(project)&&f.assignee_id!==undefined&&!websiteDevelopers(project).includes(f.assignee_id))throw bad('Choose a developer from this development team');
+  if (f.assignee_id !== undefined && f.assignee_id !== task.assignee_id)
+    assertAssignable(ctx, f.assignee_id, project.vertical_id);
+  if (
+    isDevelopmentProject(project) &&
+    f.assignee_id !== undefined &&
+    !websiteDevelopers(project).includes(f.assignee_id)
+  )
+    throw bad('Choose a developer from this development team');
   if (f.stage) {
     const stages = parseJSON(project.stages, []);
     if (!stages.includes(f.stage)) throw bad('Unknown stage');
   }
-  const merged = { ...task, ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined)) };
-  if (merged.start_date && merged.due_date && merged.due_date < merged.start_date) throw bad('Due date cannot be before the start date');
-  if (f.status !== undefined && f.status !== task.status) f.completed_at = f.status === 'done' ? ctx.now : null;
+  const merged = {
+    ...task,
+    ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined)),
+  };
+  if (merged.start_date && merged.due_date && merged.due_date < merged.start_date)
+    throw bad('Due date cannot be before the start date');
+  if (f.status !== undefined && f.status !== task.status)
+    f.completed_at = f.status === 'done' ? ctx.now : null;
   if (f.assignee_id !== undefined && f.assignee_id !== task.assignee_id) {
     f.assigned_at = f.assignee_id ? ctx.now : null;
     f.assigned_by = f.assignee_id ? uid(ctx) : null;
@@ -952,27 +1572,69 @@ route('PATCH', '/tasks/:id', (ctx) => {
   if (!sets.length) return taskDetail(ctx, task.id);
   const inGroup = f.assignee_id ? groupMemberIds(db, project) : null;
   return db.tx(() => {
-    db.run(`UPDATE tasks SET ${sets.map(([k]) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`, ...sets.map(([, v]) => v), ctx.now, task.id);
-    if(isDevelopmentProject(project)&&!ctx.timerTransition&&f.status==='done')db.run('UPDATE report_work SET revision_pending=0 WHERE task_id=? OR extra_id IN (SELECT id FROM extra_work WHERE parent_task_id=?)',task.id,task.id);
+    db.run(
+      `UPDATE tasks SET ${sets.map(([k]) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`,
+      ...sets.map(([, v]) => v),
+      ctx.now,
+      task.id,
+    );
+    if (isDevelopmentProject(project) && !ctx.timerTransition && f.status === 'done')
+      db.run(
+        'UPDATE report_work SET revision_pending=0 WHERE task_id=? OR extra_id IN (SELECT id FROM extra_work WHERE parent_task_id=?)',
+        task.id,
+        task.id,
+      );
     if (f.status !== undefined && f.status !== task.status) {
-      log(ctx, project.id, f.status === 'done' ? 'task_done' : 'task_status', `${merged.title} → ${STATUS_WORDS[f.status]}`, task.id);
+      log(
+        ctx,
+        project.id,
+        f.status === 'done' ? 'task_done' : 'task_status',
+        `${merged.title} → ${STATUS_WORDS[f.status]}`,
+        task.id,
+      );
       if (f.status === 'done' && task.created_by && task.created_by !== task.assignee_id) {
-        notify(ctx, task.created_by, project.id, `${ctx.user.name} completed “${merged.title}” in ${project.code}`, task.id);
+        notify(
+          ctx,
+          task.created_by,
+          project.id,
+          `${ctx.user.name} completed “${merged.title}” in ${project.code}`,
+          task.id,
+        );
       }
     }
     if (f.assignee_id !== undefined && f.assignee_id !== task.assignee_id) {
       const a = userBrief(db, f.assignee_id);
-      log(ctx, project.id, 'task_assigned', `${merged.title} → ${a?.name || 'Unassigned'}`, task.id);
-      if (f.assignee_id) notify(ctx, f.assignee_id, project.id, `${ctx.user.name} assigned you “${merged.title}” in ${project.code}`, task.id);
+      log(
+        ctx,
+        project.id,
+        'task_assigned',
+        `${merged.title} → ${a?.name || 'Unassigned'}`,
+        task.id,
+      );
+      if (f.assignee_id)
+        notify(
+          ctx,
+          f.assignee_id,
+          project.id,
+          `${ctx.user.name} assigned you “${merged.title}” in ${project.code}`,
+          task.id,
+        );
       if (f.assignee_id) announceJoin(ctx, project, inGroup, f.assignee_id, merged.title);
     }
     if (f.due_date !== undefined && f.due_date !== task.due_date) {
       log(ctx, project.id, 'task_due', `${merged.title} → ${f.due_date || 'no date'}`, task.id);
       if (task.assignee_id && f.assignee_id === undefined) {
-        notify(ctx, task.assignee_id, project.id, `${ctx.user.name} changed the due date of “${merged.title}” to ${f.due_date || 'no date'}`, task.id);
+        notify(
+          ctx,
+          task.assignee_id,
+          project.id,
+          `${ctx.user.name} changed the due date of “${merged.title}” to ${f.due_date || 'no date'}`,
+          task.id,
+        );
       }
     }
-    if (f.title !== undefined && f.title !== task.title) log(ctx, project.id, 'task_renamed', `${task.title} → ${f.title}`, task.id);
+    if (f.title !== undefined && f.title !== task.title)
+      log(ctx, project.id, 'task_renamed', `${task.title} → ${f.title}`, task.id);
     db.run('UPDATE projects SET updated_at = ? WHERE id = ?', ctx.now, project.id);
     return taskDetail(ctx, task.id);
   });
@@ -980,8 +1642,13 @@ route('PATCH', '/tasks/:id', (ctx) => {
 
 route('DELETE', '/tasks/:id', (ctx) => {
   const { task, project } = getTaskRaw(ctx, ctx.params.id);
-  const allowed = canEditProject(ctx.user, project) || (task.created_by === uid(ctx) && canContribute(ctx.user, project));
-  if (!allowed) throw forbidden('Only the person who added this task, the project owner or a manager can delete it');
+  const allowed =
+    canEditProject(ctx.user, project) ||
+    (task.created_by === uid(ctx) && canContribute(ctx.user, project));
+  if (!allowed)
+    throw forbidden(
+      'Only the person who added this task, the project owner or a manager can delete it',
+    );
   ctx.db.tx(() => {
     ctx.db.run('UPDATE files SET task_id = NULL WHERE task_id = ?', task.id);
     ctx.db.run('DELETE FROM tasks WHERE id = ?', task.id);
@@ -995,29 +1662,56 @@ route('GET', '/tasks', (ctx) => {
   const { db, query: q, today } = ctx;
   const vids = scopeVerticals(ctx);
   if (!vids.length) return { items: [] };
-  const where = [`p.vertical_id IN (${placeholders(vids)})`,projectVisibilitySql(ctx.user)];
+  const where = [`p.vertical_id IN (${placeholders(vids)})`, projectVisibilitySql(ctx.user)];
   const params = [...vids];
-  if (q.assignee === 'me') { where.push('t.assignee_id = ?'); params.push(uid(ctx)); }
-  else if (q.assignee === 'none') where.push('t.assignee_id IS NULL');
-  else if (q.assignee) { where.push('t.assignee_id = ?'); params.push(Number(q.assignee)); }
-  if (q.created === 'me') { where.push('t.created_by = ?'); params.push(uid(ctx)); }
-  if (q.project) { where.push('t.project_id = ?'); params.push(Number(q.project)); }
+  if (q.assignee === 'me') {
+    where.push('t.assignee_id = ?');
+    params.push(uid(ctx));
+  } else if (q.assignee === 'none') where.push('t.assignee_id IS NULL');
+  else if (q.assignee) {
+    where.push('t.assignee_id = ?');
+    params.push(Number(q.assignee));
+  }
+  if (q.created === 'me') {
+    where.push('t.created_by = ?');
+    params.push(uid(ctx));
+  }
+  if (q.project) {
+    where.push('t.project_id = ?');
+    params.push(Number(q.project));
+  }
   const scope = q.scope || 'open';
   if (scope === 'open') where.push(`t.status != 'done' AND p.status IN ${OPEN_IN}`);
   else if (scope === 'done') where.push(`t.status = 'done'`);
-  if (q.from && isDate(q.from)) { where.push('t.due_date >= ?'); params.push(q.from); }
-  if (q.to && isDate(q.to)) { where.push('t.due_date <= ?'); params.push(q.to); }
-  if (q.q) { where.push('(t.title LIKE ? OR p.name LIKE ? OR p.code LIKE ?)'); const l = `%${q.q}%`; params.push(l, l, l); }
+  if (q.from && isDate(q.from)) {
+    where.push('t.due_date >= ?');
+    params.push(q.from);
+  }
+  if (q.to && isDate(q.to)) {
+    where.push('t.due_date <= ?');
+    params.push(q.to);
+  }
+  if (q.q) {
+    where.push('(t.title LIKE ? OR p.name LIKE ? OR p.code LIKE ?)');
+    const l = `%${q.q}%`;
+    params.push(l, l, l);
+  }
   const order = scope === 'done' ? 't.completed_at DESC' : 't.due_date IS NULL, t.due_date, t.sort';
-  const items = db.all(
-    `SELECT ${TASK_COLS}, p.code, p.name AS project_name, p.client, p.vertical_id, v.short AS vertical, v.color AS vertical_color
+  const items = db
+    .all(
+      `SELECT ${TASK_COLS}, p.code, p.name AS project_name, p.client, p.vertical_id, v.short AS vertical, v.color AS vertical_color
      FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users u ON u.id = t.assignee_id
      WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT 600`,
-    ...params,
-  ).map((t) => shapeTask(t, today));
+      ...params,
+    )
+    .map((t) => shapeTask(t, today));
   // Assigned to me by someone else since I last opened My Work.
   const seen = seenAt(db, uid(ctx), 'mywork');
-  for (const t of items) t.is_new = t.assignee_id === uid(ctx) && t.status !== 'done' && isNewSince(ctx, seen, t.assigned_by, t.assigned_at);
+  for (const t of items)
+    t.is_new =
+      t.assignee_id === uid(ctx) &&
+      t.status !== 'done' &&
+      isNewSince(ctx, seen, t.assigned_by, t.assigned_at);
   return { items };
 });
 
@@ -1028,8 +1722,15 @@ route('POST', '/projects/:id/milestones', (ctx) => {
   if (!canContribute(ctx.user, p)) throw forbidden('You have view-only access to this vertical');
   const title = text(ctx.body.title, { max: 200, label: 'Milestone', required: true });
   const due = optDate(ctx.body.due_date, 'Date') ?? null;
-  const sort = (ctx.db.get('SELECT MAX(sort) AS m FROM milestones WHERE project_id = ?', p.id).m || 0) + 1;
-  const { id } = ctx.db.run('INSERT INTO milestones (project_id, title, due_date, sort) VALUES (?,?,?,?)', p.id, title, due, sort);
+  const sort =
+    (ctx.db.get('SELECT MAX(sort) AS m FROM milestones WHERE project_id = ?', p.id).m || 0) + 1;
+  const { id } = ctx.db.run(
+    'INSERT INTO milestones (project_id, title, due_date, sort) VALUES (?,?,?,?)',
+    p.id,
+    title,
+    due,
+    sort,
+  );
   log(ctx, p.id, 'milestone_added', title);
   return ctx.db.get('SELECT * FROM milestones WHERE id = ?', id);
 });
@@ -1051,7 +1752,14 @@ route('PATCH', '/milestones/:id', (ctx) => {
   const done = ctx.body.done === undefined ? undefined : ctx.body.done ? 1 : 0;
   ctx.db.run(
     'UPDATE milestones SET title = COALESCE(?, title), due_date = CASE WHEN ? THEN ? ELSE due_date END, done = COALESCE(?, done), done_at = CASE WHEN ? IS NULL THEN done_at WHEN ? = 1 THEN ? ELSE NULL END WHERE id = ?',
-    title ?? null, due !== undefined ? 1 : 0, due ?? null, done ?? null, done ?? null, done ?? null, ctx.now, m.id,
+    title ?? null,
+    due !== undefined ? 1 : 0,
+    due ?? null,
+    done ?? null,
+    done ?? null,
+    done ?? null,
+    ctx.now,
+    m.id,
   );
   if (done === 1 && !m.done) log(ctx, p.id, 'milestone_done', m.title);
   return ctx.db.get('SELECT * FROM milestones WHERE id = ?', m.id);
@@ -1074,7 +1782,10 @@ const FILE_FROM = `FROM files f JOIN projects p ON p.id = f.project_id JOIN vert
 route('GET', '/projects/:id/files', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
   const seen = seenAt(ctx.db, uid(ctx), `project:${p.id}:files`);
-  const items = ctx.db.all(`SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.project_id = ? ORDER BY f.is_final DESC, f.id DESC`, p.id);
+  const items = ctx.db.all(
+    `SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.project_id = ? ORDER BY f.is_final DESC, f.id DESC`,
+    p.id,
+  );
   for (const f of items) f.is_new = isNewSince(ctx, seen, f.uploaded_by, f.created_at);
   return { items };
 });
@@ -1085,7 +1796,11 @@ route('POST', '/projects/:id/files', (ctx) => {
   const b = ctx.body;
   const category = FILE_CATEGORIES.includes(b.category) ? b.category : 'Other';
   let taskId = optId(b.task_id) ?? null;
-  if (taskId && !ctx.db.get('SELECT 1 AS x FROM tasks WHERE id = ? AND project_id = ?', taskId, p.id)) taskId = null;
+  if (
+    taskId &&
+    !ctx.db.get('SELECT 1 AS x FROM tasks WHERE id = ? AND project_id = ?', taskId, p.id)
+  )
+    taskId = null;
   const isFinal = b.is_final === true || b.is_final === 'true' || b.is_final === '1' ? 1 : 0;
   const note = text(b.note, { max: 500, label: 'Note' }) || '';
   let row;
@@ -1095,16 +1810,37 @@ route('POST', '/projects/:id/files', (ctx) => {
     row = ctx.db.run(
       `INSERT INTO files (project_id, task_id, kind, name, mime, size, category, storage_key, is_final, note, uploaded_by, created_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      p.id, taskId, 'file', name, u.mime || '', u.size || 0, category, u.storage_key, isFinal, note, uid(ctx), ctx.now,
+      p.id,
+      taskId,
+      'file',
+      name,
+      u.mime || '',
+      u.size || 0,
+      category,
+      u.storage_key,
+      isFinal,
+      note,
+      uid(ctx),
+      ctx.now,
     );
   } else {
     const url = text(b.url, { max: 2000, label: 'Link', required: true });
     if (!/^https?:\/\//i.test(url)) throw bad('Links must start with http:// or https://');
-    const name = text(b.name, { max: 240, label: 'Name' }) || url.replace(/^https?:\/\//i, '').slice(0, 80);
+    const name =
+      text(b.name, { max: 240, label: 'Name' }) || url.replace(/^https?:\/\//i, '').slice(0, 80);
     row = ctx.db.run(
       `INSERT INTO files (project_id, task_id, kind, name, url, category, is_final, note, uploaded_by, created_at)
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      p.id, taskId, 'link', name, url, category, isFinal, note, uid(ctx), ctx.now,
+      p.id,
+      taskId,
+      'link',
+      name,
+      url,
+      category,
+      isFinal,
+      note,
+      uid(ctx),
+      ctx.now,
     );
   }
   const f = ctx.db.get(`SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.id = ?`, row.id);
@@ -1131,12 +1867,21 @@ route('PATCH', '/files/:id', (ctx) => {
   const b = ctx.body;
   const name = text(b.name, { max: 240, label: 'Name' });
   if (name === '') throw bad('Name is required');
-  const category = b.category === undefined ? undefined : FILE_CATEGORIES.includes(b.category) ? b.category : 'Other';
+  const category =
+    b.category === undefined
+      ? undefined
+      : FILE_CATEGORIES.includes(b.category)
+        ? b.category
+        : 'Other';
   const isFinal = b.is_final === undefined ? undefined : b.is_final ? 1 : 0;
   const note = text(b.note, { max: 500, label: 'Note' });
   ctx.db.run(
     'UPDATE files SET name = COALESCE(?, name), category = COALESCE(?, category), is_final = COALESCE(?, is_final), note = COALESCE(?, note) WHERE id = ?',
-    name ?? null, category ?? null, isFinal ?? null, note ?? null, f.id,
+    name ?? null,
+    category ?? null,
+    isFinal ?? null,
+    note ?? null,
+    f.id,
   );
   if (isFinal === 1 && !f.is_final) log(ctx, p.id, 'file_final', f.name);
   return ctx.db.get(`SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.id = ?`, f.id);
@@ -1144,8 +1889,10 @@ route('PATCH', '/files/:id', (ctx) => {
 
 route('DELETE', '/files/:id', async (ctx) => {
   const { f, p } = getFileChecked(ctx, ctx.params.id);
-  const allowed = canEditProject(ctx.user, p) || (f.uploaded_by === uid(ctx) && canContribute(ctx.user, p));
-  if (!allowed) throw forbidden('Only the uploader, the project owner or a manager can delete this file');
+  const allowed =
+    canEditProject(ctx.user, p) || (f.uploaded_by === uid(ctx) && canContribute(ctx.user, p));
+  if (!allowed)
+    throw forbidden('Only the uploader, the project owner or a manager can delete this file');
   ctx.db.run('DELETE FROM files WHERE id = ?', f.id);
   log(ctx, p.id, 'file_deleted', f.name);
   if (f.kind === 'file' && f.storage_key) await ctx.services.removeStored?.(f.storage_key);
@@ -1157,26 +1904,45 @@ route('GET', '/files', (ctx) => {
   const { db, query: q } = ctx;
   const vids = scopeVerticals(ctx);
   if (!vids.length) return { items: [], total: 0 };
-  const where = [`p.vertical_id IN (${placeholders(vids)})`,projectVisibilitySql(ctx.user)];
+  const where = [`p.vertical_id IN (${placeholders(vids)})`, projectVisibilitySql(ctx.user)];
   const params = [...vids];
-  if (q.category && FILE_CATEGORIES.includes(q.category)) { where.push('f.category = ?'); params.push(q.category); }
+  if (q.category && FILE_CATEGORIES.includes(q.category)) {
+    where.push('f.category = ?');
+    params.push(q.category);
+  }
   if (q.final === '1') where.push('f.is_final = 1');
   if (q.kind === 'image') where.push("f.mime LIKE 'image/%'");
   else if (q.kind === 'video') where.push("f.mime LIKE 'video/%'");
-  else if (q.kind === 'doc') where.push("f.kind = 'file' AND f.mime NOT LIKE 'image/%' AND f.mime NOT LIKE 'video/%'");
+  else if (q.kind === 'doc')
+    where.push("f.kind = 'file' AND f.mime NOT LIKE 'image/%' AND f.mime NOT LIKE 'video/%'");
   else if (q.kind === 'link') where.push("f.kind = 'link'");
   if (q.scope === 'past') where.push(`p.status IN ('completed','cancelled')`);
   else if (q.scope === 'open') where.push(`p.status IN ${OPEN_IN}`);
-  if (q.year && /^\d{4}$/.test(q.year)) { where.push('substr(COALESCE(p.key_date, p.due_date, p.start_date, f.created_at), 1, 4) = ?'); params.push(q.year); }
-  if (q.client) { where.push('p.client = ?'); params.push(q.client); }
+  if (q.year && /^\d{4}$/.test(q.year)) {
+    where.push('substr(COALESCE(p.key_date, p.due_date, p.start_date, f.created_at), 1, 4) = ?');
+    params.push(q.year);
+  }
+  if (q.client) {
+    where.push('p.client = ?');
+    params.push(q.client);
+  }
   if (q.q) {
     const l = `%${q.q}%`;
-    where.push('(f.name LIKE ? OR f.note LIKE ? OR p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ?)');
+    where.push(
+      '(f.name LIKE ? OR f.note LIKE ? OR p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ?)',
+    );
     params.push(l, l, l, l, l, l);
   }
   const limit = Math.min(Number(q.limit) || 300, 1000);
-  const items = db.all(`SELECT ${FILE_COLS} ${FILE_FROM} WHERE ${where.join(' AND ')} ORDER BY f.is_final DESC, f.id DESC LIMIT ?`, ...params, limit);
-  const total = db.get(`SELECT COUNT(*) AS n, COALESCE(SUM(f.size), 0) AS bytes ${FILE_FROM} WHERE ${where.join(' AND ')}`, ...params);
+  const items = db.all(
+    `SELECT ${FILE_COLS} ${FILE_FROM} WHERE ${where.join(' AND ')} ORDER BY f.is_final DESC, f.id DESC LIMIT ?`,
+    ...params,
+    limit,
+  );
+  const total = db.get(
+    `SELECT COUNT(*) AS n, COALESCE(SUM(f.size), 0) AS bytes ${FILE_FROM} WHERE ${where.join(' AND ')}`,
+    ...params,
+  );
   return { items, total: total.n, bytes: total.bytes };
 });
 
@@ -1186,8 +1952,14 @@ const COMMENT_COLS = 'c.*, u.name AS user_name, u.color AS user_color, d.name AS
 
 // Vertical managers and admins: the people who approve deleting old comments.
 function headsOf(db, verticalId) {
-  const ids = new Set(db.all("SELECT id FROM users WHERE role = 'admin' AND active = 1").map((r) => r.id));
-  for (const r of db.all("SELECT uv.user_id FROM user_verticals uv JOIN users u ON u.id = uv.user_id WHERE uv.vertical_id = ? AND uv.level = 'manager' AND u.active = 1", verticalId)) ids.add(r.user_id);
+  const ids = new Set(
+    db.all("SELECT id FROM users WHERE role = 'admin' AND active = 1").map((r) => r.id),
+  );
+  for (const r of db.all(
+    "SELECT uv.user_id FROM user_verticals uv JOIN users u ON u.id = uv.user_id WHERE uv.vertical_id = ? AND uv.level = 'manager' AND u.active = 1",
+    verticalId,
+  ))
+    ids.add(r.user_id);
   return [...ids];
 }
 
@@ -1200,7 +1972,8 @@ function shapeComment(ctx, c, project) {
     mine,
     delete_ms_left: mine ? left : 0,
     can_delete: mine && (left > 0 || c.delete_status === 'approved'),
-    can_request_delete: mine && left === 0 && c.delete_status !== 'requested' && c.delete_status !== 'approved',
+    can_request_delete:
+      mine && left === 0 && c.delete_status !== 'requested' && c.delete_status !== 'approved',
     can_decide: !mine && c.delete_status === 'requested' && head,
     // Heads approve deletions, so they can also remove someone else's comment directly.
     can_head_delete: !mine && head,
@@ -1208,7 +1981,10 @@ function shapeComment(ctx, c, project) {
 }
 
 function commentById(ctx, id, project) {
-  const c = ctx.db.get(`SELECT ${COMMENT_COLS} FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by WHERE c.id = ?`, id);
+  const c = ctx.db.get(
+    `SELECT ${COMMENT_COLS} FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by WHERE c.id = ?`,
+    id,
+  );
   return shapeComment(ctx, c, project);
 }
 
@@ -1219,19 +1995,37 @@ route('POST', '/projects/:id/comments', (ctx) => {
   const body = text(ctx.body.body, { max: 5000, label: 'Comment', required: true });
   let task = null;
   if (ctx.body.task_id) {
-    task = db.get('SELECT * FROM tasks WHERE id = ? AND project_id = ?', Number(ctx.body.task_id), p.id);
+    task = db.get(
+      'SELECT * FROM tasks WHERE id = ? AND project_id = ?',
+      Number(ctx.body.task_id),
+      p.id,
+    );
     if (!task) throw bad('That task is not part of this project');
   }
-  const { id } = db.run('INSERT INTO comments (project_id, task_id, user_id, body, created_at) VALUES (?,?,?,?,?)', p.id, task?.id ?? null, uid(ctx), body, ctx.now);
+  const { id } = db.run(
+    'INSERT INTO comments (project_id, task_id, user_id, body, created_at) VALUES (?,?,?,?,?)',
+    p.id,
+    task?.id ?? null,
+    uid(ctx),
+    body,
+    ctx.now,
+  );
   const where = task ? `on “${task.title}”` : `on ${p.code}`;
   const told = new Set();
   // @mentions of people who can see this vertical
   for (const u of mentionedUsers(db, body)) {
     const lu = loadUser(db, u.id);
-    if (lu && levelFor(lu, p.vertical_id)) { notify(ctx, u.id, p.id, `${ctx.user.name} mentioned you ${where}`, task?.id); told.add(u.id); }
+    if (lu && levelFor(lu, p.vertical_id)) {
+      notify(ctx, u.id, p.id, `${ctx.user.name} mentioned you ${where}`, task?.id);
+      told.add(u.id);
+    }
   }
-  if (task?.assignee_id && !told.has(task.assignee_id)) { notify(ctx, task.assignee_id, p.id, `${ctx.user.name} commented ${where}`, task.id); told.add(task.assignee_id); }
-  if (p.owner_id && !told.has(p.owner_id)) notify(ctx, p.owner_id, p.id, `${ctx.user.name} commented ${where}`, task?.id);
+  if (task?.assignee_id && !told.has(task.assignee_id)) {
+    notify(ctx, task.assignee_id, p.id, `${ctx.user.name} commented ${where}`, task.id);
+    told.add(task.assignee_id);
+  }
+  if (p.owner_id && !told.has(p.owner_id))
+    notify(ctx, p.owner_id, p.id, `${ctx.user.name} commented ${where}`, task?.id);
   return commentById(ctx, id, p);
 });
 
@@ -1249,7 +2043,8 @@ function getComment(ctx) {
 route('DELETE', '/comments/:id', async (ctx) => {
   const { c, p } = getComment(ctx);
   if (c.user_id !== uid(ctx)) {
-    if (!canManageVertical(ctx.user, p.vertical_id)) throw forbidden('Only the author or a head of this vertical can delete this comment');
+    if (!canManageVertical(ctx.user, p.vertical_id))
+      throw forbidden('Only the author or a head of this vertical can delete this comment');
     const author = userBrief(ctx.db, c.user_id);
     ctx.db.tx(() => {
       ctx.db.run('DELETE FROM comments WHERE id = ?', c.id);
@@ -1260,7 +2055,9 @@ route('DELETE', '/comments/:id', async (ctx) => {
   }
   const age = Date.parse(ctx.now) - Date.parse(c.created_at);
   if (age > DELETE_WINDOW_MS + DELETE_GRACE_MS && c.delete_status !== 'approved') {
-    throw forbidden('Comments can only be deleted within 15 seconds of posting. Ask a head to approve the deletion.');
+    throw forbidden(
+      'Comments can only be deleted within 15 seconds of posting. Ask a head to approve the deletion.',
+    );
   }
   const approver = c.delete_status === 'approved' ? userBrief(ctx.db, c.delete_decided_by) : null;
   ctx.db.tx(() => {
@@ -1274,12 +2071,23 @@ route('POST', '/comments/:id/delete-request', (ctx) => {
   const { c, p } = getComment(ctx);
   if (c.user_id !== uid(ctx)) throw forbidden('You can only ask to delete your own comments');
   if (c.delete_status === 'requested') throw bad('A head has already been asked to approve this');
-  if (c.delete_status === 'approved') throw bad('Deletion is already approved. You can delete the comment now.');
+  if (c.delete_status === 'approved')
+    throw bad('Deletion is already approved. You can delete the comment now.');
   ctx.db.tx(() => {
-    ctx.db.run("UPDATE comments SET delete_status = 'requested', delete_requested_at = ?, delete_decided_by = NULL, delete_decided_at = NULL WHERE id = ?", ctx.now, c.id);
+    ctx.db.run(
+      "UPDATE comments SET delete_status = 'requested', delete_requested_at = ?, delete_decided_by = NULL, delete_decided_at = NULL WHERE id = ?",
+      ctx.now,
+      c.id,
+    );
     const snippet = c.body.length > 60 ? c.body.slice(0, 57) + '…' : c.body;
     for (const h of headsOf(ctx.db, p.vertical_id)) {
-      notify(ctx, h, p.id, `${ctx.user.name} asks to delete a comment in ${p.code}: “${snippet}”`, c.task_id);
+      notify(
+        ctx,
+        h,
+        p.id,
+        `${ctx.user.name} asks to delete a comment in ${p.code}: “${snippet}”`,
+        c.task_id,
+      );
     }
   });
   return commentById(ctx, c.id, p);
@@ -1287,15 +2095,29 @@ route('POST', '/comments/:id/delete-request', (ctx) => {
 
 route('POST', '/comments/:id/delete-decision', (ctx) => {
   const { c, p } = getComment(ctx);
-  if (!canManageVertical(ctx.user, p.vertical_id)) throw forbidden('Only a head of this vertical can approve deleting comments');
-  if (c.user_id === uid(ctx)) throw forbidden('Another head has to approve deleting your own comment');
+  if (!canManageVertical(ctx.user, p.vertical_id))
+    throw forbidden('Only a head of this vertical can approve deleting comments');
+  if (c.user_id === uid(ctx))
+    throw forbidden('Another head has to approve deleting your own comment');
   if (c.delete_status !== 'requested') throw bad('There is no pending request for this comment');
   const approve = !!ctx.body.approve;
   ctx.db.tx(() => {
-    ctx.db.run('UPDATE comments SET delete_status = ?, delete_decided_by = ?, delete_decided_at = ? WHERE id = ?', approve ? 'approved' : 'declined', uid(ctx), ctx.now, c.id);
-    notify(ctx, c.user_id, p.id, approve
-      ? `${ctx.user.name} approved deleting your comment in ${p.code}. You can delete it now.`
-      : `${ctx.user.name} asked to keep your comment in ${p.code}.`, c.task_id);
+    ctx.db.run(
+      'UPDATE comments SET delete_status = ?, delete_decided_by = ?, delete_decided_at = ? WHERE id = ?',
+      approve ? 'approved' : 'declined',
+      uid(ctx),
+      ctx.now,
+      c.id,
+    );
+    notify(
+      ctx,
+      c.user_id,
+      p.id,
+      approve
+        ? `${ctx.user.name} approved deleting your comment in ${p.code}. You can delete it now.`
+        : `${ctx.user.name} asked to keep your comment in ${p.code}.`,
+      c.task_id,
+    );
   });
   return commentById(ctx, c.id, p);
 });
@@ -1313,14 +2135,31 @@ const GROUP_KINDS = ['message', 'update', 'status'];
 // then attached when the message is sent. Only your own recent, unattached uploads qualify.
 export const MAX_ATTACHMENTS = 10;
 const ATTACH_WITHIN_MS = 6 * 3600 * 1000;
-const STATUS_LABELS = { on_track: 'On track', need_help: 'Need help', blocked: 'Blocked', done: 'Done for today' };
+const STATUS_LABELS = {
+  on_track: 'On track',
+  need_help: 'Need help',
+  blocked: 'Blocked',
+  done: 'Done for today',
+};
 
 function groupMemberIds(db, p) {
-  if(isDevelopmentProject(p))return new Set(projectRoleIds(typeof p.service_details === 'string'?parseJSON(p.service_details,{}):p.service_details||{}));
+  if (isDevelopmentProject(p))
+    return new Set(
+      projectRoleIds(
+        typeof p.service_details === 'string'
+          ? parseJSON(p.service_details, {})
+          : p.service_details || {},
+      ),
+    );
   const ids = new Set();
   if (p.owner_id) ids.add(p.owner_id);
-  for (const r of db.all('SELECT user_id FROM project_members WHERE project_id = ?', p.id)) ids.add(r.user_id);
-  for (const r of db.all('SELECT DISTINCT assignee_id AS id FROM tasks WHERE project_id = ? AND assignee_id IS NOT NULL', p.id)) ids.add(r.id);
+  for (const r of db.all('SELECT user_id FROM project_members WHERE project_id = ?', p.id))
+    ids.add(r.user_id);
+  for (const r of db.all(
+    'SELECT DISTINCT assignee_id AS id FROM tasks WHERE project_id = ? AND assignee_id IS NOT NULL',
+    p.id,
+  ))
+    ids.add(r.id);
   return ids;
 }
 
@@ -1332,7 +2171,8 @@ function groupMembers(db, p) {
     `SELECT u.id, u.name, u.title, u.color FROM users u WHERE u.id IN (${placeholders(ids)}) AND u.active = 1
        AND (u.role = 'admin' OR EXISTS (SELECT 1 FROM user_verticals uv WHERE uv.user_id = u.id AND uv.vertical_id = ?))
      ORDER BY u.name`,
-    ...ids, p.vertical_id,
+    ...ids,
+    p.vertical_id,
   );
 }
 
@@ -1342,7 +2182,9 @@ const groupOpen = (p) => OPEN_STATUSES.includes(p.status);
 function groupUnread(ctx, projectId) {
   return ctx.db.get(
     "SELECT COUNT(*) AS n FROM group_messages WHERE project_id = ? AND kind != 'system' AND COALESCE(user_id, 0) != ? AND created_at > ?",
-    projectId, uid(ctx), seenAt(ctx.db, uid(ctx), `group:${projectId}`),
+    projectId,
+    uid(ctx),
+    seenAt(ctx.db, uid(ctx), `group:${projectId}`),
   ).n;
 }
 
@@ -1358,13 +2200,22 @@ function getGroup(ctx, id) {
 
 // A grey notice in the group: joins, status changes, the group closing.
 function groupEvent(ctx, projectId, body) {
-  ctx.db.run("INSERT INTO group_messages (project_id, user_id, kind, body, created_at) VALUES (?,?,'system',?,?)", projectId, uid(ctx), body, ctx.now);
+  ctx.db.run(
+    "INSERT INTO group_messages (project_id, user_id, kind, body, created_at) VALUES (?,?,'system',?,?)",
+    projectId,
+    uid(ctx),
+    body,
+    ctx.now,
+  );
 }
 
 function statusNotice(who, from, to, readyLabel) {
-  if (to === 'completed') return `${who} marked the project delivered. This group is now closed and its messages stay with the project.`;
-  if (to === 'cancelled') return `${who} cancelled the project. This group is now closed and its messages stay with the project.`;
-  if (!OPEN_STATUSES.includes(from)) return `${who} reopened the project, so this group is open again.`;
+  if (to === 'completed')
+    return `${who} marked the project delivered. This group is now closed and its messages stay with the project.`;
+  if (to === 'cancelled')
+    return `${who} cancelled the project. This group is now closed and its messages stay with the project.`;
+  if (!OPEN_STATUSES.includes(from))
+    return `${who} reopened the project, so this group is open again.`;
   if (to === 'ready') return `${who} moved the project to ${readyLabel || 'Ready'}.`;
   if (to === 'on_hold') return `${who} put the project on hold.`;
   if (to === 'planning') return `${who} moved the project back to Planning.`;
@@ -1376,9 +2227,13 @@ function announceJoin(ctx, project, before, assigneeId, title) {
   if (!assigneeId || before.has(assigneeId) || !groupOpen(project)) return;
   const name = userBrief(ctx.db, assigneeId)?.name;
   if (!name) return;
-  groupEvent(ctx, project.id, assigneeId === uid(ctx)
-    ? `${name} joined the group and picked up “${title}”.`
-    : `${name} joined the group: ${ctx.user.name} assigned them “${title}”.`);
+  groupEvent(
+    ctx,
+    project.id,
+    assigneeId === uid(ctx)
+      ? `${name} joined the group and picked up “${title}”.`
+      : `${name} joined the group: ${ctx.user.name} assigned them “${title}”.`,
+  );
 }
 
 // Each member's most recent status post: { userId: { status, body, created_at } }.
@@ -1388,30 +2243,37 @@ function latestStatuses(db, projectId) {
     `SELECT user_id, status, body, created_at FROM group_messages WHERE id IN
        (SELECT MAX(id) FROM group_messages WHERE project_id = ? AND kind = 'status' GROUP BY user_id)`,
     projectId,
-  )) out.set(r.user_id, r);
+  ))
+    out.set(r.user_id, r);
   return out;
 }
 
 const MSG_COLS = 'g.*, u.name AS user_name, u.color AS user_color, d.name AS decided_by_name';
-const MSG_FROM = 'FROM group_messages g LEFT JOIN users u ON u.id = g.user_id LEFT JOIN users d ON d.id = g.delete_decided_by';
+const MSG_FROM =
+  'FROM group_messages g LEFT JOIN users u ON u.id = g.user_id LEFT JOIN users d ON d.id = g.delete_decided_by';
 
 function shapeMessage(ctx, m, head) {
   const notice = m.kind === 'system';
   const mine = !notice && m.user_id === uid(ctx);
-  const left = mine ? Math.max(0, DELETE_WINDOW_MS - (Date.parse(ctx.now) - Date.parse(m.created_at))) : 0;
+  const left = mine
+    ? Math.max(0, DELETE_WINDOW_MS - (Date.parse(ctx.now) - Date.parse(m.created_at)))
+    : 0;
   return {
     ...m,
     mine,
     delete_ms_left: left,
     can_delete: mine && (left > 0 || m.delete_status === 'approved'),
-    can_request_delete: mine && left === 0 && m.delete_status !== 'requested' && m.delete_status !== 'approved',
+    can_request_delete:
+      mine && left === 0 && m.delete_status !== 'requested' && m.delete_status !== 'approved',
     can_decide: !notice && !mine && m.delete_status === 'requested' && head,
     can_head_delete: !notice && !mine && head,
   };
 }
 
 function messageById(ctx, id, head) {
-  return attachFiles(ctx, [shapeMessage(ctx, ctx.db.get(`SELECT ${MSG_COLS} ${MSG_FROM} WHERE g.id = ?`, id), head)])[0];
+  return attachFiles(ctx, [
+    shapeMessage(ctx, ctx.db.get(`SELECT ${MSG_COLS} ${MSG_FROM} WHERE g.id = ?`, id), head),
+  ])[0];
 }
 
 route('GET', '/groups', (ctx) => {
@@ -1428,22 +2290,36 @@ route('GET', '/groups', (ctx) => {
      FROM projects p JOIN verticals v ON v.id = p.vertical_id
      WHERE p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)} AND p.status IN ${OPEN_IN}
        AND (${isMember}${managed.length ? ` OR p.vertical_id IN (${placeholders(managed)})` : ''})`,
-    me, me, me, ...vids, me, me, me, ...managed,
+    me,
+    me,
+    me,
+    ...vids,
+    me,
+    me,
+    me,
+    ...managed,
   );
   if (!rows.length) return { items: [] };
   const ids = rows.map((r) => r.id);
-  const unread = new Map(db.all(
-    `SELECT g.project_id AS pid, COUNT(*) AS n FROM group_messages g
+  const unread = new Map(
+    db
+      .all(
+        `SELECT g.project_id AS pid, COUNT(*) AS n FROM group_messages g
      LEFT JOIN seen s ON s.user_id = ? AND s.scope = 'group:' || g.project_id
      WHERE g.project_id IN (${placeholders(ids)}) AND g.kind != 'system' AND COALESCE(g.user_id, 0) != ? AND g.created_at > COALESCE(s.seen_at, '')
      GROUP BY g.project_id`,
-    me, ...ids, me,
-  ).map((r) => [r.pid, r.n]));
+        me,
+        ...ids,
+        me,
+      )
+      .map((r) => [r.pid, r.n]),
+  );
   const items = rows.map((p) => {
     const members = groupMembers(db, p);
     const inGroup = new Set(members.map((m) => m.id));
     const flags = { blocked: 0, need_help: 0 };
-    for (const [userId, st] of latestStatuses(db, p.id)) if (inGroup.has(userId) && flags[st.status] !== undefined) flags[st.status]++;
+    for (const [userId, st] of latestStatuses(db, p.id))
+      if (inGroup.has(userId) && flags[st.status] !== undefined) flags[st.status]++;
     const last = db.get(
       `SELECT g.kind, g.status, g.body, g.created_at, g.user_id, u.name AS user_name,
          (SELECT COUNT(*) FROM files f WHERE f.message_id = g.id) AS file_count,
@@ -1462,19 +2338,32 @@ route('GET', '/groups', (ctx) => {
       flags,
     };
   });
-  items.sort((a, b) => (b.last?.created_at || b.created_at || '').localeCompare(a.last?.created_at || a.created_at || ''));
+  items.sort((a, b) =>
+    (b.last?.created_at || b.created_at || '').localeCompare(
+      a.last?.created_at || a.created_at || '',
+    ),
+  );
   return { items };
 });
 
 route('GET', '/groups/:id', (ctx) => {
   const { db } = ctx;
   const { p, member, head } = getGroup(ctx, ctx.params.id);
-  const v = db.get('SELECT short, name, color, ready_label, key_date_label FROM verticals WHERE id = ?', p.vertical_id);
-  const team = new Set(db.all('SELECT user_id FROM project_members WHERE project_id = ?', p.id).map((r) => r.user_id));
-  const openTasks = new Map(db.all(
-    "SELECT assignee_id AS id, COUNT(*) AS n FROM tasks WHERE project_id = ? AND assignee_id IS NOT NULL AND status != 'done' GROUP BY assignee_id",
-    p.id,
-  ).map((r) => [r.id, r.n]));
+  const v = db.get(
+    'SELECT short, name, color, ready_label, key_date_label FROM verticals WHERE id = ?',
+    p.vertical_id,
+  );
+  const team = new Set(
+    db.all('SELECT user_id FROM project_members WHERE project_id = ?', p.id).map((r) => r.user_id),
+  );
+  const openTasks = new Map(
+    db
+      .all(
+        "SELECT assignee_id AS id, COUNT(*) AS n FROM tasks WHERE project_id = ? AND assignee_id IS NOT NULL AND status != 'done' GROUP BY assignee_id",
+        p.id,
+      )
+      .map((r) => [r.id, r.n]),
+  );
   const statuses = latestStatuses(db, p.id);
   const members = groupMembers(db, p).map((m) => ({
     ...m,
@@ -1485,19 +2374,43 @@ route('GET', '/groups/:id', (ctx) => {
   }));
   members.sort((a, b) => b.owner - a.owner || a.name.localeCompare(b.name));
   const inGroup = new Set(members.map((m) => m.id));
-  const heads = headsOf(db, p.vertical_id).filter((id) => !inGroup.has(id)).map((id) => userBrief(db, id)).filter(Boolean)
+  const heads = headsOf(db, p.vertical_id)
+    .filter((id) => !inGroup.has(id))
+    .map((id) => userBrief(db, id))
+    .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name));
   const open = groupOpen(p);
   // When it closed: delivery time, else the last status change, else the closing notice.
-  const closedAt = open ? null : p.completed_at
-    || db.get("SELECT created_at FROM activity WHERE project_id = ? AND action = 'status' ORDER BY id DESC LIMIT 1", p.id)?.created_at
-    || db.get("SELECT created_at FROM group_messages WHERE project_id = ? AND kind = 'system' AND body LIKE '%group is now closed%' ORDER BY id DESC LIMIT 1", p.id)?.created_at
-    || p.updated_at;
+  const closedAt = open
+    ? null
+    : p.completed_at ||
+      db.get(
+        "SELECT created_at FROM activity WHERE project_id = ? AND action = 'status' ORDER BY id DESC LIMIT 1",
+        p.id,
+      )?.created_at ||
+      db.get(
+        "SELECT created_at FROM group_messages WHERE project_id = ? AND kind = 'system' AND body LIKE '%group is now closed%' ORDER BY id DESC LIMIT 1",
+        p.id,
+      )?.created_at ||
+      p.updated_at;
   return {
     project: {
-      id: p.id, code: p.code, name: p.name, client: p.client, status: p.status, stage: p.stage, health: p.health,
-      key_date: p.key_date, due_date: p.due_date, owner_id: p.owner_id, vertical_id: p.vertical_id,
-      vertical: v.short, vertical_name: v.name, vertical_color: v.color, ready_label: v.ready_label, key_date_label: v.key_date_label,
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      client: p.client,
+      status: p.status,
+      stage: p.stage,
+      health: p.health,
+      key_date: p.key_date,
+      due_date: p.due_date,
+      owner_id: p.owner_id,
+      vertical_id: p.vertical_id,
+      vertical: v.short,
+      vertical_name: v.name,
+      vertical_color: v.color,
+      ready_label: v.ready_label,
+      key_date_label: v.key_date_label,
     },
     open,
     closed_at: closedAt,
@@ -1506,8 +2419,14 @@ route('GET', '/groups/:id', (ctx) => {
     role: member ? 'member' : 'head',
     can_post: open && canContribute(ctx.user, p),
     seen_at: seenAt(db, uid(ctx), `group:${p.id}`),
-    message_count: db.get("SELECT COUNT(*) AS n FROM group_messages WHERE project_id = ? AND kind != 'system'", p.id).n,
-    file_count: db.get('SELECT COUNT(*) AS n FROM files f JOIN group_messages g ON g.id = f.message_id WHERE g.project_id = ?', p.id).n,
+    message_count: db.get(
+      "SELECT COUNT(*) AS n FROM group_messages WHERE project_id = ? AND kind != 'system'",
+      p.id,
+    ).n,
+    file_count: db.get(
+      'SELECT COUNT(*) AS n FROM files f JOIN group_messages g ON g.id = f.message_id WHERE g.project_id = ?',
+      p.id,
+    ).n,
   };
 });
 
@@ -1516,11 +2435,22 @@ route('GET', '/groups/:id/messages', (ctx) => {
   const limit = Math.min(Math.max(Math.floor(Number(ctx.query.limit)) || 80, 1), 400);
   const where = ['g.project_id = ?'];
   const params = [p.id];
-  if (ctx.query.before) { where.push('g.id < ?'); params.push(Number(ctx.query.before) || 0); }
+  if (ctx.query.before) {
+    where.push('g.id < ?');
+    params.push(Number(ctx.query.before) || 0);
+  }
   if (ctx.query.kind === 'updates') where.push("g.kind IN ('update','status')");
-  else if (ctx.query.kind === 'files') where.push('EXISTS (SELECT 1 FROM files f WHERE f.message_id = g.id)');
-  const rows = ctx.db.all(`SELECT ${MSG_COLS} ${MSG_FROM} WHERE ${where.join(' AND ')} ORDER BY g.id DESC LIMIT ?`, ...params, limit + 1);
-  const items = rows.slice(0, limit).reverse().map((m) => shapeMessage(ctx, m, head));
+  else if (ctx.query.kind === 'files')
+    where.push('EXISTS (SELECT 1 FROM files f WHERE f.message_id = g.id)');
+  const rows = ctx.db.all(
+    `SELECT ${MSG_COLS} ${MSG_FROM} WHERE ${where.join(' AND ')} ORDER BY g.id DESC LIMIT ?`,
+    ...params,
+    limit + 1,
+  );
+  const items = rows
+    .slice(0, limit)
+    .reverse()
+    .map((m) => shapeMessage(ctx, m, head));
   attachFiles(ctx, items);
   return { items, has_more: rows.length > limit };
 });
@@ -1530,7 +2460,11 @@ function attachFiles(ctx, messages) {
   const ids = messages.map((m) => m.id);
   const byMsg = new Map(ids.map((id) => [id, []]));
   if (ids.length) {
-    for (const f of ctx.db.all(`SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.message_id IN (${placeholders(ids)}) ORDER BY f.id`, ...ids)) byMsg.get(f.message_id)?.push(f);
+    for (const f of ctx.db.all(
+      `SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.message_id IN (${placeholders(ids)}) ORDER BY f.id`,
+      ...ids,
+    ))
+      byMsg.get(f.message_id)?.push(f);
   }
   for (const m of messages) m.files = byMsg.get(m.id) || [];
   return messages;
@@ -1559,26 +2493,50 @@ route('POST', '/groups/:id/messages', (ctx) => {
   const { db } = ctx;
   const { p, head } = getGroup(ctx, ctx.params.id);
   if (!groupOpen(p)) {
-    throw new HttpError(409, `This group closed when the project was ${p.status === 'cancelled' ? 'cancelled' : 'delivered'}. Its messages are kept read-only.`, 'group_closed');
+    throw new HttpError(
+      409,
+      `This group closed when the project was ${p.status === 'cancelled' ? 'cancelled' : 'delivered'}. Its messages are kept read-only.`,
+      'group_closed',
+    );
   }
   if (!canContribute(ctx.user, p)) throw forbidden('You have view-only access to this vertical');
   const kind = oneOf(ctx.body.kind ?? 'message', GROUP_KINDS, 'Message type');
   const status = kind === 'status' ? oneOf(ctx.body.status, GROUP_STATUSES, 'Status') : null;
-  if (kind === 'status' && !status) throw bad('Pick a status: on track, need help, blocked or done');
-  const fileIds = [...new Set((Array.isArray(ctx.body.file_ids) ? ctx.body.file_ids : []).map(Number))];
-  if (fileIds.length > MAX_ATTACHMENTS) throw bad(`You can share up to ${MAX_ATTACHMENTS} files in one message`);
+  if (kind === 'status' && !status)
+    throw bad('Pick a status: on track, need help, blocked or done');
+  const fileIds = [
+    ...new Set((Array.isArray(ctx.body.file_ids) ? ctx.body.file_ids : []).map(Number)),
+  ];
+  if (fileIds.length > MAX_ATTACHMENTS)
+    throw bad(`You can share up to ${MAX_ATTACHMENTS} files in one message`);
   const oldest = new Date(Date.parse(ctx.now) - ATTACH_WITHIN_MS).toISOString();
   for (const fid of fileIds) {
     const f = Number.isInteger(fid) && fid > 0 && db.get('SELECT * FROM files WHERE id = ?', fid);
-    if (!f || f.project_id !== p.id || f.uploaded_by !== uid(ctx) || f.message_id || f.created_at < oldest) {
+    if (
+      !f ||
+      f.project_id !== p.id ||
+      f.uploaded_by !== uid(ctx) ||
+      f.message_id ||
+      f.created_at < oldest
+    ) {
       throw bad('One of the files could not be attached. Upload it again and send.');
     }
   }
-  const body = text(ctx.body.body, { max: 4000, label: 'Message', required: kind !== 'status' && !fileIds.length }) || '';
+  const body =
+    text(ctx.body.body, {
+      max: 4000,
+      label: 'Message',
+      required: kind !== 'status' && !fileIds.length,
+    }) || '';
   const id = db.tx(() => {
     const row = db.run(
       'INSERT INTO group_messages (project_id, user_id, kind, status, body, created_at) VALUES (?,?,?,?,?,?)',
-      p.id, uid(ctx), kind, status, body, ctx.now,
+      p.id,
+      uid(ctx),
+      kind,
+      status,
+      body,
+      ctx.now,
     );
     for (const fid of fileIds) db.run('UPDATE files SET message_id = ? WHERE id = ?', row.id, fid);
     return row.id;
@@ -1596,7 +2554,14 @@ route('POST', '/groups/:id/messages', (ctx) => {
   // Asking for help reaches the project owner even if they are not watching the chat.
   if ((status === 'blocked' || status === 'need_help') && p.owner_id && !told.has(p.owner_id)) {
     const snippet = body.length > 60 ? body.slice(0, 57) + '…' : body;
-    notify(ctx, p.owner_id, p.id, `${ctx.user.name} is ${STATUS_LABELS[status].toLowerCase()} in the ${p.code} group${snippet ? `: “${snippet}”` : ''}`, null, link);
+    notify(
+      ctx,
+      p.owner_id,
+      p.id,
+      `${ctx.user.name} is ${STATUS_LABELS[status].toLowerCase()} in the ${p.code} group${snippet ? `: “${snippet}”` : ''}`,
+      null,
+      link,
+    );
   }
   return messageById(ctx, id, head);
 });
@@ -1616,24 +2581,35 @@ route('DELETE', '/group-messages/:id', async (ctx) => {
   const { m, p } = getMessage(ctx);
   const author = userBrief(ctx.db, m.user_id);
   if (m.user_id !== uid(ctx)) {
-    if (!canManageVertical(ctx.user, p.vertical_id)) throw forbidden('Only the author or a head of this vertical can delete this message');
+    if (!canManageVertical(ctx.user, p.vertical_id))
+      throw forbidden('Only the author or a head of this vertical can delete this message');
     await removeMessageFiles(ctx, m, p);
     ctx.db.tx(() => {
       ctx.db.run('DELETE FROM group_messages WHERE id = ?', m.id);
       groupEvent(ctx, p.id, `${ctx.user.name} removed a message by ${author?.name || 'someone'}.`);
-      notify(ctx, m.user_id, p.id, `${ctx.user.name} removed your message in the ${p.code} group`, null, `/teams/${p.id}`);
+      notify(
+        ctx,
+        m.user_id,
+        p.id,
+        `${ctx.user.name} removed your message in the ${p.code} group`,
+        null,
+        `/teams/${p.id}`,
+      );
     });
     return { ok: true };
   }
   const age = Date.parse(ctx.now) - Date.parse(m.created_at);
   if (age > DELETE_WINDOW_MS + DELETE_GRACE_MS && m.delete_status !== 'approved') {
-    throw forbidden('Messages can only be deleted within 15 seconds of sending. Ask a head to approve the deletion.');
+    throw forbidden(
+      'Messages can only be deleted within 15 seconds of sending. Ask a head to approve the deletion.',
+    );
   }
   const approver = m.delete_status === 'approved' ? userBrief(ctx.db, m.delete_decided_by) : null;
   await removeMessageFiles(ctx, m, p);
   ctx.db.tx(() => {
     ctx.db.run('DELETE FROM group_messages WHERE id = ?', m.id);
-    if (approver) groupEvent(ctx, p.id, `${ctx.user.name} deleted a message, approved by ${approver.name}.`);
+    if (approver)
+      groupEvent(ctx, p.id, `${ctx.user.name} deleted a message, approved by ${approver.name}.`);
   });
   return { ok: true };
 });
@@ -1642,12 +2618,24 @@ route('POST', '/group-messages/:id/delete-request', (ctx) => {
   const { m, p, head } = getMessage(ctx);
   if (m.user_id !== uid(ctx)) throw forbidden('You can only ask to delete your own messages');
   if (m.delete_status === 'requested') throw bad('A head has already been asked to approve this');
-  if (m.delete_status === 'approved') throw bad('Deletion is already approved. You can delete the message now.');
+  if (m.delete_status === 'approved')
+    throw bad('Deletion is already approved. You can delete the message now.');
   ctx.db.tx(() => {
-    ctx.db.run("UPDATE group_messages SET delete_status = 'requested', delete_requested_at = ?, delete_decided_by = NULL, delete_decided_at = NULL WHERE id = ?", ctx.now, m.id);
+    ctx.db.run(
+      "UPDATE group_messages SET delete_status = 'requested', delete_requested_at = ?, delete_decided_by = NULL, delete_decided_at = NULL WHERE id = ?",
+      ctx.now,
+      m.id,
+    );
     const snippet = m.body.length > 60 ? m.body.slice(0, 57) + '…' : m.body;
     for (const h of headsOf(ctx.db, p.vertical_id)) {
-      notify(ctx, h, p.id, `${ctx.user.name} asks to delete a message in the ${p.code} group: “${snippet}”`, null, `/teams/${p.id}`);
+      notify(
+        ctx,
+        h,
+        p.id,
+        `${ctx.user.name} asks to delete a message in the ${p.code} group: “${snippet}”`,
+        null,
+        `/teams/${p.id}`,
+      );
     }
   });
   return messageById(ctx, m.id, head);
@@ -1656,14 +2644,28 @@ route('POST', '/group-messages/:id/delete-request', (ctx) => {
 route('POST', '/group-messages/:id/delete-decision', (ctx) => {
   const { m, p, head } = getMessage(ctx);
   if (!head) throw forbidden('Only a head of this vertical can approve deleting messages');
-  if (m.user_id === uid(ctx)) throw forbidden('Another head has to approve deleting your own message');
+  if (m.user_id === uid(ctx))
+    throw forbidden('Another head has to approve deleting your own message');
   if (m.delete_status !== 'requested') throw bad('There is no pending request for this message');
   const approve = !!ctx.body.approve;
   ctx.db.tx(() => {
-    ctx.db.run('UPDATE group_messages SET delete_status = ?, delete_decided_by = ?, delete_decided_at = ? WHERE id = ?', approve ? 'approved' : 'declined', uid(ctx), ctx.now, m.id);
-    notify(ctx, m.user_id, p.id, approve
-      ? `${ctx.user.name} approved deleting your message in the ${p.code} group. You can delete it now.`
-      : `${ctx.user.name} asked to keep your message in the ${p.code} group.`, null, `/teams/${p.id}`);
+    ctx.db.run(
+      'UPDATE group_messages SET delete_status = ?, delete_decided_by = ?, delete_decided_at = ? WHERE id = ?',
+      approve ? 'approved' : 'declined',
+      uid(ctx),
+      ctx.now,
+      m.id,
+    );
+    notify(
+      ctx,
+      m.user_id,
+      p.id,
+      approve
+        ? `${ctx.user.name} approved deleting your message in the ${p.code} group. You can delete it now.`
+        : `${ctx.user.name} asked to keep your message in the ${p.code} group.`,
+      null,
+      `/teams/${p.id}`,
+    );
   });
   return messageById(ctx, m.id, head);
 });
@@ -1680,27 +2682,82 @@ route('GET', '/calendar', (ctx) => {
     `SELECT p.id, p.code, p.name, p.status, p.key_date, p.due_date, p.start_date, v.short AS vertical, v.color AS vertical_color, v.key_date_label
      FROM projects p JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND p.status != 'cancelled' AND ((p.key_date BETWEEN ? AND ?) OR (p.due_date BETWEEN ? AND ?))`,
-    ...vids, q.from, q.to, q.from, q.to,
+    ...vids,
+    q.from,
+    q.to,
+    q.from,
+    q.to,
   )) {
-    if (p.key_date && p.key_date >= q.from && p.key_date <= q.to) items.push({ type: 'key', date: p.key_date, title: p.name, label: p.key_date_label, project_id: p.id, code: p.code, color: p.vertical_color, vertical: p.vertical });
-    if (p.due_date && p.due_date >= q.from && p.due_date <= q.to && p.due_date !== p.key_date) items.push({ type: 'due', date: p.due_date, title: p.name, label: 'Project due', project_id: p.id, code: p.code, color: p.vertical_color, vertical: p.vertical });
+    if (p.key_date && p.key_date >= q.from && p.key_date <= q.to)
+      items.push({
+        type: 'key',
+        date: p.key_date,
+        title: p.name,
+        label: p.key_date_label,
+        project_id: p.id,
+        code: p.code,
+        color: p.vertical_color,
+        vertical: p.vertical,
+      });
+    if (p.due_date && p.due_date >= q.from && p.due_date <= q.to && p.due_date !== p.key_date)
+      items.push({
+        type: 'due',
+        date: p.due_date,
+        title: p.name,
+        label: 'Project due',
+        project_id: p.id,
+        code: p.code,
+        color: p.vertical_color,
+        vertical: p.vertical,
+      });
   }
   for (const m of db.all(
     `SELECT m.*, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical FROM milestones m
      JOIN projects p ON p.id = m.project_id JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND p.status != 'cancelled' AND m.due_date BETWEEN ? AND ? AND (p.key_date IS NULL OR m.due_date != p.key_date)`,
-    ...vids, q.from, q.to,
-  )) items.push({ type: 'milestone', date: m.due_date, title: m.title, done: !!m.done, project_id: m.project_id, code: m.code, project_name: m.project_name, color: m.vertical_color, vertical: m.vertical });
+    ...vids,
+    q.from,
+    q.to,
+  ))
+    items.push({
+      type: 'milestone',
+      date: m.due_date,
+      title: m.title,
+      done: !!m.done,
+      project_id: m.project_id,
+      code: m.code,
+      project_name: m.project_name,
+      color: m.vertical_color,
+      vertical: m.vertical,
+    });
   const taskWhere = [inV, 't.due_date BETWEEN ? AND ?', `p.status IN ${OPEN_IN}`];
   const tParams = [...vids, q.from, q.to];
-  if (q.tasks === 'mine') { taskWhere.push('t.assignee_id = ?'); tParams.push(uid(ctx)); }
+  if (q.tasks === 'mine') {
+    taskWhere.push('t.assignee_id = ?');
+    tParams.push(uid(ctx));
+  }
   if (q.tasks !== 'none') {
     for (const t of db.all(
       `SELECT t.id, t.title, t.status, t.due_date, t.project_id, t.priority, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical, u.name AS assignee_name
        FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users u ON u.id = t.assignee_id
        WHERE ${taskWhere.join(' AND ')} LIMIT 1500`,
       ...tParams,
-    )) items.push({ type: 'task', date: t.due_date, title: t.title, task_id: t.id, done: t.status === 'done', overdue: t.status !== 'done' && t.due_date < today, project_id: t.project_id, code: t.code, project_name: t.project_name, color: t.vertical_color, vertical: t.vertical, assignee_name: t.assignee_name, priority: t.priority });
+    ))
+      items.push({
+        type: 'task',
+        date: t.due_date,
+        title: t.title,
+        task_id: t.id,
+        done: t.status === 'done',
+        overdue: t.status !== 'done' && t.due_date < today,
+        project_id: t.project_id,
+        code: t.code,
+        project_name: t.project_name,
+        color: t.vertical_color,
+        vertical: t.vertical,
+        assignee_name: t.assignee_name,
+        priority: t.priority,
+      });
   }
   const rank = { key: 0, due: 1, milestone: 2, task: 3 };
   items.sort((a, b) => a.date.localeCompare(b.date) || rank[a.type] - rank[b.type]);
@@ -1718,34 +2775,83 @@ route('GET', '/search', (ctx) => {
   for (const p of db.all(
     `SELECT p.id, p.code, p.name, p.client, p.status, v.short AS vertical, v.color AS vertical_color FROM projects p JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND (p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ? OR p.venue LIKE ?) ORDER BY p.status IN ('completed','cancelled'), p.id DESC LIMIT 6`,
-    ...vids, l, l, l, l, l,
-  )) results.push({ type: 'project', id: p.id, title: p.name, sub: [p.code, p.client, p.status === 'completed' ? 'Completed' : p.status === 'cancelled' ? 'Cancelled' : ''].filter(Boolean).join(' · '), color: p.vertical_color, link: `/projects/${p.id}` });
+    ...vids,
+    l,
+    l,
+    l,
+    l,
+    l,
+  ))
+    results.push({
+      type: 'project',
+      id: p.id,
+      title: p.name,
+      sub: [
+        p.code,
+        p.client,
+        p.status === 'completed' ? 'Completed' : p.status === 'cancelled' ? 'Cancelled' : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      color: p.vertical_color,
+      link: `/projects/${p.id}`,
+    });
   for (const t of db.all(
     `SELECT t.id, t.title, t.project_id, p.code, v.color AS vertical_color FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND t.title LIKE ? ORDER BY t.status = 'done', t.id DESC LIMIT 6`,
-    ...vids, l,
-  )) results.push({ type: 'task', id: t.id, title: t.title, sub: t.code, color: t.vertical_color, link: `/projects/${t.project_id}/tasks/${t.id}` });
+    ...vids,
+    l,
+  ))
+    results.push({
+      type: 'task',
+      id: t.id,
+      title: t.title,
+      sub: t.code,
+      color: t.vertical_color,
+      link: `/projects/${t.project_id}/tasks/${t.id}`,
+    });
   for (const f of db.all(
     `SELECT f.id, f.name, f.project_id, p.code, v.color AS vertical_color FROM files f JOIN projects p ON p.id = f.project_id JOIN verticals v ON v.id = p.vertical_id
      WHERE ${inV} AND (f.name LIKE ? OR f.note LIKE ?) ORDER BY f.id DESC LIMIT 5`,
-    ...vids, l, l,
-  )) results.push({ type: 'file', id: f.id, title: f.name, sub: f.code, color: f.vertical_color, link: `/projects/${f.project_id}/files` });
+    ...vids,
+    l,
+    l,
+  ))
+    results.push({
+      type: 'file',
+      id: f.id,
+      title: f.name,
+      sub: f.code,
+      color: f.vertical_color,
+      link: `/projects/${f.project_id}/files`,
+    });
   return { results };
 });
 
 route('GET', '/notifications', (ctx) => {
   const vids = visibleVerticalIds(ctx.user);
-  const items = ctx.db.all(
-    `SELECT n.*, p.code, p.vertical_id, v.color AS vertical_color FROM notifications n LEFT JOIN projects p ON p.id = n.project_id LEFT JOIN verticals v ON v.id = p.vertical_id
+  const items = ctx.db
+    .all(
+      `SELECT n.*, p.code, p.vertical_id, v.color AS vertical_color FROM notifications n LEFT JOIN projects p ON p.id = n.project_id LEFT JOIN verticals v ON v.id = p.vertical_id
      WHERE n.user_id = ? ORDER BY n.id DESC LIMIT 40`,
-    uid(ctx),
-  ).filter((n) => !n.project_id || canView(ctx.user,ctx.db.get('SELECT * FROM projects WHERE id=?',n.project_id)));
+      uid(ctx),
+    )
+    .filter(
+      (n) =>
+        !n.project_id ||
+        canView(ctx.user, ctx.db.get('SELECT * FROM projects WHERE id=?', n.project_id)),
+    );
   const unread = visibleUnread(ctx);
   return { items, unread };
 });
 
 route('POST', '/notifications/read', (ctx) => {
-  if (ctx.body.id) ctx.db.run('UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?', Number(ctx.body.id), uid(ctx));
+  if (ctx.body.id)
+    ctx.db.run(
+      'UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?',
+      Number(ctx.body.id),
+      uid(ctx),
+    );
   else ctx.db.run('UPDATE notifications SET read = 1 WHERE user_id = ?', uid(ctx));
   return { ok: true };
 });
@@ -1753,14 +2859,23 @@ route('POST', '/notifications/read', (ctx) => {
 // ---------------------------------------------------------------- templates (vertical managers)
 
 function shapeTemplate(t) {
-  return { ...t, stages: parseJSON(t.stages, []), tasks: parseJSON(t.tasks, []), milestones: parseJSON(t.milestones, []) };
+  return {
+    ...t,
+    stages: parseJSON(t.stages, []),
+    tasks: parseJSON(t.tasks, []),
+    milestones: parseJSON(t.milestones, []),
+  };
 }
 
 route('GET', '/templates', (ctx) => {
   const vids = scopeVerticals(ctx);
   if (!vids.length) return { items: [] };
   return {
-    items: ctx.db.all(`SELECT t.*, v.short AS vertical, v.color AS vertical_color FROM templates t JOIN verticals v ON v.id = t.vertical_id WHERE t.vertical_id IN (${placeholders(vids)}) ORDER BY v.sort, t.name`, ...vids)
+    items: ctx.db
+      .all(
+        `SELECT t.*, v.short AS vertical, v.color AS vertical_color FROM templates t JOIN verticals v ON v.id = t.vertical_id WHERE t.vertical_id IN (${placeholders(vids)}) ORDER BY v.sort, t.name`,
+        ...vids,
+      )
       .map(shapeTemplate)
       .map((t) => ({ ...t, can_edit: canManageVertical(ctx.user, t.vertical_id) })),
   };
@@ -1769,40 +2884,78 @@ route('GET', '/templates', (ctx) => {
 function readTemplate(body) {
   const name = text(body.name, { max: 120, label: 'Template name', required: true });
   const description = text(body.description, { max: 500, label: 'Description' }) || '';
-  const stages = (Array.isArray(body.stages) ? body.stages : []).map((s) => String(s).trim()).filter(Boolean).slice(0, 15);
+  const stages = (Array.isArray(body.stages) ? body.stages : [])
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+    .slice(0, 15);
   if (!stages.length) throw bad('Add at least one stage');
-  const tasks = (Array.isArray(body.tasks) ? body.tasks : []).slice(0, 200).map((t) => ({
-    title: String(t.title || '').trim().slice(0, 240),
-    stage: stages.includes(t.stage) ? t.stage : stages[0],
-    offset: Math.max(-365, Math.min(365, Math.round(Number(t.offset) || 0))),
-    priority: PRIORITIES.includes(t.priority) ? t.priority : 'medium',
-  })).filter((t) => t.title);
-  const milestones = (Array.isArray(body.milestones) ? body.milestones : []).slice(0, 50).map((m) => ({
-    title: String(m.title || '').trim().slice(0, 200),
-    offset: Math.max(-365, Math.min(365, Math.round(Number(m.offset) || 0))),
-  })).filter((m) => m.title);
-  return { name, description, stages: JSON.stringify(stages), tasks: JSON.stringify(tasks), milestones: JSON.stringify(milestones) };
+  const tasks = (Array.isArray(body.tasks) ? body.tasks : [])
+    .slice(0, 200)
+    .map((t) => ({
+      title: String(t.title || '')
+        .trim()
+        .slice(0, 240),
+      stage: stages.includes(t.stage) ? t.stage : stages[0],
+      offset: Math.max(-365, Math.min(365, Math.round(Number(t.offset) || 0))),
+      priority: PRIORITIES.includes(t.priority) ? t.priority : 'medium',
+    }))
+    .filter((t) => t.title);
+  const milestones = (Array.isArray(body.milestones) ? body.milestones : [])
+    .slice(0, 50)
+    .map((m) => ({
+      title: String(m.title || '')
+        .trim()
+        .slice(0, 200),
+      offset: Math.max(-365, Math.min(365, Math.round(Number(m.offset) || 0))),
+    }))
+    .filter((m) => m.title);
+  return {
+    name,
+    description,
+    stages: JSON.stringify(stages),
+    tasks: JSON.stringify(tasks),
+    milestones: JSON.stringify(milestones),
+  };
 }
 
 route('POST', '/templates', (ctx) => {
   const vId = Number(ctx.body.vertical_id);
-  if (!levelFor(ctx.user, vId) || !canManageVertical(ctx.user, vId)) throw forbidden('Only vertical managers can add templates');
+  if (!levelFor(ctx.user, vId) || !canManageVertical(ctx.user, vId))
+    throw forbidden('Only vertical managers can add templates');
   const t = readTemplate(ctx.body);
-  const { id } = ctx.db.run('INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)', vId, t.name, t.description, t.stages, t.tasks, t.milestones, ctx.now);
+  const { id } = ctx.db.run(
+    'INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)',
+    vId,
+    t.name,
+    t.description,
+    t.stages,
+    t.tasks,
+    t.milestones,
+    ctx.now,
+  );
   return shapeTemplate(ctx.db.get('SELECT * FROM templates WHERE id = ?', id));
 });
 
 function getTemplateForEdit(ctx) {
   const t = ctx.db.get('SELECT * FROM templates WHERE id = ?', toId(ctx.params.id, 'Template'));
   if (!t || !levelFor(ctx.user, t.vertical_id)) throw notFound('Template');
-  if (!canManageVertical(ctx.user, t.vertical_id)) throw forbidden('Only vertical managers can change templates');
+  if (!canManageVertical(ctx.user, t.vertical_id))
+    throw forbidden('Only vertical managers can change templates');
   return t;
 }
 
 route('PATCH', '/templates/:id', (ctx) => {
   const old = getTemplateForEdit(ctx);
   const t = readTemplate(ctx.body);
-  ctx.db.run('UPDATE templates SET name = ?, description = ?, stages = ?, tasks = ?, milestones = ? WHERE id = ?', t.name, t.description, t.stages, t.tasks, t.milestones, old.id);
+  ctx.db.run(
+    'UPDATE templates SET name = ?, description = ?, stages = ?, tasks = ?, milestones = ? WHERE id = ?',
+    t.name,
+    t.description,
+    t.stages,
+    t.tasks,
+    t.milestones,
+    old.id,
+  );
   return shapeTemplate(ctx.db.get('SELECT * FROM templates WHERE id = ?', old.id));
 });
 
@@ -1815,13 +2968,38 @@ route('DELETE', '/templates/:id', (ctx) => {
 // Save an existing project's plan as a reusable template.
 route('POST', '/projects/:id/save-template', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
-  if (!canManageVertical(ctx.user, p.vertical_id)) throw forbidden('Only vertical managers can add templates');
+  if (!canManageVertical(ctx.user, p.vertical_id))
+    throw forbidden('Only vertical managers can add templates');
   const anchor = anchorOf(p);
   const off = (d) => (anchor && d ? daysBetween(anchor, d) : 0);
-  const tasks = ctx.db.all('SELECT * FROM tasks WHERE project_id = ? ORDER BY sort, id', p.id).map((t) => ({ title: t.title, stage: t.stage, offset: off(t.due_date), priority: t.priority }));
-  const milestones = ctx.db.all('SELECT * FROM milestones WHERE project_id = ? ORDER BY due_date, sort', p.id).map((m) => ({ title: m.title, offset: off(m.due_date) }));
-  const t = readTemplate({ name: ctx.body.name || `${p.name} (template)`, description: ctx.body.description || `Based on ${p.code}`, stages: parseJSON(p.stages, DEFAULT_STAGES), tasks, milestones });
-  const { id } = ctx.db.run('INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)', p.vertical_id, t.name, t.description, t.stages, t.tasks, t.milestones, ctx.now);
+  const tasks = ctx.db
+    .all('SELECT * FROM tasks WHERE project_id = ? ORDER BY sort, id', p.id)
+    .map((t) => ({
+      title: t.title,
+      stage: t.stage,
+      offset: off(t.due_date),
+      priority: t.priority,
+    }));
+  const milestones = ctx.db
+    .all('SELECT * FROM milestones WHERE project_id = ? ORDER BY due_date, sort', p.id)
+    .map((m) => ({ title: m.title, offset: off(m.due_date) }));
+  const t = readTemplate({
+    name: ctx.body.name || `${p.name} (template)`,
+    description: ctx.body.description || `Based on ${p.code}`,
+    stages: parseJSON(p.stages, DEFAULT_STAGES),
+    tasks,
+    milestones,
+  });
+  const { id } = ctx.db.run(
+    'INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)',
+    p.vertical_id,
+    t.name,
+    t.description,
+    t.stages,
+    t.tasks,
+    t.milestones,
+    ctx.now,
+  );
   return shapeTemplate(ctx.db.get('SELECT * FROM templates WHERE id = ?', id));
 });
 
@@ -1832,18 +3010,34 @@ function requireAdmin(ctx) {
 }
 
 function adminUser(db, id) {
-  const u = db.get('SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password, profile_json,profile_data,photo FROM users WHERE id = ?', id);
+  const u = db.get(
+    'SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password, profile_json,profile_data,photo FROM users WHERE id = ?',
+    id,
+  );
   if (!u) return null;
-  Object.assign(u,ensureUserIdentity(db,id));
-  u.profile=profileFor(u);delete u.profile_json;delete u.profile_data;
-  u.access = Object.fromEntries(db.all('SELECT vertical_id, level FROM user_verticals WHERE user_id = ?', id).map((r) => [r.vertical_id, r.level]));
-  u.open_tasks = db.get(`SELECT COUNT(*) AS n FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.assignee_id = ? AND t.status != 'done' AND p.status IN ${OPEN_IN}`, id).n;
+  Object.assign(u, ensureUserIdentity(db, id));
+  u.profile = profileFor(u);
+  delete u.profile_json;
+  delete u.profile_data;
+  u.access = Object.fromEntries(
+    db
+      .all('SELECT vertical_id, level FROM user_verticals WHERE user_id = ?', id)
+      .map((r) => [r.vertical_id, r.level]),
+  );
+  u.open_tasks = db.get(
+    `SELECT COUNT(*) AS n FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.assignee_id = ? AND t.status != 'done' AND p.status IN ${OPEN_IN}`,
+    id,
+  ).n;
   return u;
 }
 
 route('GET', '/admin/users', (ctx) => {
   requireAdmin(ctx);
-  return { items: ctx.db.all('SELECT id FROM users ORDER BY active DESC, name').map((r) => adminUser(ctx.db, r.id)) };
+  return {
+    items: ctx.db
+      .all('SELECT id FROM users ORDER BY active DESC, name')
+      .map((r) => adminUser(ctx.db, r.id)),
+  };
 });
 
 function writeAccess(db, userId, access) {
@@ -1855,7 +3049,12 @@ function writeAccess(db, userId, access) {
     if (!level) continue;
     if (!valid.has(Number(vid))) throw bad('Unknown vertical');
     if (!LEVELS.includes(level)) throw bad('Access must be viewer, member or manager');
-    db.run('INSERT INTO user_verticals (user_id, vertical_id, level) VALUES (?,?,?)', userId, Number(vid), level);
+    db.run(
+      'INSERT INTO user_verticals (user_id, vertical_id, level) VALUES (?,?,?)',
+      userId,
+      Number(vid),
+      level,
+    );
   }
 }
 
@@ -1868,25 +3067,48 @@ function readPerson(body, creating) {
     role: oneOf(body.role, ['admin', 'member'], 'Role'),
     color: body.color && /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : undefined,
   };
-  if (f.email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) throw bad('Enter a valid email address');
+  if (f.email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email))
+    throw bad('Enter a valid email address');
   if (body.name !== undefined && !f.name) throw bad('Name is required');
   return f;
 }
 
-const PALETTE = ['#1f2b7b', '#e31b3b', '#1a6df0', '#1fa855', '#f2a600', '#7c5cfc', '#ef4778', '#1fb2d6', '#0f766e', '#b45309'];
+const PALETTE = [
+  '#1f2b7b',
+  '#e31b3b',
+  '#1a6df0',
+  '#1fa855',
+  '#f2a600',
+  '#7c5cfc',
+  '#ef4778',
+  '#1fb2d6',
+  '#0f766e',
+  '#b45309',
+];
 
 route('POST', '/admin/users', async (ctx) => {
   requireAdmin(ctx);
   const { db, body } = ctx;
   const f = readPerson(body, true);
-  if (db.get('SELECT 1 AS x FROM users WHERE email = ?', f.email)) throw bad('Someone with this email already exists');
-  if (typeof body.password !== 'string' || body.password.length < 8) throw bad('Set a temporary password of at least 8 characters');
+  if (db.get('SELECT 1 AS x FROM users WHERE LOWER(email) = LOWER(?)', f.email))
+    throw bad('Someone with this email already exists');
+  if (typeof body.password !== 'string' || body.password.length < 8)
+    throw bad('Set a temporary password of at least 8 characters');
   const hash = await ctx.services.hashPassword(body.password);
   const count = db.get('SELECT COUNT(*) AS n FROM users').n;
   return db.tx(() => {
     const { id } = db.run(
       'INSERT INTO users (name, email, password_hash, role, title, phone, color, active, must_change_password, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      f.name, f.email, hash, f.role || 'member', f.title || '', f.phone || '', f.color || PALETTE[count % PALETTE.length], 1, 1, ctx.now,
+      f.name,
+      f.email,
+      hash,
+      f.role || 'member',
+      f.title || '',
+      f.phone || '',
+      f.color || PALETTE[count % PALETTE.length],
+      1,
+      1,
+      ctx.now,
     );
     writeAccess(db, id, body.access || {});
     return adminUser(db, id);
@@ -1900,21 +3122,33 @@ route('PATCH', '/admin/users/:id', async (ctx) => {
   const u = db.get('SELECT * FROM users WHERE id = ?', id);
   if (!u) throw notFound('Person');
   const f = readPerson(body, false);
-  if(body.profile!==undefined){
-    const profile=readProfile(body.profile,ctx.user);
-    if(profile.manager_id===id)throw bad('A person cannot report to themselves');
-    if(profile.manager_id&&!db.get('SELECT id FROM users WHERE id=? AND active=1',profile.manager_id))throw bad('Choose an active reporting manager');
-    f.profile_json=JSON.stringify({...profileFor(u),...profile});
+  if (body.profile !== undefined) {
+    const profile = readProfile(body.profile, ctx.user);
+    if (profile.manager_id === id) throw bad('A person cannot report to themselves');
+    if (
+      profile.manager_id &&
+      !db.get('SELECT id FROM users WHERE id=? AND active=1', profile.manager_id)
+    )
+      throw bad('Choose an active reporting manager');
+    f.profile_json = JSON.stringify({ ...profileFor(u), ...profile });
   }
-  if(body.username!==undefined){
-    f.username=text(body.username,{max:120,required:true,label:'Login username'});
-    if(!/^[A-Za-z0-9._-]+$/.test(f.username))throw bad('Username can contain letters, numbers, dots, hyphens and underscores');
-    if(db.get('SELECT id FROM users WHERE LOWER(username)=LOWER(?) AND id!=?',f.username,id))throw bad('Someone with this username already exists');
+  if (body.username !== undefined) {
+    f.username = text(body.username, { max: 120, required: true, label: 'Login username' });
+    if (!/^[A-Za-z0-9._-]+$/.test(f.username))
+      throw bad('Username can contain letters, numbers, dots, hyphens and underscores');
+    if (db.get('SELECT id FROM users WHERE LOWER(username)=LOWER(?) AND id!=?', f.username, id))
+      throw bad('Someone with this username already exists');
   }
-  if (f.email && f.email !== u.email && db.get('SELECT 1 AS x FROM users WHERE email = ? AND id != ?', f.email, id)) throw bad('Someone with this email already exists');
+  if (
+    f.email &&
+    f.email !== u.email &&
+    db.get('SELECT 1 AS x FROM users WHERE LOWER(email) = LOWER(?) AND id != ?', f.email, id)
+  )
+    throw bad('Someone with this email already exists');
   if (body.active !== undefined) f.active = body.active ? 1 : 0;
   const admins = db.get("SELECT COUNT(*) AS n FROM users WHERE role = 'admin' AND active = 1").n;
-  const losingAdmin = u.role === 'admin' && u.active && ((f.role && f.role !== 'admin') || f.active === 0);
+  const losingAdmin =
+    u.role === 'admin' && u.active && ((f.role && f.role !== 'admin') || f.active === 0);
   if (losingAdmin && admins <= 1) throw bad('Keep at least one active admin');
   if (id === uid(ctx) && f.active === 0) throw bad('You cannot deactivate your own account');
   if (body.password) {
@@ -1924,7 +3158,12 @@ route('PATCH', '/admin/users/:id', async (ctx) => {
   }
   return db.tx(() => {
     const sets = Object.entries(f).filter(([, v]) => v !== undefined);
-    if (sets.length) db.run(`UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, ...sets.map(([, v]) => v), id);
+    if (sets.length)
+      db.run(
+        `UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`,
+        ...sets.map(([, v]) => v),
+        id,
+      );
     writeAccess(db, id, body.access);
     if (f.active === 0) db.run('DELETE FROM sessions WHERE user_id = ?', id);
     return adminUser(db, id);
@@ -1949,22 +3188,36 @@ function readVertical(body, creating) {
     tagline: text(body.tagline, { max: 120, label: 'Tagline' }),
     key_date_label: text(body.key_date_label, { max: 40, label: 'Key date label' }),
     ready_label: text(body.ready_label, { max: 60, label: 'Final board column' }),
-    color: body.color === undefined ? undefined : /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : '#1a6df0',
+    color:
+      body.color === undefined
+        ? undefined
+        : /^#[0-9a-fA-F]{6}$/.test(body.color)
+          ? body.color
+          : '#1a6df0',
     sort: body.sort === undefined ? undefined : Number(body.sort) || 0,
     active: body.active === undefined ? undefined : body.active ? 1 : 0,
   };
-  if (f.code !== undefined && !/^[A-Z0-9]{2,6}$/.test(f.code)) throw bad('Code must be 2 to 6 letters or digits, like EXH');
+  if (f.code !== undefined && !/^[A-Z0-9]{2,6}$/.test(f.code))
+    throw bad('Code must be 2 to 6 letters or digits, like EXH');
   return f;
 }
 
 route('POST', '/admin/verticals', (ctx) => {
   requireAdmin(ctx);
   const f = readVertical(ctx.body, true);
-  if (ctx.db.get('SELECT 1 AS x FROM verticals WHERE code = ?', f.code)) throw bad('Another vertical already uses that code');
+  if (ctx.db.get('SELECT 1 AS x FROM verticals WHERE code = ?', f.code))
+    throw bad('Another vertical already uses that code');
   const sort = (ctx.db.get('SELECT MAX(sort) AS m FROM verticals').m || 0) + 1;
   const { id } = ctx.db.run(
     'INSERT INTO verticals (name, short, code, tagline, color, key_date_label, ready_label, sort, active) VALUES (?,?,?,?,?,?,?,?,1)',
-    f.name, f.short, f.code, f.tagline || '', f.color || '#1a6df0', f.key_date_label || 'Key date', f.ready_label || '', f.sort ?? sort,
+    f.name,
+    f.short,
+    f.code,
+    f.tagline || '',
+    f.color || '#1a6df0',
+    f.key_date_label || 'Key date',
+    f.ready_label || '',
+    f.sort ?? sort,
   );
   return ctx.db.get('SELECT * FROM verticals WHERE id = ?', id);
 });
@@ -1974,12 +3227,23 @@ route('PATCH', '/admin/verticals/:id', (ctx) => {
   const id = toId(ctx.params.id, 'Vertical');
   if (!ctx.db.get('SELECT 1 AS x FROM verticals WHERE id = ?', id)) throw notFound('Vertical');
   const f = readVertical(ctx.body, false);
-  if (f.code && ctx.db.get('SELECT 1 AS x FROM verticals WHERE code = ? AND id != ?', f.code, id)) throw bad('Another vertical already uses that code');
+  if (f.code && ctx.db.get('SELECT 1 AS x FROM verticals WHERE code = ? AND id != ?', f.code, id))
+    throw bad('Another vertical already uses that code');
   for (const k of ['name', 'short', 'code']) if (f[k] === '') throw bad(`${k} is required`);
   const sets = Object.entries(f).filter(([, v]) => v !== undefined);
   ctx.db.tx(() => {
-    if (sets.length) ctx.db.run(`UPDATE verticals SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, ...sets.map(([, v]) => v), id);
-    if (f.ready_label === '') ctx.db.run("UPDATE projects SET status = 'active', updated_at = ? WHERE vertical_id = ? AND status = 'ready'", ctx.now, id);
+    if (sets.length)
+      ctx.db.run(
+        `UPDATE verticals SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`,
+        ...sets.map(([, v]) => v),
+        id,
+      );
+    if (f.ready_label === '')
+      ctx.db.run(
+        "UPDATE projects SET status = 'active', updated_at = ? WHERE vertical_id = ? AND status = 'ready'",
+        ctx.now,
+        id,
+      );
   });
   return ctx.db.get('SELECT * FROM verticals WHERE id = ?', id);
 });
@@ -1987,7 +3251,11 @@ route('PATCH', '/admin/verticals/:id', (ctx) => {
 route('PATCH', '/admin/settings', (ctx) => {
   requireAdmin(ctx);
   const name = text(ctx.body.company_name, { max: 80, label: 'Company name' });
-  if (name) ctx.db.run("INSERT INTO settings (key, value) VALUES ('company_name', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", name);
+  if (name)
+    ctx.db.run(
+      "INSERT INTO settings (key, value) VALUES ('company_name', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      name,
+    );
   return { ok: true };
 });
 

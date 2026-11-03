@@ -5,8 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const clientDir = path.dirname(fileURLToPath(import.meta.url));
 
-// Install-as-app tags (manifest, icons, phone status bar). Only for the real app: the
-// browser demo is a single file inside another page, where none of this applies.
+// Install-as-app tags (manifest, icons, phone status bar).
 const APP_HEAD = [
   '<link rel="manifest" href="/manifest.webmanifest" />',
   '<meta name="theme-color" content="#f3f6fb" />',
@@ -19,7 +18,10 @@ const APP_HEAD = [
 ].join('\n    ');
 
 function installableApp() {
-  return { name: 'installable-app', transformIndexHtml: (html) => html.replace('</title>', `</title>\n    ${APP_HEAD}`) };
+  return {
+    name: 'installable-app',
+    transformIndexHtml: (html) => html.replace('</title>', `</title>\n    ${APP_HEAD}`),
+  };
 }
 
 export default defineConfig(() => {
@@ -27,7 +29,6 @@ export default defineConfig(() => {
     root: clientDir,
     publicDir: 'public',
     plugins: [react(), installableApp()],
-    define: { __DEMO__: 'false' },
     build: {
       outDir: '../dist',
       emptyOutDir: true,
