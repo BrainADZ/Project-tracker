@@ -34,6 +34,7 @@ export function TaskModal({ id, onClose, onChanged }) {
 
   const can = t?.permissions?.edit;
   const canPlanEdit = can && !t?.timer_managed && t?.review?.latest?.status!=='pending';
+  const canWork = isDevelopmentProject(t?.project) ? (canPlanEdit || t?.permissions?.work) : can;
   const save = async (body, msg) => {
     setData((d) => ({ ...d, ...body }));
     try {
@@ -98,12 +99,12 @@ export function TaskModal({ id, onClose, onChanged }) {
                     <textarea id="task-title" className="title-input" rows={1} value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title.trim() && title !== t.title && save({ title: title.trim() })} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), e.target.blur())} aria-label="Task title" maxLength={240} />
                   ) : <h2 className="title-input" style={{ border: 0 }}>{t.title}</h2>}
                 </div>
-                {!can && <div className="alert info mt-8"><Lock size={15} />You have view-only access to this vertical.</div>}
+                {!can && !canWork && <div className="alert info mt-8"><Lock size={15} />{isDevelopmentProject(t.project) ? 'Task details are read-only. Submitted work is reviewed by the head.' : 'You have view-only access to this vertical.'}</div>}
+                {isDevelopmentProject(t.project) && canWork && !can && <div className="alert info mt-8">Complete your daily modules, fill in the notes and checklist, attach your work, then submit this task to the head for review.</div>}
 
-                {isDevelopmentProject(t.project)&&<section className="card mt-12"><WebsiteTaskReview task={t} showHistory onChanged={()=>{reload({quiet:true});onChanged?.();}}/></section>}
                 {t.timer_managed && <div className="alert info mt-8">The assigned person controls status and time in <Link to={isDevelopmentProject(t.project)?'/projects/'+t.project.id+'/tasks':'/daily-reporting/'+t.project.id} onClick={onClose}>Daily Reporting</Link>.</div>}
                 <Field label="Notes" className="mt-16" htmlFor="task-desc">
-                  <textarea id="task-desc" className="textarea" rows={3} value={desc} disabled={!canPlanEdit} onChange={(e) => setDesc(e.target.value)} onBlur={() => desc !== (t.description || '') && save({ description: desc })} placeholder={can ? 'Add details, specs or links' : 'No notes'} />
+                  <textarea id="task-desc" className="textarea" rows={3} value={desc} disabled={isDevelopmentProject(t.project) ? !canWork : !canPlanEdit} onChange={(e) => setDesc(e.target.value)} onBlur={() => desc !== (t.description || '') && save({ description: desc })} placeholder={canWork ? 'Add work details, testing notes or links' : 'No notes'} />
                 </Field>
 
                 <div className="mt-16">
@@ -113,12 +114,12 @@ export function TaskModal({ id, onClose, onChanged }) {
                   <div className="checklist">
                     {t.checklist.map((c, i) => (
                       <div key={i} className={`ci ${c.done ? 'done' : ''}`}>
-                        <button type="button" className={`check-btn sm ${c.done ? 'on' : ''}`} disabled={!can} onClick={() => setChecklist(t.checklist.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))} aria-label={c.done ? `Untick ${c.text}` : `Tick ${c.text}`}>{c.done && <Check size={11} strokeWidth={3} />}</button>
+                        <button type="button" className={`check-btn sm ${c.done ? 'on' : ''}`} disabled={!canWork} onClick={() => setChecklist(t.checklist.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))} aria-label={c.done ? `Untick ${c.text}` : `Tick ${c.text}`}>{c.done && <Check size={11} strokeWidth={3} />}</button>
                         <span className="grow small">{c.text}</span>
-                        {can && <button type="button" className="icon-btn sm-x" aria-label={`Remove ${c.text}`} onClick={() => setChecklist(t.checklist.filter((_, j) => j !== i))}><X size={14} /></button>}
+                        {canWork && <button type="button" className="icon-btn sm-x" aria-label={`Remove ${c.text}`} onClick={() => setChecklist(t.checklist.filter((_, j) => j !== i))}><X size={14} /></button>}
                       </div>
                     ))}
-                    {can && (
+                    {canWork && (
                       <form className="row gap-6 mt-4" onSubmit={(e) => { e.preventDefault(); if (newItem.trim()) { setChecklist([...t.checklist, { text: newItem.trim(), done: false }]); setNewItem(''); } }}>
                         <Plus size={16} className="muted" />
                         <input id="task-checklist-new" className="input sm" value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add an item" maxLength={300} />
@@ -130,18 +131,20 @@ export function TaskModal({ id, onClose, onChanged }) {
                 <div className="mt-16">
                   <div className="row between mb-8">
                     <label className="b6 small" style={{ color: 'var(--text-2)' }}><Paperclip size={14} style={{ verticalAlign: '-2px' }} /> Files {t.files.length > 0 && <span className="muted">{t.files.length}</span>}</label>
-                    {can && <button type="button" className="link" onClick={() => setLinking(true)}>Add link</button>}
+                    {canWork && <button type="button" className="link" onClick={() => setLinking(true)}>Add link</button>}
                   </div>
                   {t.files.map((f) => <FileRow key={f.id} file={{ ...f, vertical_color: t.project.vertical_color }} onOpen={setPreview} />)}
-                  {can && <UploadZone projectId={t.project.id} taskId={t.id} compact onUploaded={() => { reload({ quiet: true }); onChanged?.(); }} />}
+                  {canWork && <UploadZone projectId={t.project.id} taskId={t.id} compact onUploaded={() => { reload({ quiet: true }); onChanged?.(); }} />}
                 </div>
+
+                {isDevelopmentProject(t.project)&&<section className="card mt-12"><WebsiteTaskReview task={t} showHistory beforeSubmit={async()=>{await api.patch(`/tasks/${id}`,{description:desc});}} onChanged={()=>{reload({quiet:true});onChanged?.();}}/></section>}
 
                 <div className="mt-16">
                   <label className="b6 small" style={{ color: 'var(--text-2)' }}>Comments</label>
                   <div className="feed mt-8">
                     {t.comments.map((c) => <CommentItem key={c.id} c={c} size={30} onChanged={() => { reload({ quiet: true }); onChanged?.(); }} />)}
                   </div>
-                  {can && <Composer onSend={comment} placeholder="Ask a question or post an update. @name notifies a teammate." />}
+                  {(can || canWork || t.review?.is_assignee) && <Composer onSend={comment} placeholder="Ask a question or post an update. @name notifies a teammate." />}
                 </div>
               </div>
 
@@ -192,7 +195,7 @@ export function TaskModal({ id, onClose, onChanged }) {
         )}
       </div>
       {preview && (
-        <FilePreview file={preview} onClose={() => setPreview(null)} canEdit={can} canDelete={t.permissions.delete || preview.uploaded_by === me.id}
+        <FilePreview file={preview} onClose={() => setPreview(null)} canEdit={canWork} canDelete={t.permissions.delete || preview.uploaded_by === me.id}
           onChanged={(f) => { setPreview(f); reload({ quiet: true }); }} onDeleted={() => { setPreview(null); reload({ quiet: true }); onChanged?.(); }} />
       )}
       {linking && <LinkForm projectId={t.project.id} taskId={t.id} onClose={() => setLinking(false)} onSaved={() => { setLinking(false); reload({ quiet: true }); onChanged?.(); }} />}

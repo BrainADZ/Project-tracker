@@ -13,8 +13,8 @@ import Assets from './pages/Assets.jsx';
 import Archive from './pages/Archive.jsx';
 import Team from './pages/Team.jsx';
 import Settings from './pages/Settings.jsx';
-import Profile from './pages/Profile.jsx';
-import ProfileEdit from './pages/ProfileEdit.jsx';
+import Profile from './pages/ProfileScreen.jsx';
+import {ProfileEditor as ProfileEdit,ProfilePassword} from './pages/ProfileScreen.jsx';
 import Teams from './pages/Teams.jsx';
 import DailyReporting from './pages/DailyReporting.jsx';
 
@@ -46,6 +46,7 @@ function Routes() {
   if (path === '/settings') return <Settings />;
   if (path === '/profile') return <Profile />;
   if (path === '/profile/edit') return <ProfileEdit />;
+  if (path === '/profile/password') return <ProfilePassword />;
   return <div className="card"><Empty title="Page not found">That link does not lead anywhere. Use the menu to find your way.</Empty></div>;
 }
 
@@ -97,4 +98,3 @@ export default function App() {
     </>
   );
 }
-

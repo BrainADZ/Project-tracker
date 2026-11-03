@@ -90,7 +90,7 @@ export default function Login() {
               <p className="muted mt-8">Welcome back to {company} Projects.</p>
               <form className="col" style={{ gap: 14, marginTop: 24 }} onSubmit={signIn}>
                 {err && <div className="alert error">{err}</div>}
-                <Field label="Work email" htmlFor="login-email"><input id="login-email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required autoFocus /></Field>
+                <Field label="Work email or username" htmlFor="login-email"><input id="login-email" type="text" className="input" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required autoFocus /></Field>
                 <Field label="Password" htmlFor="login-pass"><input id="login-pass" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></Field>
                 <button type="submit" className="btn primary lg block" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
                 <p className="xs muted">Forgot your password? Ask an admin to reset it under Team & Access.</p>

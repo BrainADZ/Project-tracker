@@ -1,4 +1,4 @@
-import { registerWebsiteTaskReviews, websiteTaskReview, pendingWebsiteReview } from './website-task-review.js';
+import { registerWebsiteTaskReviews, websiteTaskReview, pendingWebsiteReview, canEditWebsiteTaskWork } from './website-task-review.js';
 import { reportingAccess } from '../services/reporting-access.js';
 import { registerDevelopmentReporting } from './development-reporting.js';
 import { websiteProgressFor, websiteTaskTime, assertWebsiteAssignment } from '../services/website-work.js';
@@ -25,6 +25,7 @@ import {
 } from '../models/access.js';
 import { FILE_CATEGORIES } from '../schema/schema.js';
 import { createRouteRegistry } from '../routes/registry.js';
+import { ensureUserIdentity, profileFor, readProfile } from '../services/profile.js';
 
 export const PROJECT_STATUSES = ['planning', 'active', 'on_hold', 'ready', 'completed', 'cancelled'];
 export const OPEN_STATUSES = ['planning', 'active', 'on_hold', 'ready'];
@@ -308,6 +309,7 @@ route('POST', '/seen', (ctx) => {
 
 route('GET', '/bootstrap', (ctx) => {
   const { db, user } = ctx;
+  Object.assign(user,ensureUserIdentity(db,user.id));
   const vids = visibleVerticalIds(user);
   const verticals = vids.length
     ? db.all(`SELECT * FROM verticals WHERE id IN (${placeholders(vids)}) AND active = 1 ORDER BY sort, id`, ...vids)
@@ -315,7 +317,7 @@ route('GET', '/bootstrap', (ctx) => {
   for (const v of verticals) v.level = levelFor(user, v.id);
 
   // Directory of people who share at least one vertical with me (admins see everyone).
-  const people = db.all('SELECT id, name, email, title, color, role FROM users WHERE active = 1 ORDER BY name');
+  const people = db.all('SELECT id, name, email, title, color, role, profile_json FROM users WHERE active = 1 ORDER BY name');
   const accessRows = db.all('SELECT user_id, vertical_id, level FROM user_verticals');
   const allV = db.all('SELECT id FROM verticals').map((v) => v.id);
   const byUser = new Map();
@@ -330,7 +332,8 @@ route('GET', '/bootstrap', (ctx) => {
     if (isAdmin(user) || p.id === user.id || shared) {
       // Only reveal access for verticals the viewer can see.
       const visibleAcc = Object.fromEntries(Object.entries(acc).filter(([id]) => vids.includes(Number(id))));
-      users.push({ ...p, email: isAdmin(user) || shared ? p.email : '', access: visibleAcc });
+      const {profile_json,...person}=p;
+      users.push({ ...person, manager_id:profileFor(p).manager_id||null, email: isAdmin(user) || shared ? p.email : '', access: visibleAcc });
     }
   }
 
@@ -355,15 +358,15 @@ route('GET', '/bootstrap', (ctx) => {
 
 function meShape(user) {
   return {
-    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color, photo: user.photo || '', created_at: user.created_at, profile: parseJSON(user.profile_data, {}),
+    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color, photo: profileFor(user).photo || user.photo || '',
     role: user.role, must_change_password: !!user.must_change_password,
+    username:user.username,employee_code:user.employee_code,profile:profileFor(user),created_at:user.created_at,
     access: Object.fromEntries(user.access),
   };
 }
 
 route('PATCH', '/me', (ctx) => {
   const b = ctx.body;
-  const profileKeys = ['first_name', 'last_name', 'gender', 'dob', 'employee_id', 'vertical', 'department', 'designation', 'grade', 'reporting_manager_id', 'employment_type', 'working_place', 'assigned_branch', 'joining_date', 'annual_ctc', 'monthly_tds', 'pan', 'uan', 'bank_name', 'account_number', 'ifsc', 'address', 'emergency_contact', 'skills', 'about'];
   const f = {
     name: text(b.name, { max: 120, label: 'Name' }),
     title: text(b.title, { max: 120, label: 'Title' }),
@@ -373,33 +376,15 @@ route('PATCH', '/me', (ctx) => {
   };
   if (f.name === '') throw bad('Name is required');
   if (b.photo !== undefined && f.photo === undefined) throw bad('Choose a JPG, PNG or WebP photo under 220 KB');
-  if (b.email !== undefined) {
-    const email = String(b.email).trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw bad('Enter a valid work email');
-    if (ctx.db.get('SELECT id FROM users WHERE email = ? AND id != ?', email, uid(ctx))) throw bad('This email is already in use');
-    f.email = email;
-  }
-  if (b.profile !== undefined) {
-    if (!b.profile || typeof b.profile !== 'object' || Array.isArray(b.profile)) throw bad('Invalid profile details');
-    const saved = parseJSON(ctx.user.profile_data, {});
-    for (const key of profileKeys) if (Object.hasOwn(b.profile, key)) {
-      const value = b.profile[key];
-      if (typeof value !== 'string' || value.length > (key === 'about' || key === 'address' ? 2000 : 250)) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
-      saved[key] = value.trim();
-    }
-    if (Object.hasOwn(b.profile, 'employee_id') && !saved.employee_id) saved.employee_id = `BZ${String(uid(ctx)).padStart(3, '0')}`;
-    if (saved.employee_id) {
-      const taken = ctx.db.all('SELECT id, profile_data FROM users WHERE id != ?', uid(ctx)).some((row) => parseJSON(row.profile_data, {}).employee_id?.toLowerCase() === saved.employee_id.toLowerCase());
-      if (taken) throw bad('This employee ID is already in use');
-    }
-    if (saved.reporting_manager_id && (!/^\d+$/.test(saved.reporting_manager_id) || Number(saved.reporting_manager_id) === uid(ctx) || !ctx.db.get('SELECT 1 AS x FROM users WHERE id = ? AND active = 1', Number(saved.reporting_manager_id)))) throw bad('Choose a valid reporting manager');
-    for (const key of ['annual_ctc', 'monthly_tds']) if (saved[key] && (!/^\d+(\.\d{1,2})?$/.test(saved[key]) || Number(saved[key]) > 1000000000)) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
-    for (const key of ['dob', 'joining_date']) if (saved[key] && !isDate(saved[key])) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
-    f.profile_data = JSON.stringify(saved);
+  if(b.profile!==undefined){
+    const details=readProfile(b.profile,ctx.user);
+    if(details.manager_id===uid(ctx))throw bad('You cannot report to yourself');
+    if(details.manager_id&&!ctx.db.get('SELECT id FROM users WHERE id=? AND active=1',details.manager_id))throw bad('Choose an active reporting manager');
+    f.profile_json=JSON.stringify({...profileFor(ctx.user),...details});
   }
   const sets = Object.entries(f).filter(([, v]) => v !== undefined);
   if (sets.length) ctx.db.run(`UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, ...sets.map(([, v]) => v), uid(ctx));
-  return meShape(loadUser(ctx.db, uid(ctx)));
+  return meShape({...loadUser(ctx.db, uid(ctx)),...ensureUserIdentity(ctx.db,uid(ctx))});
 });
 
 route('POST', '/me/password', async (ctx) => {
@@ -929,7 +914,7 @@ route('GET', '/tasks/:id', (ctx) => {
     comments, files, history,
     created_by_user: userBrief(ctx.db, task.created_by),
     project: { id: project.id, service_type:project.service_type, developer_ids:websiteDevelopers(project), code: project.code, name: project.name, vertical_id: project.vertical_id, vertical: v.short, vertical_color: v.color, stages: parseJSON(project.stages, []), status: project.status },
-    permissions: { edit: isDevelopmentProject(project)?canChooseWorkContact(ctx.user,project):canContribute(ctx.user, project), delete: canEditProject(ctx.user, project) || task.created_by === uid(ctx) && canContribute(ctx.user, project) },
+    permissions: { edit: isDevelopmentProject(project)?canChooseWorkContact(ctx.user,project):canContribute(ctx.user, project), work: isDevelopmentProject(project)?canEditWebsiteTaskWork(ctx,task,project):canContribute(ctx.user, project), delete: canEditProject(ctx.user, project) || task.created_by === uid(ctx) && canContribute(ctx.user, project) },
   };
 });
 
@@ -940,7 +925,9 @@ route('PATCH', '/tasks/:id', (ctx) => {
   const { task, project } = getTaskRaw(ctx, ctx.params.id);
   trackingTaskGuard(ctx,task);
   if (!canContribute(ctx.user, project)) throw forbidden('You have view-only access to this vertical');
-  if (isDevelopmentProject(project) && !ctx.timerTransition && !ctx.reviewTransition && !canChooseWorkContact(ctx.user,project)) throw forbidden('Only the development head or manager can edit main tasks');
+  if (isDevelopmentProject(project) && !ctx.timerTransition && !ctx.reviewTransition && !canChooseWorkContact(ctx.user,project)) {
+    if(!canEditWebsiteTaskWork(ctx,task,project)||Object.keys(ctx.body).some(k=>!['description','checklist'].includes(k)))throw forbidden('Only the assigned developer can update work notes and checklist. Main task planning is managed by the head.');
+  }
   if(isDevelopmentProject(project)&&!ctx.timerTransition&&['completed','cancelled'].includes(project.status))throw bad('Reopen the project before editing tasks');
   if(isDevelopmentProject(project)&&!ctx.timerTransition&&(ctx.body.status!==undefined&&ctx.body.status!==task.status||ctx.body.assignee_id!==undefined&&Number(ctx.body.assignee_id)!==task.assignee_id)&&db.get('SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE s.ended_at IS NULL AND (w.task_id=? OR e.parent_task_id=?)',task.id,task.id))throw bad('Ask the developer to pause the running daily work before changing this task');
   if(isDevelopmentProject(project)&&!ctx.reviewTransition){
@@ -1845,8 +1832,10 @@ function requireAdmin(ctx) {
 }
 
 function adminUser(db, id) {
-  const u = db.get('SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password FROM users WHERE id = ?', id);
+  const u = db.get('SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password, profile_json,profile_data,photo FROM users WHERE id = ?', id);
   if (!u) return null;
+  Object.assign(u,ensureUserIdentity(db,id));
+  u.profile=profileFor(u);delete u.profile_json;delete u.profile_data;
   u.access = Object.fromEntries(db.all('SELECT vertical_id, level FROM user_verticals WHERE user_id = ?', id).map((r) => [r.vertical_id, r.level]));
   u.open_tasks = db.get(`SELECT COUNT(*) AS n FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.assignee_id = ? AND t.status != 'done' AND p.status IN ${OPEN_IN}`, id).n;
   return u;
@@ -1911,6 +1900,17 @@ route('PATCH', '/admin/users/:id', async (ctx) => {
   const u = db.get('SELECT * FROM users WHERE id = ?', id);
   if (!u) throw notFound('Person');
   const f = readPerson(body, false);
+  if(body.profile!==undefined){
+    const profile=readProfile(body.profile,ctx.user);
+    if(profile.manager_id===id)throw bad('A person cannot report to themselves');
+    if(profile.manager_id&&!db.get('SELECT id FROM users WHERE id=? AND active=1',profile.manager_id))throw bad('Choose an active reporting manager');
+    f.profile_json=JSON.stringify({...profileFor(u),...profile});
+  }
+  if(body.username!==undefined){
+    f.username=text(body.username,{max:120,required:true,label:'Login username'});
+    if(!/^[A-Za-z0-9._-]+$/.test(f.username))throw bad('Username can contain letters, numbers, dots, hyphens and underscores');
+    if(db.get('SELECT id FROM users WHERE LOWER(username)=LOWER(?) AND id!=?',f.username,id))throw bad('Someone with this username already exists');
+  }
   if (f.email && f.email !== u.email && db.get('SELECT 1 AS x FROM users WHERE email = ? AND id != ?', f.email, id)) throw bad('Someone with this email already exists');
   if (body.active !== undefined) f.active = body.active ? 1 : 0;
   const admins = db.get("SELECT COUNT(*) AS n FROM users WHERE role = 'admin' AND active = 1").n;

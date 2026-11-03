@@ -17,7 +17,7 @@ async function loadReportingComponents(){
    b.onLoad({filter:/.*/,namespace:'report-fixture'},({path})=>({loader:'jsx',resolveDir:process.cwd(),contents:
     path==='store.jsx'?'export const useApp=()=>globalThis.__reportFixture.app; export const useLoad=fn=>({data:fn(),loading:false,reload(){}});':
     path==='api.js'?'export const api={get:(path,query)=>{globalThis.__reportFixture.requests.push({path,query});return path==="/projects"?globalThis.__reportFixture.projects:path==="/development-reporting/options"?{projects:[],can_add_extra:false}:path==="/development-reporting/pending"?{items:[]}:globalThis.__reportFixture.report;},post:async(path,body)=>{(globalThis.__reportFixture.posts||=[]).push({path,body});return {ok:true};},saveText:async(name,text)=>{globalThis.__reportFixture.exported={name,text};}};':
-    path==='router.jsx'?'export const useRouter=()=>({navigate(){}});export const Link=({to,children,...p})=><a href={to} {...p}>{children}</a>;':
+    path==='router.jsx'?'export const useRouter=()=>({navigate(to){(globalThis.__reportFixture.navigations||=[]).push(to);}});export const Link=({to,children,...p})=><a href={to} {...p}>{children}</a>;':
     'export const Modal=({title,children,footer})=><section><h2>{title}</h2>{children}{footer}</section>;export const Field=({label,children})=><div><label>{label}</label>{children}</div>;export const UserSelect=()=>null;export const Avatar=()=>null;export const Progress=({value})=><span>{value}%</span>;export const PROJECT_STATUS={active:{label:"Active"}};export const HEALTH={};export const PRIORITY={};export const Loading=()=>null;export const ErrorNote=()=>null;export const Empty=({title,children})=><div>{title}{children}</div>;'
    }));
   }}]
@@ -73,7 +73,7 @@ test('separate report screens render employee privacy controls and export only t
 test('task review controls show developer submission, head decisions and feedback',async()=>{
  const {TaskReview}=await loadReportingComponents();
  let tree,changed=0;
- const Capture=({task})=>{tree=TaskReview({task,onChanged:()=>changed++});return tree;};
+ const Capture=({task,beforeSubmit})=>{tree=TaskReview({task,beforeSubmit,onChanged:()=>changed++});return tree;};
  const buttons=node=>{
   if(!node||typeof node!=='object')return [];
   return [...(node.type==='button'?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(buttons)];
@@ -86,6 +86,20 @@ test('task review controls show developer submission, head decisions and feedbac
   assert.ok(html.includes('Submit task for review'));assert.equal(html.includes('Changes required'),false);
   const submit=buttons(tree).find(b=>title(b)==='Submit task for review');
   assert.equal(submit.props.disabled,false);
+  await submit.props.onClick();
+  assert.deepEqual(globalThis.__reportFixture.posts,[{path:'/tasks/42/submit-review',body:{all_modules_complete:true}}]);
+  assert.deepEqual(globalThis.__reportFixture.navigations,['/daily-reporting/development']);
+  assert.equal(changed,1);
+  globalThis.__reportFixture.posts=[];globalThis.__reportFixture.navigations=[];changed=0;
+  renderToStaticMarkup(React.createElement(Capture,{task,beforeSubmit:async()=>{throw new Error('Notes could not be saved');}}));
+  await buttons(tree).find(b=>title(b)==='Submit task for review').props.onClick();
+  assert.deepEqual(globalThis.__reportFixture.posts,[]);
+  assert.deepEqual(globalThis.__reportFixture.navigations,[]);
+  assert.equal(changed,0);
+  html=renderToStaticMarkup(React.createElement(Capture,{task:{...task,review:{latest:null,is_assignee:false,can_submit:false,can_review:false}}}));
+  assert.ok(html.includes('The assigned developer will complete the daily modules'));
+  assert.equal(buttons(tree).some(b=>title(b)==='Submit task for review'),false);
+  assert.equal(buttons(tree).some(b=>title(b)==='Approve'),false);
   const pending={id:11,status:'pending',note:'Tested desktop and mobile',preview_url:'https://preview.example',submitted_by_name:'Developer',submitted_at:'2026-10-31T06:00:00Z'};
   task={...task,status:'review',review:{latest:pending,is_assignee:true,can_submit:false,can_review:false}};
   html=renderToStaticMarkup(React.createElement(Capture,{task}));

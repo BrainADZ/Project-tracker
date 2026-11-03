@@ -842,6 +842,17 @@ test('developer submits completed modules, head reviews, and approval updates pr
   f.time('2026-10-31T05:00:00Z');await f.call(f.dev,'POST','/daily-reporting/'+continuation.id+'/action',{action:'done'});
   const t=await f.call(f.dev,'GET','/tasks/'+main.id);
   assert.equal(t.review.can_submit,true);assert.equal(t.review.pending_modules,0);
+  assert.equal(t.permissions.edit,false);assert.equal(t.permissions.work,true);
+  const workDetails={description:'All screens tested on mobile and desktop.',checklist:[{text:'Mobile layout verified',done:true}]};
+  await f.call(f.dev,'PATCH','/tasks/'+main.id,workDetails);
+  const headDetails=await f.call(f.head,'GET','/tasks/'+main.id);
+  assert.equal(headDetails.description,workDetails.description);
+  assert.deepEqual(headDetails.checklist,workDetails.checklist);
+  for(const actor of [f.dev2,f.sales]){
+   assert.equal((await f.call(actor,'GET','/tasks/'+main.id)).permissions.work,false);
+   await assert.rejects(f.call(actor,'PATCH','/tasks/'+main.id,workDetails),e=>e.status===403);
+  }
+  for(const body of [{status:'done'},{assignee_id:f.dev2},{title:'Changed title'},{priority:'high'},{due_date:'2026-11-10'},{description:'Allowed field',status:'done'}])await assert.rejects(f.call(f.dev,'PATCH','/tasks/'+main.id,body),e=>e.status===403);
   assert.ok((await f.call(f.dev,'GET','/development-reporting/options')).projects[0].review_tasks.some(t=>t.id===main.id&&t.review.can_submit));
   await assert.rejects(submit({preview_url:'javascript:alert(1)'}),e=>e.status===400);
   const a=await submit({note:'All modules complete; tested on mobile and desktop.',preview_url:'https://preview.example/ui'});
@@ -849,6 +860,8 @@ test('developer submits completed modules, head reviews, and approval updates pr
   assert.equal(f.db.get('SELECT COUNT(*) n FROM website_task_reviews').n,1);
   let task=await f.call(f.dev,'GET','/tasks/'+main.id);
   assert.equal(task.status,'review');assert.equal(task.review.latest.preview_url,'https://preview.example/ui');assert.equal(task.review.can_submit,false);
+  assert.equal(task.permissions.work,false);
+  await assert.rejects(f.call(f.dev,'PATCH','/tasks/'+main.id,workDetails),e=>e.status===403);
   let project=await f.call(f.head,'GET','/projects/'+p.id);
   assert.equal(project.progress,0);assert.equal(project.website.ready_for_review,1);
   assert.ok(f.db.get("SELECT id FROM notifications WHERE user_id=? AND task_id=? AND text LIKE '%submitted%'",f.head,main.id));
@@ -867,6 +880,8 @@ test('developer submits completed modules, head reviews, and approval updates pr
   assert.equal((await f.call(f.head,'POST','/tasks/'+main.id+'/review',approve)).already_reviewed,true);
   task=await f.call(f.dev,'GET','/tasks/'+main.id);
   assert.equal(task.status,'done');assert.equal(task.review.latest.status,'approved');assert.equal(task.review.latest.reviewed_by,f.head);
+  assert.equal(task.permissions.work,false);
+  await assert.rejects(f.call(f.dev,'PATCH','/tasks/'+main.id,workDetails),e=>e.status===403);
   assert.equal(task.review.history.length,1);
   project=await f.call(f.head,'GET','/projects/'+p.id);
   assert.equal(project.progress,50);assert.equal(project.website.ready_for_review,0);assert.equal(project.website.done,1);
@@ -900,12 +915,16 @@ test('task review validates current modules and confirmation, requires rejection
   await assert.rejects(submit(),e=>e.status===400);
   await f.call(f.dev,'POST','/daily-reporting/'+b.id+'/action',{action:'start'});
   await f.call(f.dev,'POST','/daily-reporting/'+b.id+'/action',{action:'done'});
+  await f.call(f.dev,'PATCH',path,{description:'Checkout address and payment forms tested.'});
   const first=await submit();
+  assert.equal((await f.call(f.head,'GET',path)).review.latest.note,'Checkout address and payment forms tested.');
   await assert.rejects(f.call(f.head,'POST',path+'/review',{decision:'changes_required',review_id:first.review_id,feedback:'  '}),e=>e.status===400);
   assert.equal((await f.call(f.head,'GET',path)).status,'review');
   await f.call(f.head,'POST',path+'/review',{decision:'changes_required',review_id:first.review_id,feedback:'Fix mobile checkout validation'});
   let detail=await f.call(f.dev,'GET',path);
   assert.equal(detail.status,'in_progress');assert.equal(detail.review.latest.feedback,'Fix mobile checkout validation');
+  assert.equal(detail.permissions.work,true);
+  await f.call(f.dev,'PATCH',path,{description:'Addressing the head review feedback.'});
   assert.equal((await f.call(f.head,'GET','/projects/'+p.id)).website.changes_requested,1);
   assert.ok(f.db.get("SELECT id FROM notifications WHERE user_id=? AND text LIKE '%Fix mobile checkout validation%'",f.dev));
   await f.call(f.dev,'POST','/daily-reporting/'+b.id+'/action',{action:'reopen',note:'Fixing review feedback'});

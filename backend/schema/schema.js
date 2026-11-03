@@ -3,7 +3,7 @@ import { MARKETING_SCHEMA } from './marketing-schema.js';
 // Canonical schema definition for the offline demo and the PostgreSQL schema
 // converter. Existing SQLite databases are read only by the migration tool.
 
-export const SCHEMA_VERSION = 16;
+export const SCHEMA_VERSION = 19;
 
 // Kept as a function so a migration can rebuild the table with the same definition.
 export function projectsTable(name) {
@@ -74,7 +74,10 @@ CREATE TABLE IF NOT EXISTS users (
   active INTEGER DEFAULT 1,
   must_change_password INTEGER DEFAULT 0,
   created_at TEXT,
-  last_login_at TEXT
+  last_login_at TEXT,
+  username TEXT COLLATE NOCASE,
+  employee_code TEXT,
+  profile_json TEXT NOT NULL DEFAULT '{}'
 );
 
 -- Which verticals a person can see, and what they can do there.
