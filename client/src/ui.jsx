@@ -54,10 +54,10 @@ export function ink(hex) {
 
 // ---------------------------------------------------------------- small pieces
 
-export function Avatar({ name, color = '#1f2b7b', size = 32, title }) {
+export function Avatar({ name, color = '#1f2b7b', photo, size = 32, title }) {
   return (
     <span className="avatar" title={title ?? name} style={{ width: size, height: size, background: color, fontSize: Math.max(10, Math.round(size * 0.38)) }}>
-      {initials(name || '?')}
+      {photo ? <img src={photo} alt="" style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} /> : initials(name || '?')}
     </span>
   );
 }

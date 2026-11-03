@@ -283,7 +283,7 @@ function UserMenu({ onSignOut }) {
   return (
     <div className="menu-wrap" ref={ref}>
       <button type="button" className="user-chip" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
-        <Avatar name={me.name} color={me.color} size={40} />
+        <Avatar name={me.name} color={me.color} photo={me.photo} size={40} />
         <span className="who">
           <div className="nm">{me.name}</div>
           <div className="rl">{role}</div>

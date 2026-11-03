@@ -3,7 +3,11 @@ import { MARKETING_SCHEMA } from './marketing-schema.js';
 // Database schema shared by the Node server (node:sqlite) and the in-browser demo (sql.js).
 // Both run SQLite, so the same SQL works everywhere.
 
+<<<<<<< HEAD
 export const SCHEMA_VERSION = 15;
+=======
+export const SCHEMA_VERSION = 16;
+>>>>>>> c25c949c1075155405d2a71e6fcbdea89bcc4bd1
 
 // Kept as a function so a migration can rebuild the table with the same definition.
 export function projectsTable(name) {
@@ -69,6 +73,8 @@ CREATE TABLE IF NOT EXISTS users (
   title TEXT DEFAULT '',
   phone TEXT DEFAULT '',
   color TEXT DEFAULT '#1f2b7b',
+  photo TEXT DEFAULT '',
+  profile_data TEXT DEFAULT '{}',
   active INTEGER DEFAULT 1,
   must_change_password INTEGER DEFAULT 0,
   created_at TEXT,

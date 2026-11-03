@@ -110,10 +110,15 @@ export function migrate(db) {
     addColumn(db,'extra_work','parent_task_id','INTEGER REFERENCES tasks(id) ON DELETE CASCADE');
     addColumn(db,'extra_work','continued_from_key',"TEXT NOT NULL DEFAULT ''");
   }
+<<<<<<< HEAD
   addColumn(db,'users','username','TEXT COLLATE NOCASE');
   addColumn(db,'users','employee_code','TEXT');
   addColumn(db,'users','profile_json',"TEXT NOT NULL DEFAULT '{}'");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL; CREATE UNIQUE INDEX IF NOT EXISTS idx_users_employee_code ON users(employee_code) WHERE employee_code IS NOT NULL;");
+=======
+  if (version < 15) addColumn(db, 'users', 'photo', "TEXT DEFAULT ''");
+  if (version < 16) addColumn(db, 'users', 'profile_data', "TEXT DEFAULT '{}'");
+>>>>>>> c25c949c1075155405d2a71e6fcbdea89bcc4bd1
   db.exec("CREATE INDEX IF NOT EXISTS idx_extra_parent_task ON extra_work(parent_task_id); CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_continuation ON extra_work(continued_from_key,report_date,assignee_id) WHERE continued_from_key != '';");
   db.exec('CREATE INDEX IF NOT EXISTS idx_files_message ON files(message_id);');
   db.run(

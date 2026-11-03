@@ -379,7 +379,7 @@ route('GET', '/bootstrap', (ctx) => {
 
 function meShape(user) {
   return {
-    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color,
+    id: user.id, name: user.name, email: user.email, title: user.title, phone: user.phone, color: user.color, photo: user.photo || '', created_at: user.created_at, profile: parseJSON(user.profile_data, {}),
     role: user.role, must_change_password: !!user.must_change_password,
     username:user.username,employee_code:user.employee_code,profile:profileFor(user),created_at:user.created_at,can_manage_credentials:canManageCredentials(user),
     access: Object.fromEntries(user.access),
@@ -388,19 +388,51 @@ function meShape(user) {
 
 route('PATCH', '/me', (ctx) => {
   const b = ctx.body;
+<<<<<<< HEAD
   if(['email','username','password','password_hash','employee_code'].some(k=>b[k]!==undefined))throw forbidden('Login email, username and password are managed by CEO / IT in Team & Access');
+=======
+  const profileKeys = ['first_name', 'last_name', 'gender', 'dob', 'employee_id', 'vertical', 'department', 'designation', 'grade', 'reporting_manager_id', 'employment_type', 'working_place', 'assigned_branch', 'joining_date', 'annual_ctc', 'monthly_tds', 'pan', 'uan', 'bank_name', 'account_number', 'ifsc', 'address', 'emergency_contact', 'skills', 'about'];
+>>>>>>> c25c949c1075155405d2a71e6fcbdea89bcc4bd1
   const f = {
     name: text(b.name, { max: 120, label: 'Name' }),
     title: text(b.title, { max: 120, label: 'Title' }),
     phone: text(b.phone, { max: 40, label: 'Phone' }),
     color: b.color === undefined ? undefined : /^#[0-9a-fA-F]{6}$/.test(b.color) ? b.color : undefined,
+    photo: b.photo === undefined ? undefined : typeof b.photo === 'string' && (b.photo === '' || (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.photo) && b.photo.length <= 300000)) ? b.photo : undefined,
   };
   if (f.name === '') throw bad('Name is required');
+<<<<<<< HEAD
   if(b.profile!==undefined){
     const details=readProfile(b.profile,ctx.user);
     if(details.manager_id===uid(ctx))throw bad('You cannot report to yourself');
     if(details.manager_id&&!ctx.db.get('SELECT id FROM users WHERE id=? AND active=1',details.manager_id))throw bad('Choose an active reporting manager');
     f.profile_json=JSON.stringify({...profileFor(ctx.user),...details});
+=======
+  if (b.photo !== undefined && f.photo === undefined) throw bad('Choose a JPG, PNG or WebP photo under 220 KB');
+  if (b.email !== undefined) {
+    const email = String(b.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw bad('Enter a valid work email');
+    if (ctx.db.get('SELECT id FROM users WHERE email = ? AND id != ?', email, uid(ctx))) throw bad('This email is already in use');
+    f.email = email;
+  }
+  if (b.profile !== undefined) {
+    if (!b.profile || typeof b.profile !== 'object' || Array.isArray(b.profile)) throw bad('Invalid profile details');
+    const saved = parseJSON(ctx.user.profile_data, {});
+    for (const key of profileKeys) if (Object.hasOwn(b.profile, key)) {
+      const value = b.profile[key];
+      if (typeof value !== 'string' || value.length > (key === 'about' || key === 'address' ? 2000 : 250)) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
+      saved[key] = value.trim();
+    }
+    if (Object.hasOwn(b.profile, 'employee_id') && !saved.employee_id) saved.employee_id = `BZ${String(uid(ctx)).padStart(3, '0')}`;
+    if (saved.employee_id) {
+      const taken = ctx.db.all('SELECT id, profile_data FROM users WHERE id != ?', uid(ctx)).some((row) => parseJSON(row.profile_data, {}).employee_id?.toLowerCase() === saved.employee_id.toLowerCase());
+      if (taken) throw bad('This employee ID is already in use');
+    }
+    if (saved.reporting_manager_id && (!/^\d+$/.test(saved.reporting_manager_id) || Number(saved.reporting_manager_id) === uid(ctx) || !ctx.db.get('SELECT 1 AS x FROM users WHERE id = ? AND active = 1', Number(saved.reporting_manager_id)))) throw bad('Choose a valid reporting manager');
+    for (const key of ['annual_ctc', 'monthly_tds']) if (saved[key] && (!/^\d+(\.\d{1,2})?$/.test(saved[key]) || Number(saved[key]) > 1000000000)) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
+    for (const key of ['dob', 'joining_date']) if (saved[key] && !isDate(saved[key])) throw bad(`Invalid ${key.replaceAll('_', ' ')}`);
+    f.profile_data = JSON.stringify(saved);
+>>>>>>> c25c949c1075155405d2a71e6fcbdea89bcc4bd1
   }
   const sets = Object.entries(f).filter(([, v]) => v !== undefined);
   if (sets.length) ctx.db.run(`UPDATE users SET ${sets.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, ...sets.map(([, v]) => v), uid(ctx));
