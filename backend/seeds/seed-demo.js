@@ -5,7 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openPostgres } from '../models/postgres.js';
 import { migrate, seedBasics } from '../schema/setup.js';
-import { seedDemo, DEMO_PASSWORD, DEMO_ACCOUNTS, demoEmail } from './demo-seed.js';
+import {
+  seedDemo,
+  syncDemoHeadAccess,
+  DEMO_PASSWORD,
+  DEMO_ACCOUNTS,
+  demoEmail,
+} from './demo-seed.js';
 import { hashPassword } from '../services/auth.js';
 import { todayIn } from '../services/util.js';
 
@@ -19,10 +25,12 @@ const done = seedDemo(db, {
   today: todayIn(process.env.TIMEZONE || 'Asia/Kolkata'),
   passwordHash: await hashPassword(DEMO_PASSWORD),
 });
+const headsUpdated = syncDemoHeadAccess(db);
 if (!done) {
   console.log('The database already has projects, so demo data was not added.');
 } else {
   console.log('Demo data added. Sign in with any of these (password: demo1234):');
   for (const a of DEMO_ACCOUNTS) console.log(`  ${demoEmail(a.key).padEnd(32)} ${a.label}`);
 }
+console.log('Business Head vertical assignments synchronized: ' + headsUpdated);
 db.close();

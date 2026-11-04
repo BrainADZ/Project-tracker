@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FolderKanban, ListChecks, Images, Lock, LogIn } from 'lucide-react';
+import { FolderKanban, ListChecks, Images, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../store.jsx';
 import { Logo } from '../Layout.jsx';
 import { Field } from '../ui.jsx';
@@ -28,6 +28,7 @@ export default function Login() {
   const { loadBoot } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
   const [company, setCompany] = useState('BrainADZ');
@@ -100,8 +101,7 @@ export default function Login() {
             <h1 style={{ fontSize: 28, letterSpacing: '-0.5px' }}>Sign in</h1>
             <p className="muted mt-8">Welcome back to {company} Projects.</p>
             <form
-              className="col"
-              style={{ gap: 14, marginTop: 24 }}
+              className="col login-form"
               onSubmit={signIn}
             >
               {err && <div className="alert error">{err}</div>}
@@ -124,15 +124,26 @@ export default function Login() {
                 label="Password"
                 htmlFor="login-pass"
               >
-                <input
-                  id="login-pass"
-                  type="password"
-                  className="input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
+                <div className="login-password">
+                  <input
+                    id="login-pass"
+                    type={showPassword ? 'text' : 'password'}
+                    className="input"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="login-password-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
               </Field>
               <button
                 type="submit"
@@ -147,14 +158,8 @@ export default function Login() {
             </form>
             {import.meta.env.DEV && (
               <section
-                className="col mt-16"
+                className="login-demo"
                 aria-label="Temporary test access"
-                style={{
-                  gap: 10,
-                  padding: 16,
-                  border: '1px solid var(--border, #dce2ec)',
-                  borderRadius: 12,
-                }}
               >
                 <div className="b6">Temporary test access</div>
                 <p
@@ -164,41 +169,30 @@ export default function Login() {
                   Choose an account to fill the form, then click Sign in. Password:{' '}
                   <code>demo1234</code>
                 </p>
-                {QUICK_ACCOUNTS.map((account) => (
-                  <button
-                    key={account.email}
-                    type="button"
-                    className="demo-acc"
-                    disabled={busy}
-                    onClick={() => {
-                      setEmail(account.email);
-                      setPassword('demo1234');
-                      setErr(null);
-                    }}
-                  >
-                    <span
-                      className="grow"
-                      style={{ minWidth: 0, textAlign: 'left' }}
+                <div className="login-demo-grid">
+                  {QUICK_ACCOUNTS.map((account) => (
+                    <button
+                      key={account.email}
+                      type="button"
+                      className="demo-acc"
+                      disabled={busy}
+                      onClick={() => {
+                        setEmail(account.email);
+                        setPassword('demo1234');
+                        setErr(null);
+                      }}
                     >
-                      <span
-                        className="b6"
-                        style={{ display: 'block' }}
-                      >
-                        {account.label}
+                      <span className="grow login-demo-account-text">
+                        <span className="b6">{account.label}</span>
+                        <span className="xs muted">{account.email}</span>
                       </span>
-                      <span
-                        className="xs muted"
-                        style={{ display: 'block', overflowWrap: 'anywhere' }}
-                      >
-                        {account.email}
-                      </span>
-                    </span>
-                    <LogIn
-                      size={17}
-                      className="muted"
-                    />
-                  </button>
-                ))}
+                      <LogIn
+                        size={16}
+                        className="muted"
+                      />
+                    </button>
+                  ))}
+                </div>
                 <p
                   className="xs muted"
                   style={{ lineHeight: 1.5 }}

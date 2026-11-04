@@ -29,8 +29,26 @@ test('SEO demo adds a manager, executive and visible work without changing repea
         manager.id,
         vertical,
       ).level,
-      'manager',
+      'member',
     );
+    const anotherProject = db.run(
+      "INSERT INTO projects(code,vertical_id,name,owner_id,service_type) VALUES ('MKT-OTHER',?, 'Other Marketing project',?, 'social')",
+      vertical,
+      executive.id,
+    ).id;
+    const managerContext = {
+      db,
+      user: loadUser(db, manager.id),
+      body: {},
+      query: {},
+      services: { today: () => '2026-11-04', now: () => '2026-11-04T08:00:00.000Z' },
+    };
+    const visible = await handle(managerContext, 'GET', '/projects');
+    assert.deepEqual(
+      visible.items.map((p) => p.id),
+      [result.project_id],
+    );
+    await assert.rejects(handle(managerContext, 'GET', `/projects/${anotherProject}`), /not found/);
     const query = { department: 'seo', date: '2026-11-04' };
     const sheet = await handle(
       {
@@ -46,6 +64,20 @@ test('SEO demo adds a manager, executive and visible work without changing repea
     assert.equal(sheet.items.length, 1);
     assert.equal(sheet.items[0].project_id, result.project_id);
     assert.equal(seedSeoDemo(db, { today: '2026-11-05', passwordHash: 'different' }).added, false);
+    db.run(
+      "UPDATE user_verticals SET level='manager' WHERE user_id=? AND vertical_id=?",
+      manager.id,
+      vertical,
+    );
+    assert.equal(seedSeoDemo(db, { today: '2026-11-05', passwordHash: 'different' }).added, false);
+    assert.equal(
+      db.get(
+        'SELECT level FROM user_verticals WHERE user_id=? AND vertical_id=?',
+        manager.id,
+        vertical,
+      ).level,
+      'member',
+    );
     assert.equal(
       db.get('SELECT password_hash FROM users WHERE id=?', manager.id).password_hash,
       'test-hash',

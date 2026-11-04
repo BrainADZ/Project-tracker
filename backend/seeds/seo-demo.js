@@ -3,7 +3,7 @@ export const SEO_DEMO_PEOPLE = [
     key: 'seo-manager',
     name: 'Aditi Mehra (Demo)',
     title: 'SEO Manager',
-    level: 'manager',
+    level: 'member',
     color: '#0f766e',
   },
   {
@@ -21,9 +21,22 @@ const SEED_KEY = 'seo_demo_v1';
 // Additive and repeatable: never resets existing projects or passwords.
 export function seedSeoDemo(db, { today, passwordHash, now = new Date().toISOString() }) {
   const saved = db.get('SELECT value FROM settings WHERE key=?', SEED_KEY);
-  if (saved) return { added: false, ...JSON.parse(saved.value) };
   const vertical = db.get("SELECT id FROM verticals WHERE code='MKT' AND active=1");
   if (!vertical) throw new Error('An active Marketing vertical is required');
+  if (saved) {
+    const result = JSON.parse(saved.value);
+    const manager = db.get('SELECT id FROM users WHERE email=?', seoDemoEmail('seo-manager'));
+    if (
+      manager?.id === result.accounts?.['seo-manager'] &&
+      db.get('SELECT owner_id FROM projects WHERE id=?', result.project_id)?.owner_id === manager.id
+    )
+      db.run(
+        "UPDATE user_verticals SET level='member' WHERE user_id=? AND vertical_id=? AND level='manager'",
+        manager.id,
+        vertical.id,
+      );
+    return { added: false, ...result };
+  }
   return db.tx(() => {
     const people = {};
     for (const person of SEO_DEMO_PEOPLE) {

@@ -2,7 +2,7 @@
 
 Project management for the three BrainADZ verticals: **Live**, **Marketing** and **Exhibits**. It uses the same look as the BrainADZ HRMS.
 
-The main rule: **employees and project heads see their assigned projects within the verticals they have been given.** Project ownership, team membership, assigned tasks and social/content assignments grant access. A website head assigned to a website does not automatically see social media projects in the same Marketing vertical. Vertical managers oversee their vertical, and the CEO's administrator account sees all projects. The server applies this scope to project lists, board/timeline exports, dashboards, search, calendar, assets, notifications and direct links. Removing an assignment takes effect on the next request when no other project assignment remains.
+The main rule: **employees and project heads see their assigned projects within the verticals they have been given.** Project ownership, team membership, assigned tasks and social/content assignments grant access. A website head assigned to a website does not automatically see social media projects in the same Marketing vertical. Ordinary vertical managers oversee only their own vertical. The three named Business Heads (Live, Marketing and Exhibits) and the CEO's administrator account can see projects across all verticals. The server applies this scope to project lists, board/timeline exports, dashboards, search, calendar, assets, notifications and direct links. Removing an assignment takes effect on the next request when no other project assignment remains.
 
 ## What it does
 

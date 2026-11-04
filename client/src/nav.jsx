@@ -1,7 +1,6 @@
 // The pages in the main menu, shared by the docked sidebar and the floating menu, so both
 // show the same pages, counts and permissions.
 import { useApp } from './store.jsx';
-import { Megaphone, Code2, SearchCheck } from 'lucide-react';
 import {
   DashboardIcon,
   MyWorkIcon,
@@ -12,6 +11,9 @@ import {
   PastProjectsIcon,
   TeamAccessIcon,
   SettingsIcon,
+  SocialReportingIcon,
+  DevelopmentReportingIcon,
+  SeoReportingIcon,
 } from './navIcons.jsx';
 
 // keys: extra words the Quick Access search understands. tint: tile background in Quick Access.
@@ -45,7 +47,7 @@ export const NAV = [
     to: '/daily-reporting/social',
     department: 'social',
     label: 'Social Media Reporting',
-    icon: Megaphone,
+    icon: SocialReportingIcon,
     keys: 'daily reporting job sheet social content creative designer',
     tint: '#e2f7fa',
   },
@@ -53,7 +55,7 @@ export const NAV = [
     to: '/daily-reporting/development',
     department: 'development',
     label: 'Development Reporting',
-    icon: Code2,
+    icon: DevelopmentReportingIcon,
     keys: 'daily developer website software reporting',
     tint: '#e8effe',
   },
@@ -61,7 +63,7 @@ export const NAV = [
     to: '/daily-reporting/seo',
     department: 'seo',
     label: 'SEO Reporting',
-    icon: SearchCheck,
+    icon: SeoReportingIcon,
     keys: 'daily seo keywords rankings optimisation reporting',
     tint: '#eaf5ec',
   },

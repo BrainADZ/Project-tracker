@@ -47,6 +47,163 @@ function Grad({ id, from, to, x2 = 0, y2 = 1 }) {
   );
 }
 
+export function SocialReportingIcon(props) {
+  const id = useIds('body', 'front');
+  return (
+    <Svg {...props}>
+      <defs>
+        <Grad
+          id={id.body}
+          from="#56d2e7"
+          to="#168cbe"
+        />
+        <Grad
+          id={id.front}
+          from="#1fa9ca"
+          to="#1476a8"
+        />
+      </defs>
+      <path
+        d="M8 18a5 5 0 0 1 5-5h9l15-7v31l-15-7h-9a5 5 0 0 1-5-5z"
+        fill={`url(#${id.body})`}
+      />
+      <path
+        d="M22 13 37 6v31l-15-7z"
+        fill={`url(#${id.front})`}
+      />
+      <path
+        d="M15 31h9l-2.5 10a3.3 3.3 0 0 1-3.2 2.5h-2.1a3.3 3.3 0 0 1-3.2-4.1z"
+        fill="#0e6f9f"
+      />
+      <path
+        d="M10 19h10"
+        stroke="#d9f9ff"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M41 17.5c2 1.5 3 3.6 3 6s-1 4.5-3 6"
+        stroke="#31b7d7"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+export function DevelopmentReportingIcon(props) {
+  const id = useIds('frame', 'panel');
+  return (
+    <Svg {...props}>
+      <defs>
+        <Grad
+          id={id.frame}
+          from="#879bfa"
+          to="#4f5bcf"
+        />
+        <Grad
+          id={id.panel}
+          from="#f4f6ff"
+          to="#e1e7ff"
+        />
+      </defs>
+      <rect
+        x="3"
+        y="6"
+        width="42"
+        height="36"
+        rx="7"
+        fill={`url(#${id.frame})`}
+      />
+      <path
+        d="M3 13h42v22a7 7 0 0 1-7 7H10a7 7 0 0 1-7-7z"
+        fill={`url(#${id.panel})`}
+      />
+      <circle
+        cx="10"
+        cy="10"
+        r="1.5"
+        fill="#eff2ff"
+      />
+      <circle
+        cx="15"
+        cy="10"
+        r="1.5"
+        fill="#eff2ff"
+      />
+      <path
+        d="m18 22-6 6 6 6m12-12 6 6-6 6m-5-12-5 16"
+        stroke="#4d5dcc"
+        strokeWidth="3.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function SeoReportingIcon(props) {
+  const id = useIds('lens', 'chart');
+  return (
+    <Svg {...props}>
+      <defs>
+        <Grad
+          id={id.lens}
+          from="#67dba5"
+          to="#188c73"
+        />
+        <Grad
+          id={id.chart}
+          from="#b8f1d3"
+          to="#77d8af"
+        />
+      </defs>
+      <circle
+        cx="21.5"
+        cy="21.5"
+        r="16.5"
+        fill={`url(#${id.lens})`}
+      />
+      <circle
+        cx="21.5"
+        cy="21.5"
+        r="11.5"
+        fill="#edfdf4"
+      />
+      <rect
+        x="15"
+        y="23"
+        width="3.7"
+        height="6"
+        rx="1"
+        fill={`url(#${id.chart})`}
+      />
+      <rect
+        x="20"
+        y="19"
+        width="3.7"
+        height="10"
+        rx="1"
+        fill="#46bb8b"
+      />
+      <rect
+        x="25"
+        y="15"
+        width="3.7"
+        height="14"
+        rx="1"
+        fill="#168b70"
+      />
+      <path
+        d="m33.5 33.5 9 9"
+        stroke="#137d68"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function DashboardIcon(props) {
   const id = useIds('wall', 'roof', 'door');
   return (

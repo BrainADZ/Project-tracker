@@ -19,7 +19,7 @@ export const DEMO_PEOPLE = [
     name: 'Arvind Menon',
     title: 'Business Head – BrainADZ Live',
     color: '#e31b3b',
-    access: { Live: 'manager' },
+    access: { Live: 'manager', Marketing: 'manager', Exhibits: 'manager' },
   },
   {
     key: 'ishita',
@@ -54,7 +54,7 @@ export const DEMO_PEOPLE = [
     name: 'Kavita Rao',
     title: 'Head of Marketing',
     color: '#1fb2d6',
-    access: { Marketing: 'manager' },
+    access: { Live: 'manager', Marketing: 'manager', Exhibits: 'manager' },
   },
   {
     key: 'nandini',
@@ -89,7 +89,7 @@ export const DEMO_PEOPLE = [
     name: 'Suresh Iyer',
     title: 'Business Head – BrainADZ Exhibits',
     color: '#3c9a3a',
-    access: { Exhibits: 'manager' },
+    access: { Live: 'manager', Marketing: 'manager', Exhibits: 'manager' },
   },
   {
     key: 'rohan',
@@ -581,6 +581,36 @@ function rng(seed) {
 
 const ts = (date, h = 10, m = 0) =>
   `${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000Z`;
+
+// Existing demo databases keep their projects; update only the three named Business Heads.
+export function syncDemoHeadAccess(db) {
+  const heads = ['arvind', 'kavita', 'suresh'];
+  const verticals = db.all(
+    "SELECT id FROM verticals WHERE active=1 AND code IN ('LIV','MKT','EXH')",
+  );
+  return db.tx(() => {
+    let updated = 0;
+    for (const key of heads) {
+      const person = DEMO_PEOPLE.find((p) => p.key === key);
+      const user = db.get(
+        'SELECT id,role,title FROM users WHERE email=? AND active=1',
+        emailOf(person.name),
+      );
+      if (!user || user.role === 'admin' || user.title !== person.title) continue;
+      for (const vertical of verticals) {
+        const userId = Number(user.id);
+        const verticalId = Number(vertical.id);
+        if (!Number.isSafeInteger(userId) || !Number.isSafeInteger(verticalId))
+          throw new Error('Invalid demo head or vertical ID');
+        db.exec(
+          `INSERT INTO user_verticals(user_id,vertical_id,level) VALUES (${userId},${verticalId},'manager') ON CONFLICT(user_id,vertical_id) DO UPDATE SET level=excluded.level`,
+        );
+        updated++;
+      }
+    }
+    return updated;
+  });
+}
 
 export function seedDemo(db, { today, passwordHash, now = new Date().toISOString() }) {
   if (db.get('SELECT COUNT(*) AS n FROM projects').n > 0) return false;
