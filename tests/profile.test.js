@@ -13,7 +13,24 @@ test('merged profile migrations repair both version-15 and version-16 database l
     seedBasics(db);
     try {
       const id = db.run(
-        "INSERT INTO users(name,email,password_hash,profile_json,profile_data) VALUES ('Existing','merged@test.local','saved-hash',?,?)",
+        `
+          INSERT INTO
+            users (
+              name,
+              email,
+              password_hash,
+              profile_json,
+              profile_data
+            )
+          VALUES
+            (
+              'Existing',
+              'merged@test.local',
+              'saved-hash',
+              ?,
+              ?
+            )
+        `,
         JSON.stringify({ about: 'Current bio' }),
         JSON.stringify({
           address: 'Saved address',
@@ -25,7 +42,20 @@ test('merged profile migrations repair both version-15 and version-16 database l
         db.exec('ALTER TABLE users DROP COLUMN photo; ALTER TABLE users DROP COLUMN profile_data;');
       else
         db.exec(
-          'DROP INDEX idx_users_username; DROP INDEX idx_users_employee_code; ALTER TABLE users DROP COLUMN username; ALTER TABLE users DROP COLUMN employee_code; ALTER TABLE users DROP COLUMN profile_json;',
+          `
+            DROP INDEX idx_users_username;
+            
+            DROP INDEX idx_users_employee_code;
+            
+            ALTER TABLE users
+            DROP COLUMN username;
+            
+            ALTER TABLE users
+            DROP COLUMN employee_code;
+            
+            ALTER TABLE users
+            DROP COLUMN profile_json;
+          `,
         );
       db.run(
         "UPDATE settings SET value=? WHERE key='schema_version'",
@@ -59,10 +89,33 @@ test('existing version 14 accounts retain login and contact data through the pro
   seedBasics(db);
   try {
     const id = db.run(
-      "INSERT INTO users(name,email,password_hash,phone) VALUES ('Existing Person','existing@test.local','preserved-hash','123456789')",
+      `
+        INSERT INTO
+          users (name, email, password_hash, phone)
+        VALUES
+          (
+            'Existing Person',
+            'existing@test.local',
+            'preserved-hash',
+            '123456789'
+          )
+      `,
     ).id;
     db.exec(
-      'DROP INDEX idx_users_username; DROP INDEX idx_users_employee_code; ALTER TABLE users DROP COLUMN username; ALTER TABLE users DROP COLUMN employee_code; ALTER TABLE users DROP COLUMN profile_json;',
+      `
+        DROP INDEX idx_users_username;
+        
+        DROP INDEX idx_users_employee_code;
+        
+        ALTER TABLE users
+        DROP COLUMN username;
+        
+        ALTER TABLE users
+        DROP COLUMN employee_code;
+        
+        ALTER TABLE users
+        DROP COLUMN profile_json;
+      `,
     );
     db.run("UPDATE settings SET value='14' WHERE key='schema_version'");
     migrate(db);
@@ -89,7 +142,12 @@ test('profile edits preserve fixed login IDs and native account access', async (
       "INSERT INTO users(name,email,role) VALUES ('CEO','ceo@test.local','admin')",
     ).id;
     const member = db.run(
-      "INSERT INTO users(name,email,role,must_change_password) VALUES ('Neha Sharma','neha@test.local','member',1)",
+      `
+        INSERT INTO
+          users (name, email, role, must_change_password)
+        VALUES
+          ('Neha Sharma', 'neha@test.local', 'member', 1)
+      `,
     ).id;
     const vertical = db.get("SELECT id FROM verticals WHERE code='MKT'").id;
     db.run(

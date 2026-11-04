@@ -6,7 +6,20 @@ export function ensureUserIdentity(db, id) {
   if (!user) return {};
   if (user.username && user.employee_code) return user;
   const vertical = db.get(
-    'SELECT v.code FROM user_verticals a JOIN verticals v ON v.id=a.vertical_id WHERE a.user_id=? ORDER BY v.sort,v.id LIMIT 1',
+    `
+      SELECT
+        v.code
+      FROM
+        user_verticals a
+        JOIN verticals v ON v.id = a.vertical_id
+      WHERE
+        a.user_id = ?
+      ORDER BY
+        v.sort,
+        v.id
+      LIMIT
+        1
+    `,
     id,
   );
   const prefix = { LIV: 'BZL', MKT: 'BZM', EXH: 'BZE' }[vertical?.code] || 'BZ';

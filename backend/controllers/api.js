@@ -98,7 +98,20 @@ export async function handle(ctx, method, path) {
 const uid = (ctx) => ctx.user.id;
 function visibleUnread(ctx) {
   return ctx.db.get(
-    `SELECT COUNT(*) AS n FROM notifications n LEFT JOIN projects p ON p.id=n.project_id WHERE n.user_id=? AND n.read=0 AND (n.project_id IS NULL OR ${projectVisibilitySql(ctx.user)})`,
+    `
+      SELECT
+        COUNT(*) AS n
+      FROM
+        notifications n
+        LEFT JOIN projects p ON p.id = n.project_id
+      WHERE
+        n.user_id = ?
+        AND n.read = 0
+        AND (
+          n.project_id IS NULL
+          OR ${projectVisibilitySql(ctx.user)}
+        )
+    `,
     uid(ctx),
   ).n;
 }
@@ -118,7 +131,19 @@ function log(ctx, project_id, action, detail = '', task_id = null) {
 function notify(ctx, user_id, project_id, textMsg, task_id = null, link = '') {
   if (!user_id || user_id === uid(ctx)) return;
   ctx.db.run(
-    'INSERT INTO notifications (user_id, project_id, task_id, text, link, created_at) VALUES (?,?,?,?,?,?)',
+    `
+      INSERT INTO
+        notifications (
+          user_id,
+          project_id,
+          task_id,
+          text,
+          link,
+          created_at
+        )
+      VALUES
+        (?, ?, ?, ?, ?, ?)
+    `,
     user_id,
     project_id,
     task_id,
@@ -160,17 +185,46 @@ function scopeVerticals(ctx) {
   return visible;
 }
 
-const PROJECT_COLS = `p.*, v.short AS vertical, v.name AS vertical_name, v.color AS vertical_color, v.key_date_label, v.ready_label,
-  o.name AS owner_name, o.color AS owner_color,
-  (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) AS task_total,
-  (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = 'done') AS task_done,
-  (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status != 'done' AND t.due_date < ?) AS task_overdue,
-  (SELECT COUNT(*) FROM files f WHERE f.project_id = p.id) AS file_count,
-  (SELECT COUNT(*) FROM files f WHERE f.project_id = p.id AND f.is_final = 1) AS final_count,
-  (SELECT f.id || '|' || COALESCE(f.storage_key, '') || '|' || f.mime FROM files f
-    WHERE f.project_id = p.id AND f.mime LIKE 'image/%' ORDER BY f.is_final DESC, f.id DESC LIMIT 1) AS cover`;
-const PROJECT_FROM =
-  'FROM projects p JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users o ON o.id = p.owner_id';
+const PROJECT_COLS = `
+  p.*,
+  v.short AS vertical,
+  v.name AS vertical_name,
+  v.color AS vertical_color,
+  v.key_date_label,
+  v.ready_label,
+  o.name AS owner_name,
+  o.color AS owner_color,
+  (
+    SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id
+  ) AS task_total,
+  (
+    SELECT COUNT(*) FROM tasks t
+    WHERE t.project_id = p.id AND t.status = 'done'
+  ) AS task_done,
+  (
+    SELECT COUNT(*) FROM tasks t
+    WHERE t.project_id = p.id AND t.status != 'done' AND t.due_date < ?
+  ) AS task_overdue,
+  (
+    SELECT COUNT(*) FROM files f WHERE f.project_id = p.id
+  ) AS file_count,
+  (
+    SELECT COUNT(*) FROM files f
+    WHERE f.project_id = p.id AND f.is_final = 1
+  ) AS final_count,
+  (
+    SELECT f.id || '|' || COALESCE(f.storage_key, '') || '|' || f.mime
+    FROM files f
+    WHERE f.project_id = p.id AND f.mime LIKE 'image/%'
+    ORDER BY f.is_final DESC, f.id DESC
+    LIMIT 1
+  ) AS cover
+`;
+const PROJECT_FROM = `
+  FROM projects p
+  JOIN verticals v ON v.id = p.vertical_id
+  LEFT JOIN users o ON o.id = p.owner_id
+`;
 
 // "12|key|image/png" -> { id, storage_key, mime }, the image shown on board cards.
 function parseCover(c) {
@@ -390,10 +444,21 @@ function unseenByProject(ctx, ids) {
   const me = uid(ctx);
   for (const src of NEW_SOURCES) {
     const rows = ctx.db.all(
-      `SELECT x.project_id AS pid, COUNT(*) AS n FROM ${src.table} x
-       LEFT JOIN seen s ON s.user_id = ? AND s.scope = 'project:' || x.project_id || ':${src.tab}'
-       WHERE x.project_id IN (${placeholders(ids)}) AND COALESCE(x.${src.who}, 0) != ? AND x.created_at > COALESCE(s.seen_at, '')
-       GROUP BY x.project_id`,
+      `
+        SELECT
+          x.project_id AS pid,
+          COUNT(*) AS n
+        FROM
+          ${src.table} x
+          LEFT JOIN seen s ON s.user_id = ?
+          AND s.scope = 'project:' || x.project_id || ':${src.tab}'
+        WHERE
+          x.project_id IN (${placeholders(ids)})
+          AND COALESCE(x.${src.who}, 0) != ?
+          AND x.created_at > COALESCE(s.seen_at, '')
+        GROUP BY
+          x.project_id
+      `,
       me,
       ...ids,
       me,
@@ -413,7 +478,15 @@ route('POST', '/seen', (ctx) => {
   if (m[2]) getProjectRaw(ctx, m[2]);
   if (m[4]) getGroup(ctx, m[4]);
   ctx.db.run(
-    'INSERT INTO seen (user_id, scope, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, scope) DO UPDATE SET seen_at = excluded.seen_at',
+    `
+      INSERT INTO
+        seen (user_id, scope, seen_at)
+      VALUES
+        (?, ?, ?)
+      ON CONFLICT (user_id, scope) DO UPDATE
+      SET
+        seen_at = excluded.seen_at
+    `,
     uid(ctx),
     scope,
     ctx.now,
@@ -471,7 +544,20 @@ route('GET', '/bootstrap', (ctx) => {
   const templates = vids.length
     ? db
         .all(
-          `SELECT id, vertical_id, name, description, stages FROM templates WHERE vertical_id IN (${placeholders(vids)}) ORDER BY name`,
+          `
+            SELECT
+              id,
+              vertical_id,
+              name,
+              description,
+              stages
+            FROM
+              templates
+            WHERE
+              vertical_id IN (${placeholders(vids)})
+            ORDER BY
+              name
+          `,
           ...vids,
         )
         .map((t) => ({ ...t, stages: parseJSON(t.stages, []) }))
@@ -590,12 +676,39 @@ route('GET', '/dashboard', (ctx) => {
   const openP = `p.status IN ${OPEN_IN}`;
 
   const k = db.get(
-    `SELECT
-      SUM(CASE WHEN p.status IN ('active','ready') THEN 1 ELSE 0 END) AS active,
-      SUM(CASE WHEN p.status IN ('planning','on_hold') THEN 1 ELSE 0 END) AS planning,
-      SUM(CASE WHEN ${openP} AND p.health != 'on_track' THEN 1 ELSE 0 END) AS at_risk,
-      SUM(CASE WHEN p.status = 'completed' AND substr(p.completed_at, 1, 4) = ? THEN 1 ELSE 0 END) AS delivered
-     FROM projects p WHERE ${inV}`,
+    `
+      SELECT
+        SUM(
+          CASE
+            WHEN p.status IN ('active', 'ready') THEN 1
+            ELSE 0
+          END
+        ) AS active,
+        SUM(
+          CASE
+            WHEN p.status IN ('planning', 'on_hold') THEN 1
+            ELSE 0
+          END
+        ) AS planning,
+        SUM(
+          CASE
+            WHEN ${openP}
+            AND p.health != 'on_track' THEN 1
+            ELSE 0
+          END
+        ) AS at_risk,
+        SUM(
+          CASE
+            WHEN p.status = 'completed'
+            AND substr(p.completed_at, 1, 4) = ? THEN 1
+            ELSE 0
+          END
+        ) AS delivered
+      FROM
+        projects p
+      WHERE
+        ${inV}
+    `,
     year,
     ...vids,
   );
@@ -613,10 +726,29 @@ route('GET', '/dashboard', (ctx) => {
 
   const myTasks = db
     .all(
-      `SELECT t.*, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical
-     FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND ${openP} AND t.assignee_id = ? AND t.status != 'done'
-     ORDER BY t.due_date IS NULL, t.due_date, t.priority = 'urgent' DESC LIMIT 8`,
+      `
+        SELECT
+          t.*,
+          p.code,
+          p.name AS project_name,
+          v.color AS vertical_color,
+          v.short AS vertical
+        FROM
+          tasks t
+          JOIN projects p ON p.id = t.project_id
+          JOIN verticals v ON v.id = p.vertical_id
+        WHERE
+          ${inV}
+          AND ${openP}
+          AND t.assignee_id = ?
+          AND t.status != 'done'
+        ORDER BY
+          t.due_date IS NULL,
+          t.due_date,
+          t.priority = 'urgent' DESC
+        LIMIT
+          8
+      `,
       ...vids,
       uid(ctx),
     )
@@ -624,9 +756,32 @@ route('GET', '/dashboard', (ctx) => {
 
   const attention = db
     .all(
-      `SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE ${inV} AND ${openP}
-       AND (p.health != 'on_track' OR p.due_date < ? OR EXISTS (SELECT 1 FROM tasks t WHERE t.project_id = p.id AND t.status != 'done' AND t.due_date < ?))
-     ORDER BY p.health = 'off_track' DESC, p.due_date LIMIT 8`,
+      `
+        SELECT
+          ${PROJECT_COLS} ${PROJECT_FROM}
+        WHERE
+          ${inV}
+          AND ${openP}
+          AND (
+            p.health != 'on_track'
+            OR p.due_date < ?
+            OR EXISTS (
+              SELECT
+                1
+              FROM
+                tasks t
+              WHERE
+                t.project_id = p.id
+                AND t.status != 'done'
+                AND t.due_date < ?
+            )
+          )
+        ORDER BY
+          p.health = 'off_track' DESC,
+          p.due_date
+        LIMIT
+          8
+      `,
       today,
       ...vids,
       today,
@@ -638,9 +793,36 @@ route('GET', '/dashboard', (ctx) => {
   const horizon = addDays(today, 60);
   const upcoming = [];
   for (const p of db.all(
-    `SELECT p.id, p.code, p.name, p.client, p.key_date, p.due_date, p.venue, p.city, v.short AS vertical, v.color AS vertical_color, v.key_date_label
-     FROM projects p JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND ${openP} AND ((p.key_date >= ? AND p.key_date <= ?) OR (p.due_date >= ? AND p.due_date <= ?))`,
+    `
+      SELECT
+        p.id,
+        p.code,
+        p.name,
+        p.client,
+        p.key_date,
+        p.due_date,
+        p.venue,
+        p.city,
+        v.short AS vertical,
+        v.color AS vertical_color,
+        v.key_date_label
+      FROM
+        projects p
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND ${openP}
+        AND (
+          (
+            p.key_date >= ?
+            AND p.key_date <= ?
+          )
+          OR (
+            p.due_date >= ?
+            AND p.due_date <= ?
+          )
+        )
+    `,
     ...vids,
     today,
     horizon,
@@ -653,9 +835,29 @@ route('GET', '/dashboard', (ctx) => {
       upcoming.push({ type: 'due', date: p.due_date, label: 'Project due', project: p });
   }
   for (const m of db.all(
-    `SELECT m.*, p.code, p.name AS project_name, p.client, v.short AS vertical, v.color AS vertical_color
-     FROM milestones m JOIN projects p ON p.id = m.project_id JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND ${openP} AND m.done = 0 AND m.due_date >= ? AND m.due_date <= ? AND (p.key_date IS NULL OR m.due_date != p.key_date)`,
+    `
+      SELECT
+        m.*,
+        p.code,
+        p.name AS project_name,
+        p.client,
+        v.short AS vertical,
+        v.color AS vertical_color
+      FROM
+        milestones m
+        JOIN projects p ON p.id = m.project_id
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND ${openP}
+        AND m.done = 0
+        AND m.due_date >= ?
+        AND m.due_date <= ?
+        AND (
+          p.key_date IS NULL
+          OR m.due_date != p.key_date
+        )
+    `,
     ...vids,
     today,
     horizon,
@@ -677,14 +879,57 @@ route('GET', '/dashboard', (ctx) => {
   upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.type === 'key' ? -1 : 1));
 
   const by_vertical = db.all(
-    `SELECT v.id, v.short, v.name, v.color,
-      SUM(CASE WHEN p.status IN ${OPEN_IN} THEN 1 ELSE 0 END) AS open,
-      SUM(CASE WHEN p.status IN ('active','ready') THEN 1 ELSE 0 END) AS active,
-      SUM(CASE WHEN p.status IN ${OPEN_IN} AND p.health != 'on_track' THEN 1 ELSE 0 END) AS at_risk,
-      SUM(CASE WHEN p.status = 'completed' AND substr(p.completed_at, 1, 4) = ? THEN 1 ELSE 0 END) AS delivered,
-      SUM(CASE WHEN p.status IN ${OPEN_IN} THEN COALESCE(p.budget, 0) ELSE 0 END) AS open_budget
-     FROM verticals v LEFT JOIN projects p ON p.vertical_id = v.id AND ${projectVisibilitySql(ctx.user)}
-     WHERE v.id IN (${placeholders(vids)}) AND v.active = 1 GROUP BY v.id ORDER BY v.sort, v.id`,
+    `
+      SELECT
+        v.id,
+        v.short,
+        v.name,
+        v.color,
+        SUM(
+          CASE
+            WHEN p.status IN ${OPEN_IN} THEN 1
+            ELSE 0
+          END
+        ) AS open,
+        SUM(
+          CASE
+            WHEN p.status IN ('active', 'ready') THEN 1
+            ELSE 0
+          END
+        ) AS active,
+        SUM(
+          CASE
+            WHEN p.status IN ${OPEN_IN}
+            AND p.health != 'on_track' THEN 1
+            ELSE 0
+          END
+        ) AS at_risk,
+        SUM(
+          CASE
+            WHEN p.status = 'completed'
+            AND substr(p.completed_at, 1, 4) = ? THEN 1
+            ELSE 0
+          END
+        ) AS delivered,
+        SUM(
+          CASE
+            WHEN p.status IN ${OPEN_IN} THEN COALESCE(p.budget, 0)
+            ELSE 0
+          END
+        ) AS open_budget
+      FROM
+        verticals v
+        LEFT JOIN projects p ON p.vertical_id = v.id
+        AND ${projectVisibilitySql(ctx.user)}
+      WHERE
+        v.id IN (${placeholders(vids)})
+        AND v.active = 1
+      GROUP BY
+        v.id
+      ORDER BY
+        v.sort,
+        v.id
+    `,
     year,
     ...vids,
   );
@@ -713,10 +958,29 @@ function recentActivity(ctx, vids, projectId, limit) {
     projectVisibilitySql(ctx.user);
   const params = projectId ? [projectId] : vids;
   return ctx.db.all(
-    `SELECT a.*, u.name AS user_name, u.color AS user_color, p.code, p.name AS project_name, v.color AS vertical_color, t.title AS task_title
-     FROM activity a JOIN projects p ON p.id = a.project_id JOIN verticals v ON v.id = p.vertical_id
-     LEFT JOIN users u ON u.id = a.user_id LEFT JOIN tasks t ON t.id = a.task_id
-     WHERE ${where} ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
+    `
+      SELECT
+        a.*,
+        u.name AS user_name,
+        u.color AS user_color,
+        p.code,
+        p.name AS project_name,
+        v.color AS vertical_color,
+        t.title AS task_title
+      FROM
+        activity a
+        JOIN projects p ON p.id = a.project_id
+        JOIN verticals v ON v.id = p.vertical_id
+        LEFT JOIN users u ON u.id = a.user_id
+        LEFT JOIN tasks t ON t.id = a.task_id
+      WHERE
+        ${where}
+      ORDER BY
+        a.created_at DESC,
+        a.id DESC
+      LIMIT
+        ?
+    `,
     ...params,
     limit,
   );
@@ -747,7 +1011,18 @@ route('GET', '/projects', (ctx) => {
   }
   if (q.member === 'me') {
     where.push(
-      '(p.owner_id = ? OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = ?) OR EXISTS (SELECT 1 FROM tasks t WHERE t.project_id = p.id AND t.assignee_id = ?))',
+      `(p.owner_id = ?
+        OR EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.project_id = p.id AND pm.user_id = ?
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM tasks t
+          WHERE t.project_id = p.id AND t.assignee_id = ?
+        )
+      )`,
     );
     params.push(uid(ctx), uid(ctx), uid(ctx));
   }
@@ -766,17 +1041,39 @@ route('GET', '/projects', (ctx) => {
   if (q.q) {
     const like = `%${String(q.q).trim()}%`;
     where.push(
-      '(p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ? OR p.venue LIKE ? OR p.city LIKE ?)',
+      `(p.name LIKE ?
+        OR p.code LIKE ?
+        OR p.client LIKE ?
+        OR p.tags LIKE ?
+        OR p.venue LIKE ?
+        OR p.city LIKE ?
+      )`,
     );
     params.push(like, like, like, like, like, like);
   }
   const order =
     scope === 'past'
       ? 'COALESCE(p.key_date, p.due_date, p.completed_at) DESC'
-      : "CASE p.status WHEN 'active' THEN 0 WHEN 'planning' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END, p.due_date IS NULL, COALESCE(p.key_date, p.due_date)";
+      : `CASE p.status
+          WHEN 'active' THEN 0
+          WHEN 'planning' THEN 1
+          WHEN 'on_hold' THEN 2
+          ELSE 3
+        END,
+        p.due_date IS NULL,
+        COALESCE(p.key_date, p.due_date)`;
   const items = db
     .all(
-      `SELECT ${PROJECT_COLS} ${PROJECT_FROM} WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT 500`,
+      `
+        SELECT
+          ${PROJECT_COLS} ${PROJECT_FROM}
+        WHERE
+          ${where.join(' AND ')}
+        ORDER BY
+          ${order}
+        LIMIT
+          500
+      `,
       today,
       ...params,
     )
@@ -799,7 +1096,21 @@ route('GET', '/projects/facets', (ctx) => {
   const inV = `p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)}`;
   return {
     clients: ctx.db.all(
-      `SELECT client AS name, COUNT(*) AS n, MAX(COALESCE(key_date, due_date)) AS last FROM projects p WHERE ${inV} AND client != '' GROUP BY client ORDER BY client`,
+      `
+        SELECT
+          client AS name,
+          COUNT(*) AS n,
+          MAX(COALESCE(key_date, due_date)) AS last
+        FROM
+          projects p
+        WHERE
+          ${inV}
+          AND client != ''
+        GROUP BY
+          client
+        ORDER BY
+          client
+      `,
       ...vids,
     ),
     cities: ctx.db
@@ -810,7 +1121,20 @@ route('GET', '/projects/facets', (ctx) => {
       .map((r) => r.city),
     years: ctx.db
       .all(
-        `SELECT DISTINCT substr(COALESCE(key_date, due_date, completed_at, created_at), 1, 4) AS y FROM projects p WHERE ${inV} ORDER BY y DESC`,
+        `
+          SELECT DISTINCT
+            substr(
+              COALESCE(key_date, due_date, completed_at, created_at),
+              1,
+              4
+            ) AS y
+          FROM
+            projects p
+          WHERE
+            ${inV}
+          ORDER BY
+            y DESC
+        `,
         ...vids,
       )
       .map((r) => r.y)
@@ -868,9 +1192,60 @@ route('POST', '/projects', (ctx) => {
     const code = nextCode(db, vertical, f.start_date || today);
     const status = f.status || 'planning';
     const { id } = db.run(
-      `INSERT INTO projects (code, vertical_id, name, client, description, status, health, priority, stages, stage, owner_id,
-        start_date, due_date, key_date, venue, city, budget, tags, template_id, completed_at, created_by, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `
+        INSERT INTO
+          projects (
+            code,
+            vertical_id,
+            name,
+            client,
+            description,
+            status,
+            health,
+            priority,
+            stages,
+            stage,
+            owner_id,
+            start_date,
+            due_date,
+            key_date,
+            venue,
+            city,
+            budget,
+            tags,
+            template_id,
+            completed_at,
+            created_by,
+            created_at,
+            updated_at
+          )
+        VALUES
+          (
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?
+          )
+      `,
       code,
       verticalId,
       f.name,
@@ -940,8 +1315,29 @@ route('POST', '/projects', (ctx) => {
         }
         const checklist = parseJSON(t.checklist, []).map((c) => ({ text: c.text, done: false }));
         db.run(
-          `INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, assigned_at, assigned_by, stage, start_date, due_date, checklist, sort, created_by, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          `
+            INSERT INTO
+              tasks (
+                project_id,
+                title,
+                description,
+                status,
+                priority,
+                assignee_id,
+                assigned_at,
+                assigned_by,
+                stage,
+                start_date,
+                due_date,
+                checklist,
+                sort,
+                created_by,
+                created_at,
+                updated_at
+              )
+            VALUES
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
           id,
           t.title,
           t.description,
@@ -982,8 +1378,24 @@ route('POST', '/projects', (ctx) => {
       };
       parseJSON(template.tasks, []).forEach((t, i) => {
         db.run(
-          `INSERT INTO tasks (project_id, title, description, status, priority, stage, due_date, sort, created_by, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          `
+            INSERT INTO
+              tasks (
+                project_id,
+                title,
+                description,
+                status,
+                priority,
+                stage,
+                due_date,
+                sort,
+                created_by,
+                created_at,
+                updated_at
+              )
+            VALUES
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
           id,
           t.title,
           t.description || '',
@@ -1027,8 +1439,21 @@ route('GET', '/projects/:id', (ctx) => {
   const p = getProjectFull(ctx, ctx.params.id);
   const { db } = ctx;
   const members = db.all(
-    `SELECT u.id, u.name, u.title, u.color, u.email FROM project_members pm JOIN users u ON u.id = pm.user_id
-     WHERE pm.project_id = ? ORDER BY u.name`,
+    `
+      SELECT
+        u.id,
+        u.name,
+        u.title,
+        u.color,
+        u.email
+      FROM
+        project_members pm
+        JOIN users u ON u.id = pm.user_id
+      WHERE
+        pm.project_id = ?
+      ORDER BY
+        u.name
+    `,
     p.id,
   );
   const milestones = db.all(
@@ -1042,7 +1467,23 @@ route('GET', '/projects/:id', (ctx) => {
   ))
     taskStats[r.status] = r.n;
   const stageStats = db.all(
-    `SELECT stage, COUNT(*) AS total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done FROM tasks WHERE project_id = ? GROUP BY stage`,
+    `
+      SELECT
+        stage,
+        COUNT(*) AS total,
+        SUM(
+          CASE
+            WHEN status = 'done' THEN 1
+            ELSE 0
+          END
+        ) AS done
+      FROM
+        tasks
+      WHERE
+        project_id = ?
+      GROUP BY
+        stage
+    `,
     p.id,
   );
   const upcoming = db
@@ -1154,7 +1595,19 @@ route('PATCH', '/projects/:id', (ctx) => {
   if (
     ['completed', 'cancelled'].includes(f.status) &&
     db.get(
-      'SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key JOIN tasks t ON t.id=w.task_id WHERE t.project_id=? AND s.ended_at IS NULL LIMIT 1',
+      `
+        SELECT
+          s.id
+        FROM
+          report_work_sessions s
+          JOIN report_work w ON w.work_key = s.work_key
+          JOIN tasks t ON t.id = w.task_id
+        WHERE
+          t.project_id = ?
+          AND s.ended_at IS NULL
+        LIMIT
+          1
+      `,
       p.id,
     )
   )
@@ -1174,7 +1627,13 @@ route('PATCH', '/projects/:id', (ctx) => {
     if (isDevelopmentProject(merged)) {
       const team = projectRoleIds(parseJSON(f.service_details, {}));
       const outside = db.get(
-        "SELECT t.id FROM tasks t LEFT JOIN report_work w ON w.task_id=t.id WHERE t.project_id=? AND (t.status!='done' OR COALESCE(w.revision_pending,0)>0) AND t.assignee_id IS NOT NULL AND t.assignee_id NOT IN (" +
+        `SELECT t.id
+         FROM tasks t
+         LEFT JOIN report_work w ON w.task_id = t.id
+         WHERE t.project_id = ?
+           AND (t.status != 'done' OR COALESCE(w.revision_pending, 0) > 0)
+           AND t.assignee_id IS NOT NULL
+           AND t.assignee_id NOT IN (` +
           placeholders(websiteDevelopers(f)) +
           ') LIMIT 1',
         p.id,
@@ -1272,7 +1731,21 @@ route('PUT', '/projects/:id/members', (ctx) => {
   });
   return {
     members: ctx.db.all(
-      'SELECT u.id, u.name, u.title, u.color, u.email FROM project_members pm JOIN users u ON u.id = pm.user_id WHERE pm.project_id = ? ORDER BY u.name',
+      `
+        SELECT
+          u.id,
+          u.name,
+          u.title,
+          u.color,
+          u.email
+        FROM
+          project_members pm
+          JOIN users u ON u.id = pm.user_id
+        WHERE
+          pm.project_id = ?
+        ORDER BY
+          u.name
+      `,
       p.id,
     ),
   };
@@ -1281,9 +1754,22 @@ route('PUT', '/projects/:id/members', (ctx) => {
 route('GET', '/projects/:id/activity', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
   const comments = ctx.db.all(
-    `SELECT ${COMMENT_COLS}, t.title AS task_title FROM comments c
-     LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by LEFT JOIN tasks t ON t.id = c.task_id
-     WHERE c.project_id = ? ORDER BY c.id DESC LIMIT 200`,
+    `
+      SELECT
+        ${COMMENT_COLS},
+        t.title AS task_title
+      FROM
+        comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        LEFT JOIN users d ON d.id = c.delete_decided_by
+        LEFT JOIN tasks t ON t.id = c.task_id
+      WHERE
+        c.project_id = ?
+      ORDER BY
+        c.id DESC
+      LIMIT
+        200
+    `,
     p.id,
   );
   const seen = seenAt(ctx.db, uid(ctx), `project:${p.id}:discussion`);
@@ -1302,7 +1788,18 @@ route('GET', '/projects/:id/tasks', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
   const items = ctx.db
     .all(
-      `SELECT ${TASK_COLS} FROM tasks t LEFT JOIN users u ON u.id = t.assignee_id WHERE t.project_id = ? ORDER BY t.sort, t.id`,
+      `
+        SELECT
+          ${TASK_COLS}
+        FROM
+          tasks t
+          LEFT JOIN users u ON u.id = t.assignee_id
+        WHERE
+          t.project_id = ?
+        ORDER BY
+          t.sort,
+          t.id
+      `,
       p.id,
     )
     .map((t) => shapeTask(t, ctx.today));
@@ -1376,8 +1873,30 @@ route('POST', '/projects/:id/tasks', (ctx) => {
   return db.tx(() => {
     const status = f.status || 'todo';
     const { id } = db.run(
-      `INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, assigned_at, assigned_by, stage, start_date, due_date, checklist, sort, created_by, created_at, updated_at, completed_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `
+        INSERT INTO
+          tasks (
+            project_id,
+            title,
+            description,
+            status,
+            priority,
+            assignee_id,
+            assigned_at,
+            assigned_by,
+            stage,
+            start_date,
+            due_date,
+            checklist,
+            sort,
+            created_by,
+            created_at,
+            updated_at,
+            completed_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       p.id,
       f.title,
       f.description || '',
@@ -1431,16 +1950,51 @@ route('GET', '/tasks/:id', (ctx) => {
   const { task, project } = getTaskRaw(ctx, ctx.params.id);
   const comments = ctx.db
     .all(
-      `SELECT ${COMMENT_COLS} FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by WHERE c.task_id = ? ORDER BY c.id`,
+      `
+        SELECT
+          ${COMMENT_COLS}
+        FROM
+          comments c
+          LEFT JOIN users u ON u.id = c.user_id
+          LEFT JOIN users d ON d.id = c.delete_decided_by
+        WHERE
+          c.task_id = ?
+        ORDER BY
+          c.id
+      `,
       task.id,
     )
     .map((c) => shapeComment(ctx, c, project));
   const files = ctx.db.all(
-    'SELECT f.*, u.name AS uploader_name FROM files f LEFT JOIN users u ON u.id = f.uploaded_by WHERE f.task_id = ? ORDER BY f.id DESC',
+    `
+      SELECT
+        f.*,
+        u.name AS uploader_name
+      FROM
+        files f
+        LEFT JOIN users u ON u.id = f.uploaded_by
+      WHERE
+        f.task_id = ?
+      ORDER BY
+        f.id DESC
+    `,
     task.id,
   );
   const history = ctx.db.all(
-    'SELECT a.*, u.name AS user_name FROM activity a LEFT JOIN users u ON u.id = a.user_id WHERE a.task_id = ? ORDER BY a.id DESC LIMIT 30',
+    `
+      SELECT
+        a.*,
+        u.name AS user_name
+      FROM
+        activity a
+        LEFT JOIN users u ON u.id = a.user_id
+      WHERE
+        a.task_id = ?
+      ORDER BY
+        a.id DESC
+      LIMIT
+        30
+    `,
     task.id,
   );
   const v = ctx.db.get('SELECT short, color FROM verticals WHERE id = ?', project.vertical_id);
@@ -1519,7 +2073,20 @@ route('PATCH', '/tasks/:id', (ctx) => {
     ((ctx.body.status !== undefined && ctx.body.status !== task.status) ||
       (ctx.body.assignee_id !== undefined && Number(ctx.body.assignee_id) !== task.assignee_id)) &&
     db.get(
-      'SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE s.ended_at IS NULL AND (w.task_id=? OR e.parent_task_id=?)',
+      `
+        SELECT
+          s.id
+        FROM
+          report_work_sessions s
+          JOIN report_work w ON w.work_key = s.work_key
+          LEFT JOIN extra_work e ON e.id = w.extra_id
+        WHERE
+          s.ended_at IS NULL
+          AND (
+            w.task_id = ?
+            OR e.parent_task_id = ?
+          )
+      `,
       task.id,
       task.id,
     )
@@ -1580,7 +2147,21 @@ route('PATCH', '/tasks/:id', (ctx) => {
     );
     if (isDevelopmentProject(project) && !ctx.timerTransition && f.status === 'done')
       db.run(
-        'UPDATE report_work SET revision_pending=0 WHERE task_id=? OR extra_id IN (SELECT id FROM extra_work WHERE parent_task_id=?)',
+        `
+          UPDATE report_work
+          SET
+            revision_pending = 0
+          WHERE
+            task_id = ?
+            OR extra_id IN (
+              SELECT
+                id
+              FROM
+                extra_work
+              WHERE
+                parent_task_id = ?
+            )
+        `,
         task.id,
         task.id,
       );
@@ -1699,9 +2280,27 @@ route('GET', '/tasks', (ctx) => {
   const order = scope === 'done' ? 't.completed_at DESC' : 't.due_date IS NULL, t.due_date, t.sort';
   const items = db
     .all(
-      `SELECT ${TASK_COLS}, p.code, p.name AS project_name, p.client, p.vertical_id, v.short AS vertical, v.color AS vertical_color
-     FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users u ON u.id = t.assignee_id
-     WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT 600`,
+      `
+        SELECT
+          ${TASK_COLS},
+          p.code,
+          p.name AS project_name,
+          p.client,
+          p.vertical_id,
+          v.short AS vertical,
+          v.color AS vertical_color
+        FROM
+          tasks t
+          JOIN projects p ON p.id = t.project_id
+          JOIN verticals v ON v.id = p.vertical_id
+          LEFT JOIN users u ON u.id = t.assignee_id
+        WHERE
+          ${where.join(' AND ')}
+        ORDER BY
+          ${order}
+        LIMIT
+          600
+      `,
       ...params,
     )
     .map((t) => shapeTask(t, today));
@@ -1751,7 +2350,23 @@ route('PATCH', '/milestones/:id', (ctx) => {
   const due = optDate(ctx.body.due_date, 'Date');
   const done = ctx.body.done === undefined ? undefined : ctx.body.done ? 1 : 0;
   ctx.db.run(
-    'UPDATE milestones SET title = COALESCE(?, title), due_date = CASE WHEN ? THEN ? ELSE due_date END, done = COALESCE(?, done), done_at = CASE WHEN ? IS NULL THEN done_at WHEN ? = 1 THEN ? ELSE NULL END WHERE id = ?',
+    `
+      UPDATE milestones
+      SET
+        title = COALESCE(?, title),
+        due_date = CASE
+          WHEN ? THEN ?
+          ELSE due_date
+        END,
+        done = COALESCE(?, done),
+        done_at = CASE
+          WHEN ? IS NULL THEN done_at
+          WHEN ? = 1 THEN ?
+          ELSE NULL
+        END
+      WHERE
+        id = ?
+    `,
     title ?? null,
     due !== undefined ? 1 : 0,
     due ?? null,
@@ -1774,16 +2389,40 @@ route('DELETE', '/milestones/:id', (ctx) => {
 
 // ---------------------------------------------------------------- files & assets
 
-const FILE_COLS = `f.*, u.name AS uploader_name, p.code, p.name AS project_name, p.client, p.vertical_id, p.status AS project_status,
-  COALESCE(p.key_date, p.due_date, p.start_date) AS project_date, v.short AS vertical, v.color AS vertical_color, t.title AS task_title`;
-const FILE_FROM = `FROM files f JOIN projects p ON p.id = f.project_id JOIN verticals v ON v.id = p.vertical_id
-  LEFT JOIN users u ON u.id = f.uploaded_by LEFT JOIN tasks t ON t.id = f.task_id`;
+const FILE_COLS = `
+  f.*,
+  u.name AS uploader_name,
+  p.code,
+  p.name AS project_name,
+  p.client,
+  p.vertical_id,
+  p.status AS project_status,
+  COALESCE(p.key_date, p.due_date, p.start_date) AS project_date,
+  v.short AS vertical,
+  v.color AS vertical_color,
+  t.title AS task_title
+`;
+const FILE_FROM = `
+  FROM files f
+  JOIN projects p ON p.id = f.project_id
+  JOIN verticals v ON v.id = p.vertical_id
+  LEFT JOIN users u ON u.id = f.uploaded_by
+  LEFT JOIN tasks t ON t.id = f.task_id
+`;
 
 route('GET', '/projects/:id/files', (ctx) => {
   const p = getProjectRaw(ctx, ctx.params.id);
   const seen = seenAt(ctx.db, uid(ctx), `project:${p.id}:files`);
   const items = ctx.db.all(
-    `SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.project_id = ? ORDER BY f.is_final DESC, f.id DESC`,
+    `
+      SELECT
+        ${FILE_COLS} ${FILE_FROM}
+      WHERE
+        f.project_id = ?
+      ORDER BY
+        f.is_final DESC,
+        f.id DESC
+    `,
     p.id,
   );
   for (const f of items) f.is_new = isNewSince(ctx, seen, f.uploaded_by, f.created_at);
@@ -1808,8 +2447,25 @@ route('POST', '/projects/:id/files', (ctx) => {
     const u = ctx.upload;
     const name = text(b.name || u.name, { max: 240, label: 'File name', required: true });
     row = ctx.db.run(
-      `INSERT INTO files (project_id, task_id, kind, name, mime, size, category, storage_key, is_final, note, uploaded_by, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `
+        INSERT INTO
+          files (
+            project_id,
+            task_id,
+            kind,
+            name,
+            mime,
+            size,
+            category,
+            storage_key,
+            is_final,
+            note,
+            uploaded_by,
+            created_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       p.id,
       taskId,
       'file',
@@ -1829,8 +2485,23 @@ route('POST', '/projects/:id/files', (ctx) => {
     const name =
       text(b.name, { max: 240, label: 'Name' }) || url.replace(/^https?:\/\//i, '').slice(0, 80);
     row = ctx.db.run(
-      `INSERT INTO files (project_id, task_id, kind, name, url, category, is_final, note, uploaded_by, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      `
+        INSERT INTO
+          files (
+            project_id,
+            task_id,
+            kind,
+            name,
+            url,
+            category,
+            is_final,
+            note,
+            uploaded_by,
+            created_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       p.id,
       taskId,
       'link',
@@ -1876,7 +2547,16 @@ route('PATCH', '/files/:id', (ctx) => {
   const isFinal = b.is_final === undefined ? undefined : b.is_final ? 1 : 0;
   const note = text(b.note, { max: 500, label: 'Note' });
   ctx.db.run(
-    'UPDATE files SET name = COALESCE(?, name), category = COALESCE(?, category), is_final = COALESCE(?, is_final), note = COALESCE(?, note) WHERE id = ?',
+    `
+      UPDATE files
+      SET
+        name = COALESCE(?, name),
+        category = COALESCE(?, category),
+        is_final = COALESCE(?, is_final),
+        note = COALESCE(?, note)
+      WHERE
+        id = ?
+    `,
     name ?? null,
     category ?? null,
     isFinal ?? null,
@@ -1935,12 +2615,28 @@ route('GET', '/files', (ctx) => {
   }
   const limit = Math.min(Number(q.limit) || 300, 1000);
   const items = db.all(
-    `SELECT ${FILE_COLS} ${FILE_FROM} WHERE ${where.join(' AND ')} ORDER BY f.is_final DESC, f.id DESC LIMIT ?`,
+    `
+      SELECT
+        ${FILE_COLS} ${FILE_FROM}
+      WHERE
+        ${where.join(' AND ')}
+      ORDER BY
+        f.is_final DESC,
+        f.id DESC
+      LIMIT
+        ?
+    `,
     ...params,
     limit,
   );
   const total = db.get(
-    `SELECT COUNT(*) AS n, COALESCE(SUM(f.size), 0) AS bytes ${FILE_FROM} WHERE ${where.join(' AND ')}`,
+    `
+      SELECT
+        COUNT(*) AS n,
+        COALESCE(SUM(f.size), 0) AS bytes ${FILE_FROM}
+      WHERE
+        ${where.join(' AND ')}
+    `,
     ...params,
   );
   return { items, total: total.n, bytes: total.bytes };
@@ -1956,7 +2652,17 @@ function headsOf(db, verticalId) {
     db.all("SELECT id FROM users WHERE role = 'admin' AND active = 1").map((r) => r.id),
   );
   for (const r of db.all(
-    "SELECT uv.user_id FROM user_verticals uv JOIN users u ON u.id = uv.user_id WHERE uv.vertical_id = ? AND uv.level = 'manager' AND u.active = 1",
+    `
+      SELECT
+        uv.user_id
+      FROM
+        user_verticals uv
+        JOIN users u ON u.id = uv.user_id
+      WHERE
+        uv.vertical_id = ?
+        AND uv.level = 'manager'
+        AND u.active = 1
+    `,
     verticalId,
   ))
     ids.add(r.user_id);
@@ -1982,7 +2688,16 @@ function shapeComment(ctx, c, project) {
 
 function commentById(ctx, id, project) {
   const c = ctx.db.get(
-    `SELECT ${COMMENT_COLS} FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN users d ON d.id = c.delete_decided_by WHERE c.id = ?`,
+    `
+      SELECT
+        ${COMMENT_COLS}
+      FROM
+        comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        LEFT JOIN users d ON d.id = c.delete_decided_by
+      WHERE
+        c.id = ?
+    `,
     id,
   );
   return shapeComment(ctx, c, project);
@@ -2075,7 +2790,16 @@ route('POST', '/comments/:id/delete-request', (ctx) => {
     throw bad('Deletion is already approved. You can delete the comment now.');
   ctx.db.tx(() => {
     ctx.db.run(
-      "UPDATE comments SET delete_status = 'requested', delete_requested_at = ?, delete_decided_by = NULL, delete_decided_at = NULL WHERE id = ?",
+      `
+        UPDATE comments
+        SET
+          delete_status = 'requested',
+          delete_requested_at = ?,
+          delete_decided_by = NULL,
+          delete_decided_at = NULL
+        WHERE
+          id = ?
+      `,
       ctx.now,
       c.id,
     );
@@ -2168,9 +2892,32 @@ function groupMembers(db, p) {
   const ids = [...groupMemberIds(db, p)];
   if (!ids.length) return [];
   return db.all(
-    `SELECT u.id, u.name, u.title, u.color FROM users u WHERE u.id IN (${placeholders(ids)}) AND u.active = 1
-       AND (u.role = 'admin' OR EXISTS (SELECT 1 FROM user_verticals uv WHERE uv.user_id = u.id AND uv.vertical_id = ?))
-     ORDER BY u.name`,
+    `
+      SELECT
+        u.id,
+        u.name,
+        u.title,
+        u.color
+      FROM
+        users u
+      WHERE
+        u.id IN (${placeholders(ids)})
+        AND u.active = 1
+        AND (
+          u.role = 'admin'
+          OR EXISTS (
+            SELECT
+              1
+            FROM
+              user_verticals uv
+            WHERE
+              uv.user_id = u.id
+              AND uv.vertical_id = ?
+          )
+        )
+      ORDER BY
+        u.name
+    `,
     ...ids,
     p.vertical_id,
   );
@@ -2181,7 +2928,17 @@ const groupOpen = (p) => OPEN_STATUSES.includes(p.status);
 // Messages from others since I last opened the group (notices do not count).
 function groupUnread(ctx, projectId) {
   return ctx.db.get(
-    "SELECT COUNT(*) AS n FROM group_messages WHERE project_id = ? AND kind != 'system' AND COALESCE(user_id, 0) != ? AND created_at > ?",
+    `
+      SELECT
+        COUNT(*) AS n
+      FROM
+        group_messages
+      WHERE
+        project_id = ?
+        AND kind != 'system'
+        AND COALESCE(user_id, 0) != ?
+        AND created_at > ?
+    `,
     projectId,
     uid(ctx),
     seenAt(ctx.db, uid(ctx), `group:${projectId}`),
@@ -2240,8 +2997,27 @@ function announceJoin(ctx, project, before, assigneeId, title) {
 function latestStatuses(db, projectId) {
   const out = new Map();
   for (const r of db.all(
-    `SELECT user_id, status, body, created_at FROM group_messages WHERE id IN
-       (SELECT MAX(id) FROM group_messages WHERE project_id = ? AND kind = 'status' GROUP BY user_id)`,
+    `
+      SELECT
+        user_id,
+        status,
+        body,
+        created_at
+      FROM
+        group_messages
+      WHERE
+        id IN (
+          SELECT
+            MAX(id)
+          FROM
+            group_messages
+          WHERE
+            project_id = ?
+            AND kind = 'status'
+          GROUP BY
+            user_id
+        )
+    `,
     projectId,
   ))
     out.set(r.user_id, r);
@@ -2282,14 +3058,43 @@ route('GET', '/groups', (ctx) => {
   if (!vids.length) return { items: [] };
   const me = uid(ctx);
   const managed = vids.filter((v) => canManageVertical(ctx.user, v));
-  const isMember = `(p.owner_id = ? OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = ?)
-    OR EXISTS (SELECT 1 FROM tasks t WHERE t.project_id = p.id AND t.assignee_id = ?))`;
+  const isMember = `(
+    p.owner_id = ?
+    OR EXISTS (
+      SELECT 1 FROM project_members pm
+      WHERE pm.project_id = p.id AND pm.user_id = ?
+    )
+    OR EXISTS (
+      SELECT 1 FROM tasks t
+      WHERE t.project_id = p.id AND t.assignee_id = ?
+    )
+  )`;
   const rows = db.all(
-    `SELECT p.id, p.code, p.name, p.client, p.status, p.owner_id, p.vertical_id, p.key_date, p.created_at,
-       v.short AS vertical, v.color AS vertical_color, v.ready_label, v.key_date_label, ${isMember} AS member
-     FROM projects p JOIN verticals v ON v.id = p.vertical_id
-     WHERE p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)} AND p.status IN ${OPEN_IN}
-       AND (${isMember}${managed.length ? ` OR p.vertical_id IN (${placeholders(managed)})` : ''})`,
+    `
+      SELECT
+        p.id,
+        p.code,
+        p.name,
+        p.client,
+        p.status,
+        p.owner_id,
+        p.vertical_id,
+        p.key_date,
+        p.created_at,
+        v.short AS vertical,
+        v.color AS vertical_color,
+        v.ready_label,
+        v.key_date_label,
+        ${isMember} AS member
+      FROM
+        projects p
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        p.vertical_id IN (${placeholders(vids)})
+        AND ${projectVisibilitySql(ctx.user)}
+        AND p.status IN ${OPEN_IN}
+        AND (${isMember}${managed.length ? ` OR p.vertical_id IN (${placeholders(managed)})` : ''})
+    `,
     me,
     me,
     me,
@@ -2304,10 +3109,22 @@ route('GET', '/groups', (ctx) => {
   const unread = new Map(
     db
       .all(
-        `SELECT g.project_id AS pid, COUNT(*) AS n FROM group_messages g
-     LEFT JOIN seen s ON s.user_id = ? AND s.scope = 'group:' || g.project_id
-     WHERE g.project_id IN (${placeholders(ids)}) AND g.kind != 'system' AND COALESCE(g.user_id, 0) != ? AND g.created_at > COALESCE(s.seen_at, '')
-     GROUP BY g.project_id`,
+        `
+          SELECT
+            g.project_id AS pid,
+            COUNT(*) AS n
+          FROM
+            group_messages g
+            LEFT JOIN seen s ON s.user_id = ?
+            AND s.scope = 'group:' || g.project_id
+          WHERE
+            g.project_id IN (${placeholders(ids)})
+            AND g.kind != 'system'
+            AND COALESCE(g.user_id, 0) != ?
+            AND g.created_at > COALESCE(s.seen_at, '')
+          GROUP BY
+            g.project_id
+        `,
         me,
         ...ids,
         me,
@@ -2321,10 +3138,44 @@ route('GET', '/groups', (ctx) => {
     for (const [userId, st] of latestStatuses(db, p.id))
       if (inGroup.has(userId) && flags[st.status] !== undefined) flags[st.status]++;
     const last = db.get(
-      `SELECT g.kind, g.status, g.body, g.created_at, g.user_id, u.name AS user_name,
-         (SELECT COUNT(*) FROM files f WHERE f.message_id = g.id) AS file_count,
-         (SELECT f.name FROM files f WHERE f.message_id = g.id ORDER BY f.id LIMIT 1) AS file_name
-       FROM group_messages g LEFT JOIN users u ON u.id = g.user_id WHERE g.project_id = ? ORDER BY g.id DESC LIMIT 1`,
+      `
+        SELECT
+          g.kind,
+          g.status,
+          g.body,
+          g.created_at,
+          g.user_id,
+          u.name AS user_name,
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              files f
+            WHERE
+              f.message_id = g.id
+          ) AS file_count,
+          (
+            SELECT
+              f.name
+            FROM
+              files f
+            WHERE
+              f.message_id = g.id
+            ORDER BY
+              f.id
+            LIMIT
+              1
+          ) AS file_name
+        FROM
+          group_messages g
+          LEFT JOIN users u ON u.id = g.user_id
+        WHERE
+          g.project_id = ?
+        ORDER BY
+          g.id DESC
+        LIMIT
+          1
+      `,
       p.id,
     );
     return {
@@ -2359,7 +3210,19 @@ route('GET', '/groups/:id', (ctx) => {
   const openTasks = new Map(
     db
       .all(
-        "SELECT assignee_id AS id, COUNT(*) AS n FROM tasks WHERE project_id = ? AND assignee_id IS NOT NULL AND status != 'done' GROUP BY assignee_id",
+        `
+          SELECT
+            assignee_id AS id,
+            COUNT(*) AS n
+          FROM
+            tasks
+          WHERE
+            project_id = ?
+            AND assignee_id IS NOT NULL
+            AND status != 'done'
+          GROUP BY
+            assignee_id
+        `,
         p.id,
       )
       .map((r) => [r.id, r.n]),
@@ -2389,7 +3252,20 @@ route('GET', '/groups/:id', (ctx) => {
         p.id,
       )?.created_at ||
       db.get(
-        "SELECT created_at FROM group_messages WHERE project_id = ? AND kind = 'system' AND body LIKE '%group is now closed%' ORDER BY id DESC LIMIT 1",
+        `
+          SELECT
+            created_at
+          FROM
+            group_messages
+          WHERE
+            project_id = ?
+            AND kind = 'system'
+            AND body LIKE '%group is now closed%'
+          ORDER BY
+            id DESC
+          LIMIT
+            1
+        `,
         p.id,
       )?.created_at ||
       p.updated_at;
@@ -2424,7 +3300,15 @@ route('GET', '/groups/:id', (ctx) => {
       p.id,
     ).n,
     file_count: db.get(
-      'SELECT COUNT(*) AS n FROM files f JOIN group_messages g ON g.id = f.message_id WHERE g.project_id = ?',
+      `
+        SELECT
+          COUNT(*) AS n
+        FROM
+          files f
+          JOIN group_messages g ON g.id = f.message_id
+        WHERE
+          g.project_id = ?
+      `,
       p.id,
     ).n,
   };
@@ -2443,7 +3327,16 @@ route('GET', '/groups/:id/messages', (ctx) => {
   else if (ctx.query.kind === 'files')
     where.push('EXISTS (SELECT 1 FROM files f WHERE f.message_id = g.id)');
   const rows = ctx.db.all(
-    `SELECT ${MSG_COLS} ${MSG_FROM} WHERE ${where.join(' AND ')} ORDER BY g.id DESC LIMIT ?`,
+    `
+      SELECT
+        ${MSG_COLS} ${MSG_FROM}
+      WHERE
+        ${where.join(' AND ')}
+      ORDER BY
+        g.id DESC
+      LIMIT
+        ?
+    `,
     ...params,
     limit + 1,
   );
@@ -2461,7 +3354,14 @@ function attachFiles(ctx, messages) {
   const byMsg = new Map(ids.map((id) => [id, []]));
   if (ids.length) {
     for (const f of ctx.db.all(
-      `SELECT ${FILE_COLS} ${FILE_FROM} WHERE f.message_id IN (${placeholders(ids)}) ORDER BY f.id`,
+      `
+        SELECT
+          ${FILE_COLS} ${FILE_FROM}
+        WHERE
+          f.message_id IN (${placeholders(ids)})
+        ORDER BY
+          f.id
+      `,
       ...ids,
     ))
       byMsg.get(f.message_id)?.push(f);
@@ -2530,7 +3430,19 @@ route('POST', '/groups/:id/messages', (ctx) => {
     }) || '';
   const id = db.tx(() => {
     const row = db.run(
-      'INSERT INTO group_messages (project_id, user_id, kind, status, body, created_at) VALUES (?,?,?,?,?,?)',
+      `
+        INSERT INTO
+          group_messages (
+            project_id,
+            user_id,
+            kind,
+            status,
+            body,
+            created_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?)
+      `,
       p.id,
       uid(ctx),
       kind,
@@ -2622,7 +3534,16 @@ route('POST', '/group-messages/:id/delete-request', (ctx) => {
     throw bad('Deletion is already approved. You can delete the message now.');
   ctx.db.tx(() => {
     ctx.db.run(
-      "UPDATE group_messages SET delete_status = 'requested', delete_requested_at = ?, delete_decided_by = NULL, delete_decided_at = NULL WHERE id = ?",
+      `
+        UPDATE group_messages
+        SET
+          delete_status = 'requested',
+          delete_requested_at = ?,
+          delete_decided_by = NULL,
+          delete_decided_at = NULL
+        WHERE
+          id = ?
+      `,
       ctx.now,
       m.id,
     );
@@ -2650,7 +3571,15 @@ route('POST', '/group-messages/:id/delete-decision', (ctx) => {
   const approve = !!ctx.body.approve;
   ctx.db.tx(() => {
     ctx.db.run(
-      'UPDATE group_messages SET delete_status = ?, delete_decided_by = ?, delete_decided_at = ? WHERE id = ?',
+      `
+        UPDATE group_messages
+        SET
+          delete_status = ?,
+          delete_decided_by = ?,
+          delete_decided_at = ?
+        WHERE
+          id = ?
+      `,
       approve ? 'approved' : 'declined',
       uid(ctx),
       ctx.now,
@@ -2679,9 +3608,29 @@ route('GET', '/calendar', (ctx) => {
   const inV = `p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)}`;
   const items = [];
   for (const p of db.all(
-    `SELECT p.id, p.code, p.name, p.status, p.key_date, p.due_date, p.start_date, v.short AS vertical, v.color AS vertical_color, v.key_date_label
-     FROM projects p JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND p.status != 'cancelled' AND ((p.key_date BETWEEN ? AND ?) OR (p.due_date BETWEEN ? AND ?))`,
+    `
+      SELECT
+        p.id,
+        p.code,
+        p.name,
+        p.status,
+        p.key_date,
+        p.due_date,
+        p.start_date,
+        v.short AS vertical,
+        v.color AS vertical_color,
+        v.key_date_label
+      FROM
+        projects p
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND p.status != 'cancelled'
+        AND (
+          (p.key_date BETWEEN ? AND ?)
+          OR (p.due_date BETWEEN ? AND ?)
+        )
+    `,
     ...vids,
     q.from,
     q.to,
@@ -2712,9 +3661,26 @@ route('GET', '/calendar', (ctx) => {
       });
   }
   for (const m of db.all(
-    `SELECT m.*, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical FROM milestones m
-     JOIN projects p ON p.id = m.project_id JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND p.status != 'cancelled' AND m.due_date BETWEEN ? AND ? AND (p.key_date IS NULL OR m.due_date != p.key_date)`,
+    `
+      SELECT
+        m.*,
+        p.code,
+        p.name AS project_name,
+        v.color AS vertical_color,
+        v.short AS vertical
+      FROM
+        milestones m
+        JOIN projects p ON p.id = m.project_id
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND p.status != 'cancelled'
+        AND m.due_date BETWEEN ? AND ?
+        AND (
+          p.key_date IS NULL
+          OR m.due_date != p.key_date
+        )
+    `,
     ...vids,
     q.from,
     q.to,
@@ -2738,9 +3704,29 @@ route('GET', '/calendar', (ctx) => {
   }
   if (q.tasks !== 'none') {
     for (const t of db.all(
-      `SELECT t.id, t.title, t.status, t.due_date, t.project_id, t.priority, p.code, p.name AS project_name, v.color AS vertical_color, v.short AS vertical, u.name AS assignee_name
-       FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id LEFT JOIN users u ON u.id = t.assignee_id
-       WHERE ${taskWhere.join(' AND ')} LIMIT 1500`,
+      `
+        SELECT
+          t.id,
+          t.title,
+          t.status,
+          t.due_date,
+          t.project_id,
+          t.priority,
+          p.code,
+          p.name AS project_name,
+          v.color AS vertical_color,
+          v.short AS vertical,
+          u.name AS assignee_name
+        FROM
+          tasks t
+          JOIN projects p ON p.id = t.project_id
+          JOIN verticals v ON v.id = p.vertical_id
+          LEFT JOIN users u ON u.id = t.assignee_id
+        WHERE
+          ${taskWhere.join(' AND ')}
+        LIMIT
+          1500
+      `,
       ...tParams,
     ))
       items.push({
@@ -2773,8 +3759,33 @@ route('GET', '/search', (ctx) => {
   const inV = `p.vertical_id IN (${placeholders(vids)}) AND ${projectVisibilitySql(ctx.user)}`;
   const results = [];
   for (const p of db.all(
-    `SELECT p.id, p.code, p.name, p.client, p.status, v.short AS vertical, v.color AS vertical_color FROM projects p JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND (p.name LIKE ? OR p.code LIKE ? OR p.client LIKE ? OR p.tags LIKE ? OR p.venue LIKE ?) ORDER BY p.status IN ('completed','cancelled'), p.id DESC LIMIT 6`,
+    `
+      SELECT
+        p.id,
+        p.code,
+        p.name,
+        p.client,
+        p.status,
+        v.short AS vertical,
+        v.color AS vertical_color
+      FROM
+        projects p
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND (
+          p.name LIKE ?
+          OR p.code LIKE ?
+          OR p.client LIKE ?
+          OR p.tags LIKE ?
+          OR p.venue LIKE ?
+        )
+      ORDER BY
+        p.status IN ('completed', 'cancelled'),
+        p.id DESC
+      LIMIT
+        6
+    `,
     ...vids,
     l,
     l,
@@ -2797,8 +3808,26 @@ route('GET', '/search', (ctx) => {
       link: `/projects/${p.id}`,
     });
   for (const t of db.all(
-    `SELECT t.id, t.title, t.project_id, p.code, v.color AS vertical_color FROM tasks t JOIN projects p ON p.id = t.project_id JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND t.title LIKE ? ORDER BY t.status = 'done', t.id DESC LIMIT 6`,
+    `
+      SELECT
+        t.id,
+        t.title,
+        t.project_id,
+        p.code,
+        v.color AS vertical_color
+      FROM
+        tasks t
+        JOIN projects p ON p.id = t.project_id
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND t.title LIKE ?
+      ORDER BY
+        t.status = 'done',
+        t.id DESC
+      LIMIT
+        6
+    `,
     ...vids,
     l,
   ))
@@ -2811,8 +3840,28 @@ route('GET', '/search', (ctx) => {
       link: `/projects/${t.project_id}/tasks/${t.id}`,
     });
   for (const f of db.all(
-    `SELECT f.id, f.name, f.project_id, p.code, v.color AS vertical_color FROM files f JOIN projects p ON p.id = f.project_id JOIN verticals v ON v.id = p.vertical_id
-     WHERE ${inV} AND (f.name LIKE ? OR f.note LIKE ?) ORDER BY f.id DESC LIMIT 5`,
+    `
+      SELECT
+        f.id,
+        f.name,
+        f.project_id,
+        p.code,
+        v.color AS vertical_color
+      FROM
+        files f
+        JOIN projects p ON p.id = f.project_id
+        JOIN verticals v ON v.id = p.vertical_id
+      WHERE
+        ${inV}
+        AND (
+          f.name LIKE ?
+          OR f.note LIKE ?
+        )
+      ORDER BY
+        f.id DESC
+      LIMIT
+        5
+    `,
     ...vids,
     l,
     l,
@@ -2832,8 +3881,23 @@ route('GET', '/notifications', (ctx) => {
   const vids = visibleVerticalIds(ctx.user);
   const items = ctx.db
     .all(
-      `SELECT n.*, p.code, p.vertical_id, v.color AS vertical_color FROM notifications n LEFT JOIN projects p ON p.id = n.project_id LEFT JOIN verticals v ON v.id = p.vertical_id
-     WHERE n.user_id = ? ORDER BY n.id DESC LIMIT 40`,
+      `
+        SELECT
+          n.*,
+          p.code,
+          p.vertical_id,
+          v.color AS vertical_color
+        FROM
+          notifications n
+          LEFT JOIN projects p ON p.id = n.project_id
+          LEFT JOIN verticals v ON v.id = p.vertical_id
+        WHERE
+          n.user_id = ?
+        ORDER BY
+          n.id DESC
+        LIMIT
+          40
+      `,
       uid(ctx),
     )
     .filter(
@@ -2873,7 +3937,20 @@ route('GET', '/templates', (ctx) => {
   return {
     items: ctx.db
       .all(
-        `SELECT t.*, v.short AS vertical, v.color AS vertical_color FROM templates t JOIN verticals v ON v.id = t.vertical_id WHERE t.vertical_id IN (${placeholders(vids)}) ORDER BY v.sort, t.name`,
+        `
+          SELECT
+            t.*,
+            v.short AS vertical,
+            v.color AS vertical_color
+          FROM
+            templates t
+            JOIN verticals v ON v.id = t.vertical_id
+          WHERE
+            t.vertical_id IN (${placeholders(vids)})
+          ORDER BY
+            v.sort,
+            t.name
+        `,
         ...vids,
       )
       .map(shapeTemplate)
@@ -2924,7 +4001,20 @@ route('POST', '/templates', (ctx) => {
     throw forbidden('Only vertical managers can add templates');
   const t = readTemplate(ctx.body);
   const { id } = ctx.db.run(
-    'INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)',
+    `
+      INSERT INTO
+        templates (
+          vertical_id,
+          name,
+          description,
+          stages,
+          tasks,
+          milestones,
+          created_at
+        )
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?)
+    `,
     vId,
     t.name,
     t.description,
@@ -2991,7 +4081,20 @@ route('POST', '/projects/:id/save-template', (ctx) => {
     milestones,
   });
   const { id } = ctx.db.run(
-    'INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)',
+    `
+      INSERT INTO
+        templates (
+          vertical_id,
+          name,
+          description,
+          stages,
+          tasks,
+          milestones,
+          created_at
+        )
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?)
+    `,
     p.vertical_id,
     t.name,
     t.description,
@@ -3011,7 +4114,27 @@ function requireAdmin(ctx) {
 
 function adminUser(db, id) {
   const u = db.get(
-    'SELECT id, name, email, role, title, phone, color, active, created_at, last_login_at, must_change_password, profile_json,profile_data,photo FROM users WHERE id = ?',
+    `
+      SELECT
+        id,
+        name,
+        email,
+        role,
+        title,
+        phone,
+        color,
+        active,
+        created_at,
+        last_login_at,
+        must_change_password,
+        profile_json,
+        profile_data,
+        photo
+      FROM
+        users
+      WHERE
+        id = ?
+    `,
     id,
   );
   if (!u) return null;
@@ -3025,7 +4148,17 @@ function adminUser(db, id) {
       .map((r) => [r.vertical_id, r.level]),
   );
   u.open_tasks = db.get(
-    `SELECT COUNT(*) AS n FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.assignee_id = ? AND t.status != 'done' AND p.status IN ${OPEN_IN}`,
+    `
+      SELECT
+        COUNT(*) AS n
+      FROM
+        tasks t
+        JOIN projects p ON p.id = t.project_id
+      WHERE
+        t.assignee_id = ?
+        AND t.status != 'done'
+        AND p.status IN ${OPEN_IN}
+    `,
     id,
   ).n;
   return u;
@@ -3098,7 +4231,23 @@ route('POST', '/admin/users', async (ctx) => {
   const count = db.get('SELECT COUNT(*) AS n FROM users').n;
   return db.tx(() => {
     const { id } = db.run(
-      'INSERT INTO users (name, email, password_hash, role, title, phone, color, active, must_change_password, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      `
+        INSERT INTO
+          users (
+            name,
+            email,
+            password_hash,
+            role,
+            title,
+            phone,
+            color,
+            active,
+            must_change_password,
+            created_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       f.name,
       f.email,
       hash,
@@ -3174,8 +4323,31 @@ route('GET', '/admin/verticals', (ctx) => {
   requireAdmin(ctx);
   return {
     items: ctx.db.all(
-      `SELECT v.*, (SELECT COUNT(*) FROM projects p WHERE p.vertical_id = v.id) AS projects,
-        (SELECT COUNT(*) FROM user_verticals uv WHERE uv.vertical_id = v.id) AS people FROM verticals v ORDER BY v.sort, v.id`,
+      `
+        SELECT
+          v.*,
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              projects p
+            WHERE
+              p.vertical_id = v.id
+          ) AS projects,
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              user_verticals uv
+            WHERE
+              uv.vertical_id = v.id
+          ) AS people
+        FROM
+          verticals v
+        ORDER BY
+          v.sort,
+          v.id
+      `,
     ),
   };
 });
@@ -3209,7 +4381,22 @@ route('POST', '/admin/verticals', (ctx) => {
     throw bad('Another vertical already uses that code');
   const sort = (ctx.db.get('SELECT MAX(sort) AS m FROM verticals').m || 0) + 1;
   const { id } = ctx.db.run(
-    'INSERT INTO verticals (name, short, code, tagline, color, key_date_label, ready_label, sort, active) VALUES (?,?,?,?,?,?,?,?,1)',
+    `
+      INSERT INTO
+        verticals (
+          name,
+          short,
+          code,
+          tagline,
+          color,
+          key_date_label,
+          ready_label,
+          sort,
+          active
+        )
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `,
     f.name,
     f.short,
     f.code,
@@ -3253,7 +4440,15 @@ route('PATCH', '/admin/settings', (ctx) => {
   const name = text(ctx.body.company_name, { max: 80, label: 'Company name' });
   if (name)
     ctx.db.run(
-      "INSERT INTO settings (key, value) VALUES ('company_name', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      `
+        INSERT INTO
+          settings (key, value)
+        VALUES
+          ('company_name', ?)
+        ON CONFLICT (key) DO UPDATE
+        SET
+          value = excluded.value
+      `,
       name,
     );
   return { ok: true };

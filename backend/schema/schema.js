@@ -8,36 +8,45 @@ export const SCHEMA_VERSION = 19;
 // Kept as a function so a migration can rebuild the table with the same definition.
 export function projectsTable(name) {
   return `
-CREATE TABLE IF NOT EXISTS ${name} (
-  id INTEGER PRIMARY KEY,
-  code TEXT NOT NULL UNIQUE,
-  vertical_id INTEGER NOT NULL REFERENCES verticals(id),
-  name TEXT NOT NULL,
-  client TEXT DEFAULT '',
-  description TEXT DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'planning' CHECK (status IN ('planning','active','on_hold','ready','completed','cancelled')),
-  health TEXT NOT NULL DEFAULT 'on_track' CHECK (health IN ('on_track','at_risk','off_track')),
-  priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
-  stages TEXT DEFAULT '[]',
-  stage TEXT DEFAULT '',
-  owner_id INTEGER REFERENCES users(id),
-  start_date TEXT,
-  due_date TEXT,
-  key_date TEXT,
-  venue TEXT DEFAULT '',
-  city TEXT DEFAULT '',
-  budget REAL,
-  tags TEXT DEFAULT '',
-  template_id INTEGER,
-  service_type TEXT NOT NULL DEFAULT '',
-  service_details TEXT NOT NULL DEFAULT '{}',
-  board_sort REAL,
-  completed_at TEXT,
-  created_by INTEGER,
-  created_at TEXT,
-  updated_at TEXT
-);
-`;
+    CREATE TABLE IF NOT EXISTS ${name} (
+      id INTEGER PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      vertical_id INTEGER NOT NULL REFERENCES verticals(id),
+      name TEXT NOT NULL,
+      client TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'planning' CHECK (
+        status IN (
+          'planning',
+          'active',
+          'on_hold',
+          'ready',
+          'completed',
+          'cancelled'
+        )
+      ),
+      health TEXT NOT NULL DEFAULT 'on_track' CHECK (health IN ('on_track', 'at_risk', 'off_track')),
+      priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+      stages TEXT DEFAULT '[]',
+      stage TEXT DEFAULT '',
+      owner_id INTEGER REFERENCES users(id),
+      start_date TEXT,
+      due_date TEXT,
+      key_date TEXT,
+      venue TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      budget REAL,
+      tags TEXT DEFAULT '',
+      template_id INTEGER,
+      service_type TEXT NOT NULL DEFAULT '',
+      service_details TEXT NOT NULL DEFAULT '{}',
+      board_sort REAL,
+      completed_at TEXT,
+      created_by INTEGER,
+      created_at TEXT,
+      updated_at TEXT
+    );
+  `;
 }
 
 export const SCHEMA =

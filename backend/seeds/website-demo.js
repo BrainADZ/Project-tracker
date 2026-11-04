@@ -29,7 +29,22 @@ export function seedWebsiteDemo(db, { today, passwordHash, now = new Date().toIS
       people[person.key] =
         existing?.id ||
         db.run(
-          "INSERT INTO users (name,email,password_hash,role,title,color,active,must_change_password,created_at) VALUES (?,?,?,'member',?,?,1,0,?)",
+          `
+            INSERT INTO
+              users (
+                name,
+                email,
+                password_hash,
+                role,
+                title,
+                color,
+                active,
+                must_change_password,
+                created_at
+              )
+            VALUES
+              (?, ?, ?, 'member', ?, ?, 1, 0, ?)
+          `,
           person.name,
           email,
           passwordHash,
@@ -61,7 +76,52 @@ export function seedWebsiteDemo(db, { today, passwordHash, now = new Date().toIS
       technology: 'WordPress + WooCommerce',
     };
     const project = db.run(
-      "INSERT INTO projects (code,vertical_id,name,client,description,status,health,priority,stages,stage,owner_id,start_date,due_date,tags,created_by,created_at,updated_at,service_type,service_details) VALUES (?,?,?,?,?,'active','on_track','medium',?,?,?,?,?,'demo,website',?,?,?,'website',?)",
+      `
+        INSERT INTO
+          projects (
+            code,
+            vertical_id,
+            name,
+            client,
+            description,
+            status,
+            health,
+            priority,
+            stages,
+            stage,
+            owner_id,
+            start_date,
+            due_date,
+            tags,
+            created_by,
+            created_at,
+            updated_at,
+            service_type,
+            service_details
+          )
+        VALUES
+          (
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            'active',
+            'on_track',
+            'medium',
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            'demo,website',
+            ?,
+            ?,
+            ?,
+            'website',
+            ?
+          )
+      `,
       code,
       vertical.id,
       'Nova Commerce — Website (Demo)',
@@ -144,7 +204,29 @@ export function seedWebsiteDemo(db, { today, passwordHash, now = new Date().toIS
       const status =
         plan.state === 'Done' ? 'done' : plan.state === 'Paused' ? 'in_progress' : 'todo';
       const task = db.run(
-        'INSERT INTO tasks (project_id,title,description,status,priority,assignee_id,assigned_at,assigned_by,stage,start_date,due_date,checklist,sort,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        `
+          INSERT INTO
+            tasks (
+              project_id,
+              title,
+              description,
+              status,
+              priority,
+              assignee_id,
+              assigned_at,
+              assigned_by,
+              stage,
+              start_date,
+              due_date,
+              checklist,
+              sort,
+              created_by,
+              created_at,
+              updated_at
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         project,
         plan.title,
         plan.note,
@@ -175,7 +257,18 @@ export function seedWebsiteDemo(db, { today, passwordHash, now = new Date().toIS
         ).toISOString();
         const start = new Date(Date.parse(end) - plan.minutes * 60000).toISOString();
         db.run(
-          'INSERT INTO report_work_sessions (work_key,user_id,started_at,ended_at,duration_ms) VALUES (?,?,?,?,?)',
+          `
+            INSERT INTO
+              report_work_sessions (
+                work_key,
+                user_id,
+                started_at,
+                ended_at,
+                duration_ms
+              )
+            VALUES
+              (?, ?, ?, ?, ?)
+          `,
           key,
           plan.assignee,
           start,

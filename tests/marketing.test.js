@@ -233,7 +233,13 @@ test('client creation rolls back its project if registry insertion fails', async
   const f = fixture();
   try {
     f.db.exec(
-      "CREATE TRIGGER fail_client BEFORE INSERT ON marketing_clients BEGIN SELECT RAISE(ABORT, 'test insert failure'); END;",
+      `
+        CREATE TRIGGER fail_client BEFORE INSERT ON marketing_clients BEGIN
+        SELECT
+          RAISE (ABORT, 'test insert failure');
+        
+        END;
+      `,
     );
     await assert.rejects(
       f.call(f.manager, 'POST', '/marketing/clients', { name: 'Rollback client' }),
@@ -603,7 +609,32 @@ test('existing manual reporting migrates without inventing running time', async 
       status: 'in_progress',
     });
     f.db.run(
-      "INSERT INTO daily_reporting (task_id,report_date,work_type,social_id,start_time,status,remarks,created_by,updated_at) VALUES (?,?,'Still',?,'10:00','In Process','Keep old brief',?,?)",
+      `
+        INSERT INTO
+          daily_reporting (
+            task_id,
+            report_date,
+            work_type,
+            social_id,
+            start_time,
+            status,
+            remarks,
+            created_by,
+            updated_at
+          )
+        VALUES
+          (
+            ?,
+            ?,
+            'Still',
+            ?,
+            '10:00',
+            'In Process',
+            'Keep old brief',
+            ?,
+            ?
+          )
+      `,
       t.id,
       '2026-10-30',
       f.social,
@@ -611,7 +642,15 @@ test('existing manual reporting migrates without inventing running time', async 
       '2026-10-30T04:30:00.000Z',
     );
     f.db.exec(
-      'DROP TABLE report_work_notes;DROP TABLE report_work_sessions;DROP TABLE report_work;DROP TABLE extra_work;',
+      `
+        DROP TABLE report_work_notes;
+        
+        DROP TABLE report_work_sessions;
+        
+        DROP TABLE report_work;
+        
+        DROP TABLE extra_work;
+      `,
     );
     f.db.run("UPDATE settings SET value='8' WHERE key='schema_version'");
     migrate(f.db);
@@ -2120,7 +2159,18 @@ test('version 12 website histories upgrade intact and legacy work continues as a
       t.id,
     );
     f.db.run(
-      'INSERT INTO report_work_sessions (work_key,user_id,started_at,ended_at,duration_ms) VALUES (?,?,?,?,?)',
+      `
+        INSERT INTO
+          report_work_sessions (
+            work_key,
+            user_id,
+            started_at,
+            ended_at,
+            duration_ms
+          )
+        VALUES
+          (?, ?, ?, ?, ?)
+      `,
       'task-' + t.id,
       f.dev,
       '2026-10-30T04:00:00Z',
@@ -2146,7 +2196,17 @@ test('version 12 website histories upgrade intact and legacy work continues as a
         tables.map((table) => [table, f.db.all('SELECT * FROM ' + table)]),
       );
     f.db.exec(
-      'DROP INDEX idx_daily_continuation; DROP INDEX idx_extra_parent_task; ALTER TABLE extra_work DROP COLUMN parent_task_id; ALTER TABLE extra_work DROP COLUMN continued_from_key;',
+      `
+        DROP INDEX idx_daily_continuation;
+        
+        DROP INDEX idx_extra_parent_task;
+        
+        ALTER TABLE extra_work
+        DROP COLUMN parent_task_id;
+        
+        ALTER TABLE extra_work
+        DROP COLUMN continued_from_key;
+      `,
     );
     f.db.run("UPDATE settings SET value='12' WHERE key='schema_version'");
     migrate(f.db);
@@ -2619,7 +2679,13 @@ test('task submission rolls back status and review history if notification fails
     await f.call(f.dev, 'POST', '/daily-reporting/' + day.id + '/action', { action: 'done' });
     const activities = f.db.get('SELECT COUNT(*) n FROM activity').n;
     f.db.exec(
-      "CREATE TRIGGER fail_review_notice BEFORE INSERT ON notifications WHEN NEW.text LIKE '%submitted%' BEGIN SELECT RAISE(ABORT,'test notification failure'); END;",
+      `
+        CREATE TRIGGER fail_review_notice BEFORE INSERT ON notifications WHEN NEW.text LIKE '%submitted%' BEGIN
+        SELECT
+          RAISE (ABORT, 'test notification failure');
+        
+        END;
+      `,
     );
     await assert.rejects(
       f.call(f.dev, 'POST', '/tasks/' + task.id + '/submit-review', { all_modules_complete: true }),

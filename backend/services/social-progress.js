@@ -33,7 +33,16 @@ export function socialProgressFor(db, projects, today, requestedMonth) {
     });
   }
   const rows = db.all(
-    'SELECT t.project_id,t.status,COALESCE(d.report_date,t.due_date,t.start_date,substr(t.created_at,1,10)) AS work_date,w.state,w.revision_pending FROM tasks t LEFT JOIN daily_reporting d ON d.task_id=t.id LEFT JOIN report_work w ON w.task_id=t.id WHERE t.project_id IN (' +
+    `SELECT
+      t.project_id,
+      t.status,
+      COALESCE(d.report_date, t.due_date, t.start_date, substr(t.created_at, 1, 10)) AS work_date,
+      w.state,
+      w.revision_pending
+    FROM tasks t
+    LEFT JOIN daily_reporting d ON d.task_id = t.id
+    LEFT JOIN report_work w ON w.task_id = t.id
+    WHERE t.project_id IN (` +
       placeholders(social) +
       ') AND substr(COALESCE(d.report_date,t.due_date,t.start_date,t.created_at),1,7)=?',
     ...social.map((p) => p.id),

@@ -49,7 +49,41 @@ export function websiteProgressFor(db, projects, today) {
       developers: websiteDevelopers(p).map((id) => ({ id, total: 0, done: 0, running: 0 })),
     });
   for (const t of db.all(
-    "SELECT t.project_id,t.assignee_id,t.stage,t.status,t.due_date,w.state,(COALESCE(w.revision_pending,0)<>0 OR EXISTS (SELECT 1 FROM extra_work ce JOIN report_work cw ON cw.extra_id=ce.id WHERE ce.parent_task_id=t.id AND cw.revision_pending=1) OR (SELECT r.status FROM website_task_reviews r WHERE r.task_id=t.id ORDER BY r.id DESC LIMIT 1)='changes_required') revision_pending,(SELECT COUNT(*) FROM report_work_sessions rs JOIN report_work rw ON rw.work_key=rs.work_key LEFT JOIN extra_work re ON re.id=rw.extra_id WHERE rs.ended_at IS NULL AND (rw.task_id=t.id OR re.parent_task_id=t.id)) active_modules FROM tasks t LEFT JOIN report_work w ON w.task_id=t.id WHERE t.project_id IN (" +
+    `SELECT
+      t.project_id,
+      t.assignee_id,
+      t.stage,
+      t.status,
+      t.due_date,
+      w.state,
+      (
+        COALESCE(w.revision_pending, 0) <> 0
+        OR EXISTS (
+          SELECT 1
+          FROM extra_work ce
+          JOIN report_work cw ON cw.extra_id = ce.id
+          WHERE ce.parent_task_id = t.id
+            AND cw.revision_pending = 1
+        )
+        OR (
+          SELECT r.status
+          FROM website_task_reviews r
+          WHERE r.task_id = t.id
+          ORDER BY r.id DESC
+          LIMIT 1
+        ) = 'changes_required'
+      ) revision_pending,
+      (
+        SELECT COUNT(*)
+        FROM report_work_sessions rs
+        JOIN report_work rw ON rw.work_key = rs.work_key
+        LEFT JOIN extra_work re ON re.id = rw.extra_id
+        WHERE rs.ended_at IS NULL
+          AND (rw.task_id = t.id OR re.parent_task_id = t.id)
+      ) active_modules
+    FROM tasks t
+    LEFT JOIN report_work w ON w.task_id = t.id
+    WHERE t.project_id IN (` +
       placeholders(websites) +
       ')',
     ...websites.map((p) => p.id),
@@ -88,7 +122,17 @@ export function websiteProgressFor(db, projects, today) {
 
 export function websiteTaskTime(db, taskId, now) {
   const sessions = db.all(
-    'SELECT s.* FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE w.task_id=? OR e.parent_task_id=?',
+    `
+      SELECT
+        s.*
+      FROM
+        report_work_sessions s
+        JOIN report_work w ON w.work_key = s.work_key
+        LEFT JOIN extra_work e ON e.id = w.extra_id
+      WHERE
+        w.task_id = ?
+        OR e.parent_task_id = ?
+    `,
     taskId,
     taskId,
   );

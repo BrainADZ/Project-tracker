@@ -22,7 +22,16 @@ function openProject(ctx, id) {
 export function registerDevelopmentReporting(route, call) {
   route('GET', '/development-reporting/options', (ctx) => {
     const projects = ctx.db.all(
-      "SELECT p.* FROM projects p WHERE p.service_type IN ('website','software') AND p.status NOT IN ('completed','cancelled') AND " +
+      `
+        SELECT
+          p.*
+        FROM
+          projects p
+        WHERE
+          p.service_type IN ('website', 'software')
+          AND p.status NOT IN ('completed', 'cancelled')
+          AND
+      ` +
         projectVisibilitySql(ctx.user) +
         ' ORDER BY p.name',
     );
@@ -61,21 +70,125 @@ export function registerDevelopmentReporting(route, call) {
   route('GET', '/development-reporting/pending', (ctx) => {
     const own = ctx.user.id;
     const extra = ctx.db.all(
-      "SELECT 'extra-'||e.id id,e.title,e.report_date,e.parent_task_id,t.title parent_task_title,p.id project_id,p.name project_name,w.state status FROM extra_work e JOIN tasks t ON t.id=e.parent_task_id JOIN projects p ON p.id=t.project_id JOIN report_work w ON w.extra_id=e.id WHERE e.assignee_id=? AND t.assignee_id=? AND e.report_date<? AND t.status!='done' AND p.status NOT IN ('completed','cancelled') AND (w.state IN ('Under process','Paused','Not Started') OR w.state='Done' AND w.revision_pending=1) AND NOT EXISTS (SELECT 1 FROM extra_work n WHERE n.continued_from_key='extra-'||e.id) AND " +
-        projectVisibilitySql(ctx.user),
+      `
+        SELECT
+          'extra-' || e.id id,
+          e.title,
+          e.report_date,
+          e.parent_task_id,
+          t.title parent_task_title,
+          p.id project_id,
+          p.name project_name,
+          w.state status
+        FROM
+          extra_work e
+          JOIN tasks t ON t.id = e.parent_task_id
+          JOIN projects p ON p.id = t.project_id
+          JOIN report_work w ON w.extra_id = e.id
+        WHERE
+          e.assignee_id = ?
+          AND t.assignee_id = ?
+          AND e.report_date < ?
+          AND t.status != 'done'
+          AND p.status NOT IN ('completed', 'cancelled')
+          AND (
+            w.state IN ('Under process', 'Paused', 'Not Started')
+            OR w.state = 'Done'
+            AND w.revision_pending = 1
+          )
+          AND NOT EXISTS (
+            SELECT
+              1
+            FROM
+              extra_work n
+            WHERE
+              n.continued_from_key = 'extra-' || e.id
+          )
+          AND
+      ` + projectVisibilitySql(ctx.user),
       own,
       own,
       ctx.today,
     );
     const legacy = ctx.db.all(
-      "SELECT t.id,t.title,d.report_date,t.id parent_task_id,t.title parent_task_title,p.id project_id,p.name project_name,w.state status FROM tasks t JOIN projects p ON p.id=t.project_id JOIN daily_reporting d ON d.task_id=t.id JOIN report_work w ON w.task_id=t.id WHERE p.service_type IN ('website','software') AND t.assignee_id=? AND d.report_date<? AND t.status!='done' AND p.status NOT IN ('completed','cancelled') AND w.state IN ('Under process','Paused','Not Started') AND EXISTS (SELECT 1 FROM report_work_sessions s WHERE s.work_key=w.work_key) AND NOT EXISTS (SELECT 1 FROM extra_work n WHERE n.continued_from_key=CAST(t.id AS TEXT)) AND " +
-        projectVisibilitySql(ctx.user),
+      `
+        SELECT
+          t.id,
+          t.title,
+          d.report_date,
+          t.id parent_task_id,
+          t.title parent_task_title,
+          p.id project_id,
+          p.name project_name,
+          w.state status
+        FROM
+          tasks t
+          JOIN projects p ON p.id = t.project_id
+          JOIN daily_reporting d ON d.task_id = t.id
+          JOIN report_work w ON w.task_id = t.id
+        WHERE
+          p.service_type IN ('website', 'software')
+          AND t.assignee_id = ?
+          AND d.report_date < ?
+          AND t.status != 'done'
+          AND p.status NOT IN ('completed', 'cancelled')
+          AND w.state IN ('Under process', 'Paused', 'Not Started')
+          AND EXISTS (
+            SELECT
+              1
+            FROM
+              report_work_sessions s
+            WHERE
+              s.work_key = w.work_key
+          )
+          AND NOT EXISTS (
+            SELECT
+              1
+            FROM
+              extra_work n
+            WHERE
+              n.continued_from_key = CAST(t.id AS TEXT)
+          )
+          AND
+      ` + projectVisibilitySql(ctx.user),
       own,
       ctx.today,
     );
     const standalone = ctx.db
       .all(
-        "SELECT 'extra-'||e.id id,e.title,e.report_date,NULL AS parent_task_id,'Extra work' parent_task_title,NULL AS project_id,'Extra work' project_name,e.vertical_id,w.state status FROM extra_work e JOIN report_work w ON w.extra_id=e.id WHERE e.parent_task_id IS NULL AND e.reporting_team='development' AND e.assignee_id=? AND e.report_date<? AND (w.state IN ('Under process','Paused','Not Started') OR w.state='Done' AND w.revision_pending=1) AND NOT EXISTS (SELECT 1 FROM extra_work n WHERE n.continued_from_key='extra-'||e.id)",
+        `
+          SELECT
+            'extra-' || e.id id,
+            e.title,
+            e.report_date,
+            NULL AS parent_task_id,
+            'Extra work' parent_task_title,
+            NULL AS project_id,
+            'Extra work' project_name,
+            e.vertical_id,
+            w.state status
+          FROM
+            extra_work e
+            JOIN report_work w ON w.extra_id = e.id
+          WHERE
+            e.parent_task_id IS NULL
+            AND e.reporting_team = 'development'
+            AND e.assignee_id = ?
+            AND e.report_date < ?
+            AND (
+              w.state IN ('Under process', 'Paused', 'Not Started')
+              OR w.state = 'Done'
+              AND w.revision_pending = 1
+            )
+            AND NOT EXISTS (
+              SELECT
+                1
+              FROM
+                extra_work n
+              WHERE
+                n.continued_from_key = 'extra-' || e.id
+            )
+        `,
         own,
         ctx.today,
       )
@@ -152,7 +265,26 @@ export function registerDevelopmentReporting(route, call) {
     }
     return ctx.db.tx(() => {
       const { id } = ctx.db.run(
-        'INSERT INTO extra_work (vertical_id,title,client_label,work_type,reporting_team,parent_task_id,continued_from_key,report_date,assignee_id,created_by,remarks,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        `
+          INSERT INTO
+            extra_work (
+              vertical_id,
+              title,
+              client_label,
+              work_type,
+              reporting_team,
+              parent_task_id,
+              continued_from_key,
+              report_date,
+              assignee_id,
+              created_by,
+              remarks,
+              created_at,
+              updated_at
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         p.vertical_id,
         title,
         p.client,

@@ -13,7 +13,17 @@ export function loadUser(db, id) {
       access.set(v.id, 'manager');
   } else {
     for (const row of db.all(
-      'SELECT uv.vertical_id, uv.level FROM user_verticals uv JOIN verticals v ON v.id = uv.vertical_id WHERE uv.user_id = ? AND v.active = 1',
+      `
+        SELECT
+          uv.vertical_id,
+          uv.level
+        FROM
+          user_verticals uv
+          JOIN verticals v ON v.id = uv.vertical_id
+        WHERE
+          uv.user_id = ?
+          AND v.active = 1
+      `,
       id,
     )) {
       access.set(row.vertical_id, row.level);
@@ -95,7 +105,11 @@ export function projectVisibilitySql(user, alias = 'p') {
       '.id AND visibility_task.assignee_id = ' +
       id +
       ')',
-    'EXISTS (SELECT 1 FROM daily_reporting visibility_report JOIN tasks visibility_work ON visibility_work.id = visibility_report.task_id WHERE visibility_work.project_id = ' +
+    `EXISTS (
+      SELECT 1
+      FROM daily_reporting visibility_report
+      JOIN tasks visibility_work ON visibility_work.id = visibility_report.task_id
+      WHERE visibility_work.project_id = ` +
       alias +
       '.id AND visibility_report.social_id = ' +
       id +

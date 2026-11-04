@@ -20,14 +20,57 @@ export function migratePostgres(db) {
   db.exec(POSTGRES_SCHEMA);
   // Existing PostgreSQL databases predate the merged profile feature.
   db.exec(
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT; ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_code TEXT; ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_json TEXT NOT NULL DEFAULT '{}'; ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data TEXT DEFAULT '{}'; ALTER TABLE users ADD COLUMN IF NOT EXISTS photo TEXT DEFAULT ''; CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (LOWER(username)) WHERE username IS NOT NULL; CREATE UNIQUE INDEX IF NOT EXISTS idx_users_employee_code ON users(employee_code) WHERE employee_code IS NOT NULL;",
+    `
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS username TEXT;
+      
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS employee_code TEXT;
+      
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS profile_json TEXT NOT NULL DEFAULT '{}';
+      
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS profile_data TEXT DEFAULT '{}';
+      
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS photo TEXT DEFAULT '';
+      
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (LOWER(username))
+      WHERE
+        username IS NOT NULL;
+      
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_employee_code ON users (employee_code)
+      WHERE
+        employee_code IS NOT NULL;
+    `,
   );
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));');
   db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_extra_parent_task ON extra_work(parent_task_id); CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_continuation ON extra_work(continued_from_key,report_date,assignee_id) WHERE continued_from_key != ''; CREATE INDEX IF NOT EXISTS idx_files_message ON files(message_id);",
+    `
+      CREATE INDEX IF NOT EXISTS idx_extra_parent_task ON extra_work (parent_task_id);
+      
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_continuation ON extra_work (
+        continued_from_key,
+        report_date,
+        assignee_id
+      )
+      WHERE
+        continued_from_key != '';
+      
+      CREATE INDEX IF NOT EXISTS idx_files_message ON files (message_id);
+    `,
   );
   db.run(
-    "INSERT INTO settings (key,value) VALUES ('schema_version',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+    `
+      INSERT INTO
+        settings (key, value)
+      VALUES
+        ('schema_version', ?)
+      ON CONFLICT (key) DO UPDATE
+      SET
+        value = excluded.value
+    `,
     String(SCHEMA_VERSION),
   );
 }
