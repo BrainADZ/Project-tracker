@@ -130,7 +130,17 @@ export function createApp({
       for (const user of db.all("SELECT id FROM users WHERE username IS NULL OR username=''"))
         ensureUserIdentity(db, user.id);
       const row = db.get(
-        'SELECT id, password_hash, active FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)',
+        `
+          SELECT
+            id,
+            password_hash,
+            active
+          FROM
+            users
+          WHERE
+            LOWER(email) = LOWER(?)
+            OR LOWER(username) = LOWER(?)
+        `,
         email,
         email,
       );

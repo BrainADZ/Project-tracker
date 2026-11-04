@@ -75,7 +75,12 @@ export function reportingAccess(db, user) {
   }
   if (vids.length) {
     for (const r of db.all(
-      'SELECT DISTINCT p.service_type FROM tasks t JOIN projects p ON p.id=t.project_id LEFT JOIN daily_reporting d ON d.task_id=t.id WHERE p.vertical_id IN (' +
+      `SELECT DISTINCT
+        p.service_type
+      FROM tasks t
+      JOIN projects p ON p.id = t.project_id
+      LEFT JOIN daily_reporting d ON d.task_id = t.id
+      WHERE p.vertical_id IN (` +
         placeholders(vids) +
         ') AND (t.assignee_id=? OR d.social_id=?)',
       ...vids,

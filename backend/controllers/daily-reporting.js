@@ -61,12 +61,42 @@ export function importLegacyDailyRows(db) {
       }),
       c.project_id,
     );
-  db.exec(`INSERT OR IGNORE INTO daily_reporting (task_id,report_date,work_type,social_id,start_time,completion_time,status,delay_reason,remarks,created_by,updated_at)
-    SELECT j.task_id,j.work_date,j.post_type,j.social_owner_id,
-    COALESCE(strftime('%H:%M',j.started_at,'+5 hours','+30 minutes'),''),COALESCE(strftime('%H:%M',j.finished_at,'+5 hours','+30 minutes'),''),
-    CASE t.status WHEN 'done' THEN 'Done' WHEN 'in_progress' THEN 'In Process' WHEN 'review' THEN 'In Review' WHEN 'blocked' THEN 'Pending' ELSE 'Not Started' END,
-    j.delay_reason,COALESCE(t.description,''),COALESCE(t.created_by,p.owner_id),COALESCE(t.updated_at,t.created_at)
-    FROM marketing_jobs j JOIN tasks t ON t.id = j.task_id JOIN projects p ON p.id = t.project_id;`);
+  db.exec(`
+    INSERT OR IGNORE INTO daily_reporting (
+      task_id,
+      report_date,
+      work_type,
+      social_id,
+      start_time,
+      completion_time,
+      status,
+      delay_reason,
+      remarks,
+      created_by,
+      updated_at
+    )
+    SELECT
+      j.task_id,
+      j.work_date,
+      j.post_type,
+      j.social_owner_id,
+      COALESCE(strftime('%H:%M', j.started_at, '+5 hours', '+30 minutes'), ''),
+      COALESCE(strftime('%H:%M', j.finished_at, '+5 hours', '+30 minutes'), ''),
+      CASE t.status
+        WHEN 'done' THEN 'Done'
+        WHEN 'in_progress' THEN 'In Process'
+        WHEN 'review' THEN 'In Review'
+        WHEN 'blocked' THEN 'Pending'
+        ELSE 'Not Started'
+      END,
+      j.delay_reason,
+      COALESCE(t.description, ''),
+      COALESCE(t.created_by, p.owner_id),
+      COALESCE(t.updated_at, t.created_at)
+    FROM marketing_jobs j
+    JOIN tasks t ON t.id = j.task_id
+    JOIN projects p ON p.id = t.project_id;
+  `);
 }
 function getProject(ctx, id, write = false) {
   const p = ctx.db.get('SELECT * FROM projects WHERE id=?', toId(id, 'Project'));
@@ -123,15 +153,91 @@ function rejectManualTiming(b) {
       'Status and time are automatic. The assigned person uses Start, Pause, Resume and Done.',
     );
 }
-const ROWS = `SELECT d.task_id AS id,d.task_id,d.report_date,d.work_type,d.social_id,d.remarks,d.delay_reason,d.created_by,d.updated_at,
-  t.project_id,t.title,t.assignee_id,t.status AS parent_status,t.due_date,t.stage,p.name AS project_name,p.client,p.service_type,p.service_details,p.owner_id,p.status AS project_status,p.vertical_id,
-  u.name AS designer_name,s.name AS social_name,w.work_key,w.state AS status,w.first_started_at,w.completed_at,w.revision_no,w.revision_pending,w.updated_at AS timer_updated_at
-  FROM daily_reporting d JOIN tasks t ON t.id=d.task_id JOIN projects p ON p.id=t.project_id JOIN report_work w ON w.task_id=d.task_id
-  LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN users s ON s.id=d.social_id`;
-const EXTRA_ROWS = `SELECT 'extra-'||e.id AS id,NULL AS task_id,e.parent_task_id,e.continued_from_key,e.report_date,e.work_type,e.reporting_team,NULL AS social_id,e.remarks,'' AS delay_reason,e.created_by,e.updated_at,
-  p.id AS project_id,e.title,e.assignee_id,t.title AS parent_task_title,t.status AS parent_status,t.assignee_id AS parent_assignee_id,t.due_date,COALESCE(t.stage,'') AS stage,COALESCE(p.name,'Extra work') AS project_name,COALESCE(p.client,e.client_label) AS client,COALESCE(p.service_type,'other') AS service_type,p.service_details,p.owner_id,COALESCE(p.status,'active') AS project_status,e.vertical_id,
-  u.name AS designer_name,NULL AS social_name,w.work_key,w.state AS status,w.first_started_at,w.completed_at,w.revision_no,w.revision_pending,w.updated_at AS timer_updated_at
-  FROM extra_work e JOIN report_work w ON w.extra_id=e.id JOIN users u ON u.id=e.assignee_id LEFT JOIN tasks t ON t.id=e.parent_task_id LEFT JOIN projects p ON p.id=t.project_id`;
+const ROWS = `
+  SELECT
+    d.task_id AS id,
+    d.task_id,
+    d.report_date,
+    d.work_type,
+    d.social_id,
+    d.remarks,
+    d.delay_reason,
+    d.created_by,
+    d.updated_at,
+    t.project_id,
+    t.title,
+    t.assignee_id,
+    t.status AS parent_status,
+    t.due_date,
+    t.stage,
+    p.name AS project_name,
+    p.client,
+    p.service_type,
+    p.service_details,
+    p.owner_id,
+    p.status AS project_status,
+    p.vertical_id,
+    u.name AS designer_name,
+    s.name AS social_name,
+    w.work_key,
+    w.state AS status,
+    w.first_started_at,
+    w.completed_at,
+    w.revision_no,
+    w.revision_pending,
+    w.updated_at AS timer_updated_at
+  FROM daily_reporting d
+  JOIN tasks t ON t.id = d.task_id
+  JOIN projects p ON p.id = t.project_id
+  JOIN report_work w ON w.task_id = d.task_id
+  LEFT JOIN users u ON u.id = t.assignee_id
+  LEFT JOIN users s ON s.id = d.social_id
+`;
+
+const EXTRA_ROWS = `
+  SELECT
+    'extra-' || e.id AS id,
+    NULL AS task_id,
+    e.parent_task_id,
+    e.continued_from_key,
+    e.report_date,
+    e.work_type,
+    e.reporting_team,
+    NULL AS social_id,
+    e.remarks,
+    '' AS delay_reason,
+    e.created_by,
+    e.updated_at,
+    p.id AS project_id,
+    e.title,
+    e.assignee_id,
+    t.title AS parent_task_title,
+    t.status AS parent_status,
+    t.assignee_id AS parent_assignee_id,
+    t.due_date,
+    COALESCE(t.stage, '') AS stage,
+    COALESCE(p.name, 'Extra work') AS project_name,
+    COALESCE(p.client, e.client_label) AS client,
+    COALESCE(p.service_type, 'other') AS service_type,
+    p.service_details,
+    p.owner_id,
+    COALESCE(p.status, 'active') AS project_status,
+    e.vertical_id,
+    u.name AS designer_name,
+    NULL AS social_name,
+    w.work_key,
+    w.state AS status,
+    w.first_started_at,
+    w.completed_at,
+    w.revision_no,
+    w.revision_pending,
+    w.updated_at AS timer_updated_at
+  FROM extra_work e
+  JOIN report_work w ON w.extra_id = e.id
+  JOIN users u ON u.id = e.assignee_id
+  LEFT JOIN tasks t ON t.id = e.parent_task_id
+  LEFT JOIN projects p ON p.id = t.project_id
+`;
 function entry(ctx, id, write = false) {
   const parsed = workId(id);
   const r = parsed.extraId
@@ -396,7 +502,18 @@ export function registerDailyReporting(route, call) {
     const r = entry(ctx, ctx.params.id),
       totals = workTotals(ctx.db, r.work_key, ctx.now);
     const notes = ctx.db.all(
-      'SELECT n.*,u.name AS author_name FROM report_work_notes n JOIN users u ON u.id=n.user_id WHERE work_key=? ORDER BY n.id',
+      `
+        SELECT
+          n.*,
+          u.name AS author_name
+        FROM
+          report_work_notes n
+          JOIN users u ON u.id = n.user_id
+        WHERE
+          work_key = ?
+        ORDER BY
+          n.id
+      `,
       r.work_key,
     );
     const sessions = totals.sessions.map((s) => ({
@@ -429,7 +546,19 @@ export function registerDailyReporting(route, call) {
           'Reporting department',
         );
         const { id } = ctx.db.run(
-          'INSERT INTO extra_work (vertical_id,title,client_label,work_type,reporting_team,report_date,assignee_id,created_by,remarks,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+          `INSERT INTO extra_work (
+            vertical_id,
+            title,
+            client_label,
+            work_type,
+            reporting_team,
+            report_date,
+            assignee_id,
+            created_by,
+            remarks,
+            created_at,
+            updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           vid,
           title,
           label,
@@ -473,7 +602,23 @@ export function registerDailyReporting(route, call) {
         description: remarks,
       });
       ctx.db.run(
-        "INSERT INTO daily_reporting (task_id,report_date,work_type,social_id,status,remarks,created_by,updated_at) VALUES (?,?,?,?,'Not Started',?,?,?) ON CONFLICT(task_id) DO UPDATE SET report_date=excluded.report_date,work_type=excluded.work_type,social_id=excluded.social_id,remarks=excluded.remarks,created_by=excluded.created_by,updated_at=excluded.updated_at",
+        `INSERT INTO daily_reporting (
+          task_id,
+          report_date,
+          work_type,
+          social_id,
+          status,
+          remarks,
+          created_by,
+          updated_at
+        ) VALUES (?, ?, ?, ?, 'Not Started', ?, ?, ?)
+        ON CONFLICT(task_id) DO UPDATE SET
+          report_date = excluded.report_date,
+          work_type = excluded.work_type,
+          social_id = excluded.social_id,
+          remarks = excluded.remarks,
+          created_by = excluded.created_by,
+          updated_at = excluded.updated_at`,
         t.id,
         date,
         type,
@@ -559,7 +704,17 @@ export function registerDailyReporting(route, call) {
           description: remarks,
         });
         ctx.db.run(
-          'UPDATE daily_reporting SET report_date=?,work_type=?,social_id=?,remarks=?,updated_at=? WHERE task_id=?',
+          `
+            UPDATE daily_reporting
+            SET
+              report_date = ?,
+              work_type = ?,
+              social_id = ?,
+              remarks = ?,
+              updated_at = ?
+            WHERE
+              task_id = ?
+          `,
           date,
           type,
           social,
@@ -576,7 +731,18 @@ export function registerDailyReporting(route, call) {
       } else {
         if (designer !== r.assignee_id) throw bad('Your own extra work cannot be reassigned');
         ctx.db.run(
-          'UPDATE extra_work SET title=?,client_label=?,work_type=?,report_date=?,remarks=?,updated_at=? WHERE id=?',
+          `
+            UPDATE extra_work
+            SET
+              title = ?,
+              client_label = ?,
+              work_type = ?,
+              report_date = ?,
+              remarks = ?,
+              updated_at = ?
+            WHERE
+              id = ?
+          `,
           title,
           text(b.client_label === undefined ? r.client : b.client_label, { max: 160 }) ||
             'Other / extra work',
@@ -688,7 +854,18 @@ export function registerDailyReporting(route, call) {
       }
       const first = r.first_started_at || (next === 'In Process' ? ctx.now : null);
       ctx.db.run(
-        'UPDATE report_work SET state=?,first_started_at=?,completed_at=?,revision_no=?,revision_pending=?,updated_at=? WHERE work_key=?',
+        `
+          UPDATE report_work
+          SET
+            state = ?,
+            first_started_at = ?,
+            completed_at = ?,
+            revision_no = ?,
+            revision_pending = ?,
+            updated_at = ?
+          WHERE
+            work_key = ?
+        `,
         next,
         first,
         next === 'Done' ? ctx.now : null,

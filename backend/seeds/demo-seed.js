@@ -600,7 +600,21 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
       const { id } = existing
         ? { id: existing.id }
         : db.run(
-            'INSERT INTO users (name, email, password_hash, role, title, color, active, created_at) VALUES (?,?,?,?,?,?,1,?)',
+            `
+              INSERT INTO
+                users (
+                  name,
+                  email,
+                  password_hash,
+                  role,
+                  title,
+                  color,
+                  active,
+                  created_at
+                )
+              VALUES
+                (?, ?, ?, ?, ?, ?, 1, ?)
+            `,
             p.name,
             emailOf(p.name),
             passwordHash,
@@ -613,7 +627,15 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
       for (const [short, level] of Object.entries(p.access)) {
         if (vByShort[short])
           db.run(
-            'INSERT INTO user_verticals (user_id, vertical_id, level) VALUES (?,?,?) ON CONFLICT(user_id, vertical_id) DO UPDATE SET level=excluded.level',
+            `
+              INSERT INTO
+                user_verticals (user_id, vertical_id, level)
+              VALUES
+                (?, ?, ?)
+              ON CONFLICT (user_id, vertical_id) DO UPDATE
+              SET
+                level = excluded.level
+            `,
             id,
             vByShort[short].id,
             level,
@@ -725,9 +747,60 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
         : firstOpen?.stage || tplData.stages[0];
 
       const { id: pid } = db.run(
-        `INSERT INTO projects (code, vertical_id, name, client, description, status, health, priority, stages, stage, owner_id, start_date, due_date, key_date,
-          venue, city, budget, tags, template_id, completed_at, created_by, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `
+          INSERT INTO
+            projects (
+              code,
+              vertical_id,
+              name,
+              client,
+              description,
+              status,
+              health,
+              priority,
+              stages,
+              stage,
+              owner_id,
+              start_date,
+              due_date,
+              key_date,
+              venue,
+              city,
+              budget,
+              tags,
+              template_id,
+              completed_at,
+              created_by,
+              created_at,
+              updated_at
+            )
+          VALUES
+            (
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?
+            )
+        `,
         code,
         v.id,
         name,
@@ -778,8 +851,30 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
             ]
           : [];
         const { id: tid } = db.run(
-          `INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, assigned_at, assigned_by, stage, start_date, due_date, checklist, sort, created_by, created_at, updated_at, completed_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          `
+            INSERT INTO
+              tasks (
+                project_id,
+                title,
+                description,
+                status,
+                priority,
+                assignee_id,
+                assigned_at,
+                assigned_by,
+                stage,
+                start_date,
+                due_date,
+                checklist,
+                sort,
+                created_by,
+                created_at,
+                updated_at,
+                completed_at
+              )
+            VALUES
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
           pid,
           t.title,
           '',
@@ -876,8 +971,24 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
         const at = planned < addDays(today, -3) ? planned : addDays(today, -3 - (i % 3));
         const isFinal = closed && /Final|report|photos|highlights|Aftermovie/i.test(fname) ? 1 : 0;
         db.run(
-          `INSERT INTO files (project_id, kind, name, mime, size, category, storage_key, is_final, note, uploaded_by, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          `
+            INSERT INTO
+              files (
+                project_id,
+                kind,
+                name,
+                mime,
+                size,
+                category,
+                storage_key,
+                is_final,
+                note,
+                uploaded_by,
+                created_at
+              )
+            VALUES
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
           pid,
           'file',
           fname.replace('{client}', client),
@@ -901,7 +1012,22 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
           );
       });
       db.run(
-        `INSERT INTO files (project_id, kind, name, url, category, is_final, note, uploaded_by, created_at) VALUES (?,?,?,?,?,?,?,?,?)`,
+        `
+          INSERT INTO
+            files (
+              project_id,
+              kind,
+              name,
+              url,
+              category,
+              is_final,
+              note,
+              uploaded_by,
+              created_at
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         pid,
         'link',
         `Shared drive folder – ${code}`,
@@ -1027,7 +1153,19 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     if (zenith) {
       const at = ts(addDays(today, -1), 12, 5);
       db.run(
-        "INSERT INTO comments (project_id, user_id, body, created_at, delete_status, delete_requested_at) VALUES (?,?,?,?, 'requested', ?)",
+        `
+          INSERT INTO
+            comments (
+              project_id,
+              user_id,
+              body,
+              created_at,
+              delete_status,
+              delete_requested_at
+            )
+          VALUES
+            (?, ?, ?, ?, 'requested', ?)
+        `,
         zenith.id,
         ids.rohan,
         'Flooring quote from the vendor is ₹4,80,000 including the raised platform.',
@@ -1059,7 +1197,15 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     const projectIds = db.all('SELECT id FROM projects').map((r) => r.id);
     for (const uid of Object.values(ids)) {
       db.run(
-        'INSERT INTO seen (user_id, scope, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, scope) DO UPDATE SET seen_at=excluded.seen_at',
+        `
+          INSERT INTO
+            seen (user_id, scope, seen_at)
+          VALUES
+            (?, ?, ?)
+          ON CONFLICT (user_id, scope) DO UPDATE
+          SET
+            seen_at = excluded.seen_at
+        `,
         uid,
         'mywork',
         lastLook,
@@ -1067,7 +1213,15 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
       for (const pid of projectIds) {
         for (const tab of ['tasks', 'files', 'discussion'])
           db.run(
-            'INSERT INTO seen (user_id, scope, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, scope) DO UPDATE SET seen_at=excluded.seen_at',
+            `
+              INSERT INTO
+                seen (user_id, scope, seen_at)
+              VALUES
+                (?, ?, ?)
+              ON CONFLICT (user_id, scope) DO UPDATE
+              SET
+                seen_at = excluded.seen_at
+            `,
             uid,
             `project:${pid}:${tab}`,
             lastLook,
@@ -1076,8 +1230,26 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     }
     // A handful of tasks were handed over yesterday, so My Work has something new.
     const handover = db.all(
-      `SELECT t.id, t.project_id, t.title, p.owner_id, p.code FROM tasks t JOIN projects p ON p.id = t.project_id
-       WHERE t.status = 'todo' AND p.status IN ('active','planning') AND t.assignee_id IS NOT NULL AND t.assignee_id != p.owner_id ORDER BY t.due_date LIMIT 8`,
+      `
+        SELECT
+          t.id,
+          t.project_id,
+          t.title,
+          p.owner_id,
+          p.code
+        FROM
+          tasks t
+          JOIN projects p ON p.id = t.project_id
+        WHERE
+          t.status = 'todo'
+          AND p.status IN ('active', 'planning')
+          AND t.assignee_id IS NOT NULL
+          AND t.assignee_id != p.owner_id
+        ORDER BY
+          t.due_date
+        LIMIT
+          8
+      `,
     );
     for (const t of handover)
       db.run(
@@ -1089,7 +1261,22 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     // New tasks added yesterday on two live projects, so their Tasks tabs show red.
     for (const client of ['Zenith Pharma', 'Sahyadri Foods', 'Lotus Hotels']) {
       const p = db.get(
-        "SELECT id, owner_id, stage, vertical_id FROM projects WHERE client = ? AND status IN ('active','ready') ORDER BY id LIMIT 1",
+        `
+          SELECT
+            id,
+            owner_id,
+            stage,
+            vertical_id
+          FROM
+            projects
+          WHERE
+            client = ?
+            AND status IN ('active', 'ready')
+          ORDER BY
+            id
+          LIMIT
+            1
+        `,
         client,
       );
       if (!p) continue;
@@ -1098,8 +1285,26 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
         { Exhibits: ids.suresh, Marketing: ids.kavita, Live: ids.arvind }[short] || ids.rajiv;
       const added = ts(addDays(today, -1), 11, 40);
       db.run(
-        `INSERT INTO tasks (project_id, title, status, priority, assignee_id, assigned_at, assigned_by, stage, due_date, sort, created_by, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `
+          INSERT INTO
+            tasks (
+              project_id,
+              title,
+              status,
+              priority,
+              assignee_id,
+              assigned_at,
+              assigned_by,
+              stage,
+              due_date,
+              sort,
+              created_by,
+              created_at,
+              updated_at
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         p.id,
         'Client asked for a revised quote with GST breakup',
         'todo',
@@ -1131,8 +1336,24 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     if (zen) {
       const at = ts(addDays(today, -1), 15, 5);
       db.run(
-        `INSERT INTO files (project_id, kind, name, mime, size, category, storage_key, is_final, note, uploaded_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        `
+          INSERT INTO
+            files (
+              project_id,
+              kind,
+              name,
+              mime,
+              size,
+              category,
+              storage_key,
+              is_final,
+              note,
+              uploaded_by,
+              created_at
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         zen.id,
         'file',
         'Stall 3D render – bigger logo v4.jpg',
@@ -1157,12 +1378,41 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
 
     // A few unread notifications per demo account
     const notes = db.all(
-      `SELECT t.id, t.title, t.project_id, t.assignee_id, p.code FROM tasks t JOIN projects p ON p.id = t.project_id
-       WHERE t.status != 'done' AND p.status IN ('planning','active','on_hold') AND t.assignee_id IS NOT NULL ORDER BY t.due_date LIMIT 40`,
+      `
+        SELECT
+          t.id,
+          t.title,
+          t.project_id,
+          t.assignee_id,
+          p.code
+        FROM
+          tasks t
+          JOIN projects p ON p.id = t.project_id
+        WHERE
+          t.status != 'done'
+          AND p.status IN ('planning', 'active', 'on_hold')
+          AND t.assignee_id IS NOT NULL
+        ORDER BY
+          t.due_date
+        LIMIT
+          40
+      `,
     );
     for (const n of notes.slice(0, 30)) {
       db.run(
-        'INSERT INTO notifications (user_id, project_id, task_id, text, read, created_at) VALUES (?,?,?,?,?,?)',
+        `
+          INSERT INTO
+            notifications (
+              user_id,
+              project_id,
+              task_id,
+              text,
+              read,
+              created_at
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?)
+        `,
         n.assignee_id,
         n.project_id,
         n.id,
@@ -1173,7 +1423,30 @@ export function seedDemo(db, { today, passwordHash, now = new Date().toISOString
     }
     for (const mgr of ['rajiv', 'suresh', 'kavita', 'arvind']) {
       const p = db.get(
-        `SELECT p.id, p.code, p.name FROM projects p WHERE p.health != 'on_track' AND p.status IN ('active','planning') ${mgr === 'rajiv' ? '' : 'AND p.vertical_id IN (SELECT vertical_id FROM user_verticals WHERE user_id = ?)'} ORDER BY p.id LIMIT 1`,
+        `
+          SELECT
+            p.id,
+            p.code,
+            p.name
+          FROM
+            projects p
+          WHERE
+            p.health != 'on_track'
+            AND p.status IN ('active', 'planning')
+            ${
+              mgr === 'rajiv'
+                ? ''
+                : `AND p.vertical_id IN (
+                    SELECT vertical_id
+                    FROM user_verticals
+                    WHERE user_id = ?
+                  )`
+            }
+          ORDER BY
+            p.id
+          LIMIT
+            1
+        `,
         ...(mgr === 'rajiv' ? [] : [ids[mgr]]),
       );
       if (p)
@@ -1293,7 +1566,19 @@ export function seedGroupChats(db, { today, now = new Date().toISOString() }) {
   };
   const post = (pid, userId, kind, body, createdAt, status = null) =>
     db.run(
-      'INSERT INTO group_messages (project_id, user_id, kind, status, body, created_at) VALUES (?,?,?,?,?,?)',
+      `
+        INSERT INTO
+          group_messages (
+            project_id,
+            user_id,
+            kind,
+            status,
+            body,
+            created_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?)
+      `,
       pid,
       userId,
       kind,
@@ -1306,8 +1591,25 @@ export function seedGroupChats(db, { today, now = new Date().toISOString() }) {
     const mid = post(pid, userId, 'message', body, createdAt);
     files.forEach(([name, mime, category, kb], i) =>
       db.run(
-        `INSERT INTO files (project_id, kind, name, mime, size, category, storage_key, is_final, note, uploaded_by, created_at, message_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `
+          INSERT INTO
+            files (
+              project_id,
+              kind,
+              name,
+              mime,
+              size,
+              category,
+              storage_key,
+              is_final,
+              note,
+              uploaded_by,
+              created_at,
+              message_id
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         pid,
         'file',
         name,
@@ -1324,8 +1626,26 @@ export function seedGroupChats(db, { today, now = new Date().toISOString() }) {
     );
   };
   const projects = db.all(
-    `SELECT p.id, p.code, p.name, p.client, p.status, p.health, p.owner_id, p.due_date, p.created_at, p.completed_at, v.short, v.ready_label
-     FROM projects p JOIN verticals v ON v.id = p.vertical_id ORDER BY p.id`,
+    `
+      SELECT
+        p.id,
+        p.code,
+        p.name,
+        p.client,
+        p.status,
+        p.health,
+        p.owner_id,
+        p.due_date,
+        p.created_at,
+        p.completed_at,
+        v.short,
+        v.ready_label
+      FROM
+        projects p
+        JOIN verticals v ON v.id = p.vertical_id
+      ORDER BY
+        p.id
+    `,
   );
   for (const g of projects) {
     const lines = GROUP_LINES[g.short];

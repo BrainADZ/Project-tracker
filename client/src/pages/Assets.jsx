@@ -78,7 +78,10 @@ export default function Assets() {
         />
       </div>
       <div className="filters mb-12">
-        <div className="input-icon grow" style={{ maxWidth: 420 }}>
+        <div
+          className="input-icon grow"
+          style={{ maxWidth: 420 }}
+        >
           <Search size={16} />
           <input
             id="assets-search"
@@ -134,7 +137,10 @@ export default function Assets() {
         >
           <option value="">Any client</option>
           {facets?.clients.map((c) => (
-            <option key={c.name} value={c.name}>
+            <option
+              key={c.name}
+              value={c.name}
+            >
               {c.name}
             </option>
           ))}
@@ -146,7 +152,11 @@ export default function Assets() {
             checked={finalOnly}
             onChange={(e) => setFinalOnly(e.target.checked)}
           />
-          <Star size={14} fill="var(--amber)" color="var(--amber)" />
+          <Star
+            size={14}
+            fill="var(--amber)"
+            color="var(--amber)"
+          />
           Final assets only
         </label>
         {active && (
@@ -169,7 +179,11 @@ export default function Assets() {
         )}
       </div>
       <div className="tabs pills">
-        <button type="button" className={!category ? 'on' : ''} onClick={() => setCategory('')}>
+        <button
+          type="button"
+          className={!category ? 'on' : ''}
+          onClick={() => setCategory('')}
+        >
           All categories
         </button>
         {categories.map((c) => (
@@ -183,12 +197,18 @@ export default function Assets() {
           </button>
         ))}
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : items.length === 0 ? (
         <div className="card">
-          <Empty icon={Images} title={active ? 'No files match' : 'No files yet'}>
+          <Empty
+            icon={Images}
+            title={active ? 'No files match' : 'No files yet'}
+          >
             {active
               ? 'Try a different search or clear the filters.'
               : 'Files uploaded to any project in your verticals appear here.'}

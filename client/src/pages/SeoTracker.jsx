@@ -108,14 +108,26 @@ export default function SeoTracker({ project, month, onMonthChange }) {
   };
 
   if (loading && !data) return <Loading />;
-  if (error && !data) return <ErrorNote error={error} retry={() => reload()} />;
+  if (error && !data)
+    return (
+      <ErrorNote
+        error={error}
+        retry={() => reload()}
+      />
+    );
   if (!data) return null;
   const canEdit = data.can_edit;
 
   return (
-    <div className="seo-tracker col" style={{ gap: 16 }}>
+    <div
+      className="seo-tracker col"
+      style={{ gap: 16 }}
+    >
       <section className="card">
-        <div className="row wrap between" style={{ gap: 12 }}>
+        <div
+          className="row wrap between"
+          style={{ gap: 12 }}
+        >
           <div>
             <h3>SEO performance</h3>
             <p className="small muted mt-4">Monthly search results and keyword positions.</p>
@@ -131,7 +143,10 @@ export default function SeoTracker({ project, month, onMonthChange }) {
         {formError && <div className="alert error mt-12">{formError}</div>}
         <div className="seo-metrics">
           {metricFields.map(([key, label]) => (
-            <div key={key} className="seo-metric">
+            <div
+              key={key}
+              className="seo-metric"
+            >
               <span className="small muted">{label}</span>
               <strong>{Number(data.report[key] || 0).toLocaleString('en-IN')}</strong>
             </div>
@@ -141,7 +156,10 @@ export default function SeoTracker({ project, month, onMonthChange }) {
             ['Top 10 keywords', data.summary.top_ten],
             ['Improved rankings', data.summary.improved],
           ].map(([label, value]) => (
-            <div key={label} className="seo-metric">
+            <div
+              key={label}
+              className="seo-metric"
+            >
               <span className="small muted">{label}</span>
               <strong>
                 {value}
@@ -165,10 +183,17 @@ export default function SeoTracker({ project, month, onMonthChange }) {
           </button>
         )}
         {reportDraft && (
-          <form className="col mt-16" style={{ gap: 12 }} onSubmit={saveReport}>
+          <form
+            className="col mt-16"
+            style={{ gap: 12 }}
+            onSubmit={saveReport}
+          >
             <div className="seo-metric-form">
               {metricFields.map(([key, label]) => (
-                <Field key={key} label={label}>
+                <Field
+                  key={key}
+                  label={label}
+                >
                   <input
                     className="input"
                     type="number"
@@ -195,10 +220,18 @@ export default function SeoTracker({ project, month, onMonthChange }) {
               />
             </Field>
             <div className="row wrap gap-6">
-              <button type="submit" className="btn primary" disabled={busy}>
+              <button
+                type="submit"
+                className="btn primary"
+                disabled={busy}
+              >
                 Save report
               </button>
-              <button type="button" className="btn" onClick={() => setReportDraft(null)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setReportDraft(null)}
+              >
                 Cancel
               </button>
             </div>
@@ -207,7 +240,10 @@ export default function SeoTracker({ project, month, onMonthChange }) {
       </section>
 
       <section className="card">
-        <div className="row wrap between" style={{ gap: 12 }}>
+        <div
+          className="row wrap between"
+          style={{ gap: 12 }}
+        >
           <div>
             <h3>Keyword rankings</h3>
             <p className="small muted mt-4">
@@ -221,7 +257,10 @@ export default function SeoTracker({ project, month, onMonthChange }) {
         {data.keywords.length ? (
           <div className="seo-keyword-list mt-16">
             {data.keywords.map((keyword) => (
-              <div key={keyword.id} className="seo-keyword-row">
+              <div
+                key={keyword.id}
+                className="seo-keyword-row"
+              >
                 <div className="seo-keyword-name">
                   <strong>{keyword.keyword}</strong>
                   <span className="xs muted">
@@ -286,7 +325,10 @@ export default function SeoTracker({ project, month, onMonthChange }) {
           </Empty>
         )}
         {canEdit && (
-          <form className="seo-add-keyword mt-16" onSubmit={addKeyword}>
+          <form
+            className="seo-add-keyword mt-16"
+            onSubmit={addKeyword}
+          >
             <Field label="Keyword">
               <input
                 className="input"
@@ -320,7 +362,11 @@ export default function SeoTracker({ project, month, onMonthChange }) {
                 }
               />
             </Field>
-            <button type="submit" className="btn primary" disabled={busy}>
+            <button
+              type="submit"
+              className="btn primary"
+              disabled={busy}
+            >
               Add keyword
             </button>
           </form>
@@ -330,7 +376,10 @@ export default function SeoTracker({ project, month, onMonthChange }) {
       {editingKeyword && (
         <section className="card">
           <h3>Edit keyword</h3>
-          <form className="seo-add-keyword mt-16" onSubmit={saveKeyword}>
+          <form
+            className="seo-add-keyword mt-16"
+            onSubmit={saveKeyword}
+          >
             <Field label="Keyword">
               <input
                 className="input"
@@ -368,10 +417,18 @@ export default function SeoTracker({ project, month, onMonthChange }) {
               />
             </Field>
             <div className="row wrap gap-6">
-              <button type="submit" className="btn primary" disabled={busy}>
+              <button
+                type="submit"
+                className="btn primary"
+                disabled={busy}
+              >
                 Save keyword
               </button>
-              <button type="button" className="btn" onClick={() => setEditingKeyword(null)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setEditingKeyword(null)}
+              >
                 Cancel
               </button>
             </div>

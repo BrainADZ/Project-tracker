@@ -237,12 +237,19 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
           </div>
         </div>
         <div className="head-actions">
-          <button className="btn" disabled={!items.length} onClick={exportRows}>
+          <button
+            className="btn"
+            disabled={!items.length}
+            onClick={exportRows}
+          >
             <Download size={16} />
             Export
           </button>
           {(projects.length > 0 || options.data?.can_add_extra) && (
-            <button className="btn primary" onClick={() => open(null)}>
+            <button
+              className="btn primary"
+              onClick={() => open(null)}
+            >
               <Plus size={16} />
               Add today’s work
             </button>
@@ -268,7 +275,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
             ],
             ['Done', items.filter((r) => r.status === 'Done').length],
           ].map(([title, n]) => (
-            <div className="card" key={title}>
+            <div
+              className="card"
+              key={title}
+            >
               <span className="small muted">{title}</span>
               <b>{n}</b>
             </div>
@@ -308,7 +318,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
           >
             <option value="">All team members</option>
             {people.map((u) => (
-              <option key={u.id} value={u.id}>
+              <option
+                key={u.id}
+                value={u.id}
+              >
                 {u.name}
               </option>
             ))}
@@ -323,14 +336,23 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
             submission.
           </p>
           {reviewTasks.map((t) => (
-            <div className="development-review-row" key={t.id}>
+            <div
+              className="development-review-row"
+              key={t.id}
+            >
               <div>
-                <Link className="b6" to={'/projects/' + t.project_id + '/tasks/' + t.id}>
+                <Link
+                  className="b6"
+                  to={'/projects/' + t.project_id + '/tasks/' + t.id}
+                >
                   {t.title}
                 </Link>
                 <p className="small muted mt-4">{t.project_name}</p>
               </div>
-              <WebsiteTaskReview task={t} onChanged={changed} />
+              <WebsiteTaskReview
+                task={t}
+                onChanged={changed}
+              />
             </div>
           ))}
         </section>
@@ -416,7 +438,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
                         <b>{duration(elapsed(r))}</b>
                       </td>
                       <td className="work-note-cell">
-                        <button className="link small" onClick={() => setNotes(r.id)}>
+                        <button
+                          className="link small"
+                          onClick={() => setNotes(r.id)}
+                        >
                           <MessageSquare size={13} />
                           {r.note_count ? r.note_count + ' notes' : 'Notes'}
                         </button>
@@ -540,14 +565,21 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
             Previous entries keep their dates and time. Continue creates a new entry for today.
           </p>
           {pending.data.items.map((r) => (
-            <div className="list-item development-carry" key={r.id}>
+            <div
+              className="list-item development-carry"
+              key={r.id}
+            >
               <div>
                 <b>{r.title}</b>
                 <div className="small muted">
                   {r.project_name} · {r.parent_task_title} · {fmtDate(r.report_date)}
                 </div>
               </div>
-              <button className="btn sm" disabled={busy === String(r.id)} onClick={() => carry(r)}>
+              <button
+                className="btn sm"
+                disabled={busy === String(r.id)}
+                onClick={() => carry(r)}
+              >
                 <ArrowRight size={13} />
                 Continue today
               </button>
@@ -562,7 +594,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
           onClose={() => setForm(null)}
           footer={
             <>
-              <button className="btn" onClick={() => setForm(null)}>
+              <button
+                className="btn"
+                onClick={() => setForm(null)}
+              >
                 Cancel
               </button>
               <button
@@ -576,7 +611,11 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
             </>
           }
         >
-          <form id="development-entry-form" className="modal-body form-grid" onSubmit={save}>
+          <form
+            id="development-entry-form"
+            className="modal-body form-grid"
+            onSubmit={save}
+          >
             <div className="full">
               <ErrorNote error={error} />
             </div>
@@ -590,7 +629,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
               >
                 <option value="">Other / extra work</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option
+                    key={p.id}
+                    value={p.id}
+                  >
                     {p.name}
                   </option>
                 ))}
@@ -611,7 +653,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
               />
             </Field>
             {f.project_id && (
-              <Field label="Assigned main task" className="full">
+              <Field
+                label="Assigned main task"
+                className="full"
+              >
                 <select
                   className="select"
                   required
@@ -621,7 +666,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
                 >
                   <option value="">Choose your task</option>
                   {selected?.tasks.map((t) => (
-                    <option key={t.id} value={t.id}>
+                    <option
+                      key={t.id}
+                      value={t.id}
+                    >
                       {t.title} · {t.stage}
                     </option>
                   ))}
@@ -632,7 +680,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
                 </select>
               </Field>
             )}
-            <Field label="Module / today’s work" className="full">
+            <Field
+              label="Module / today’s work"
+              className="full"
+            >
               <input
                 className="input"
                 required
@@ -642,7 +693,10 @@ export default function DevelopmentReporting({ projectId, embedded = false, init
                 placeholder="e.g. UI design — homepage header and mobile navigation"
               />
             </Field>
-            <Field label="Notes" className="full">
+            <Field
+              label="Notes"
+              className="full"
+            >
               <textarea
                 className="input"
                 rows={3}

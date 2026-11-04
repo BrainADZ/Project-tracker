@@ -17,24 +17,88 @@ export function canEditWebsiteTaskWork(ctx, task, project) {
 }
 export function websiteTaskReview(ctx, task, project, { history = false } = {}) {
   const rows = ctx.db.all(
-    'SELECT r.*,s.name submitted_by_name,h.name reviewed_by_name FROM website_task_reviews r JOIN users s ON s.id=r.submitted_by LEFT JOIN users h ON h.id=r.reviewed_by WHERE r.task_id=? ORDER BY r.id DESC',
+    `
+      SELECT
+        r.*,
+        s.name submitted_by_name,
+        h.name reviewed_by_name
+      FROM
+        website_task_reviews r
+        JOIN users s ON s.id = r.submitted_by
+        LEFT JOIN users h ON h.id = r.reviewed_by
+      WHERE
+        r.task_id = ?
+      ORDER BY
+        r.id DESC
+    `,
     task.id,
   );
   const latest = rows[0] || null,
     pending = rows.find((r) => r.status === 'pending') || null;
   const current = ctx.db.all(
-    "SELECT e.id,w.state,w.revision_pending FROM extra_work e JOIN report_work w ON w.extra_id=e.id WHERE e.parent_task_id=? AND e.assignee_id=? AND NOT EXISTS (SELECT 1 FROM extra_work n WHERE n.parent_task_id=e.parent_task_id AND n.continued_from_key='extra-'||e.id)",
+    `
+      SELECT
+        e.id,
+        w.state,
+        w.revision_pending
+      FROM
+        extra_work e
+        JOIN report_work w ON w.extra_id = e.id
+      WHERE
+        e.parent_task_id = ?
+        AND e.assignee_id = ?
+        AND NOT EXISTS (
+          SELECT
+            1
+          FROM
+            extra_work n
+          WHERE
+            n.parent_task_id = e.parent_task_id
+            AND n.continued_from_key = 'extra-' || e.id
+        )
+    `,
     task.id,
     task.assignee_id,
   );
   const running = !!ctx.db.get(
-    'SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE s.ended_at IS NULL AND (w.task_id=? OR e.parent_task_id=?) LIMIT 1',
+    `
+      SELECT
+        s.id
+      FROM
+        report_work_sessions s
+        JOIN report_work w ON w.work_key = s.work_key
+        LEFT JOIN extra_work e ON e.id = w.extra_id
+      WHERE
+        s.ended_at IS NULL
+        AND (
+          w.task_id = ?
+          OR e.parent_task_id = ?
+        )
+      LIMIT
+        1
+    `,
     task.id,
     task.id,
   );
   const unfinished = current.filter((r) => r.state !== 'Done' || r.revision_pending).length;
   const legacy = ctx.db.get(
-    'SELECT w.state,w.revision_pending FROM report_work w WHERE w.task_id=? AND EXISTS (SELECT 1 FROM report_work_sessions s WHERE s.work_key=w.work_key)',
+    `
+      SELECT
+        w.state,
+        w.revision_pending
+      FROM
+        report_work w
+      WHERE
+        w.task_id = ?
+        AND EXISTS (
+          SELECT
+            1
+          FROM
+            report_work_sessions s
+          WHERE
+            s.work_key = w.work_key
+        )
+    `,
     task.id,
   );
   const hasCompletedWork =
@@ -143,7 +207,18 @@ export function registerWebsiteTaskReviews(route, call) {
       const review = websiteTaskReview(ctx, task, project);
       if (!review.can_submit) throw bad(review.blocker || 'This task cannot be submitted');
       const { id } = ctx.db.run(
-        'INSERT INTO website_task_reviews (task_id,submitted_by,submitted_at,note,preview_url) VALUES (?,?,?,?,?)',
+        `
+          INSERT INTO
+            website_task_reviews (
+              task_id,
+              submitted_by,
+              submitted_at,
+              note,
+              preview_url
+            )
+          VALUES
+            (?, ?, ?, ?, ?)
+        `,
         task.id,
         ctx.user.id,
         ctx.now,
@@ -210,7 +285,22 @@ export function registerWebsiteTaskReviews(route, call) {
         if (
           ready.pending_modules ||
           ctx.db.get(
-            'SELECT s.id FROM report_work_sessions s JOIN report_work w ON w.work_key=s.work_key LEFT JOIN extra_work e ON e.id=w.extra_id WHERE s.ended_at IS NULL AND (w.task_id=? OR e.parent_task_id=?) LIMIT 1',
+            `
+              SELECT
+                s.id
+              FROM
+                report_work_sessions s
+                JOIN report_work w ON w.work_key = s.work_key
+                LEFT JOIN extra_work e ON e.id = w.extra_id
+              WHERE
+                s.ended_at IS NULL
+                AND (
+                  w.task_id = ?
+                  OR e.parent_task_id = ?
+                )
+              LIMIT
+                1
+            `,
             task.id,
             task.id,
           )

@@ -21,7 +21,22 @@ if (db.get('SELECT COUNT(*) AS n FROM users').n === 0) {
   const email = (env.ADMIN_EMAIL || 'admin@brainadz.com').toLowerCase();
   const password = env.ADMIN_PASSWORD || randomBytes(6).toString('base64url');
   db.run(
-    "INSERT INTO users (name, email, password_hash, role, title, color, active, must_change_password, created_at) VALUES (?,?,?,'admin',?,?,1,?,?)",
+    `
+      INSERT INTO
+        users (
+          name,
+          email,
+          password_hash,
+          role,
+          title,
+          color,
+          active,
+          must_change_password,
+          created_at
+        )
+      VALUES
+        (?, ?, ?, 'admin', ?, ?, 1, ?, ?)
+    `,
     env.ADMIN_NAME || 'Admin',
     email,
     await hashPassword(password),

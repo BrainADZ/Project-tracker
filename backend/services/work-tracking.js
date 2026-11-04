@@ -10,74 +10,112 @@ import {
 import { bad, forbidden, notFound, toId, parseJSON, todayIn } from './util.js';
 
 export const TRACKING_SCHEMA = `
-CREATE TABLE IF NOT EXISTS website_task_reviews (
-  id INTEGER PRIMARY KEY,
-  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  submitted_by INTEGER NOT NULL REFERENCES users(id),
-  submitted_at TEXT NOT NULL,
-  note TEXT NOT NULL DEFAULT '',
-  preview_url TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','changes_required')),
-  reviewed_by INTEGER REFERENCES users(id),
-  reviewed_at TEXT,
-  feedback TEXT NOT NULL DEFAULT ''
-);
-CREATE INDEX IF NOT EXISTS idx_website_review_task ON website_task_reviews(task_id,id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_website_review_pending ON website_task_reviews(task_id) WHERE status='pending';
+  CREATE TABLE IF NOT EXISTS website_task_reviews (
+    id INTEGER PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    submitted_by INTEGER NOT NULL REFERENCES users(id),
+    submitted_at TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    preview_url TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (
+      status IN ('pending', 'approved', 'changes_required')
+    ),
+    reviewed_by INTEGER REFERENCES users(id),
+    reviewed_at TEXT,
+    feedback TEXT NOT NULL DEFAULT ''
+  );
 
-CREATE TABLE IF NOT EXISTS extra_work (
-  id INTEGER PRIMARY KEY,
-  vertical_id INTEGER NOT NULL REFERENCES verticals(id),
-  title TEXT NOT NULL,
-  client_label TEXT NOT NULL DEFAULT '',
-  work_type TEXT NOT NULL DEFAULT 'Graphic',
-  reporting_team TEXT NOT NULL DEFAULT 'social' CHECK (reporting_team IN ('social','development','other')),
-  parent_task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
-  continued_from_key TEXT NOT NULL DEFAULT '',
-  report_date TEXT NOT NULL,
-  assignee_id INTEGER NOT NULL REFERENCES users(id),
-  created_by INTEGER NOT NULL REFERENCES users(id),
-  remarks TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS report_work (
-  work_key TEXT PRIMARY KEY,
-  task_id INTEGER UNIQUE REFERENCES tasks(id) ON DELETE CASCADE,
-  extra_id INTEGER UNIQUE REFERENCES extra_work(id) ON DELETE CASCADE,
-  state TEXT NOT NULL DEFAULT 'Not Started',
-  first_started_at TEXT,
-  completed_at TEXT,
-  revision_no INTEGER NOT NULL DEFAULT 0,
-  revision_pending INTEGER NOT NULL DEFAULT 0,
-  updated_at TEXT NOT NULL,
-  CHECK ((task_id IS NOT NULL AND extra_id IS NULL) OR (task_id IS NULL AND extra_id IS NOT NULL))
-);
-CREATE TABLE IF NOT EXISTS report_work_sessions (
-  id INTEGER PRIMARY KEY,
-  work_key TEXT NOT NULL REFERENCES report_work(work_key) ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users(id),
-  revision_no INTEGER NOT NULL DEFAULT 0,
-  started_at TEXT NOT NULL,
-  ended_at TEXT,
-  duration_ms INTEGER NOT NULL DEFAULT 0
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_report_one_running_user ON report_work_sessions(user_id) WHERE ended_at IS NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_report_one_running_work ON report_work_sessions(work_key) WHERE ended_at IS NULL;
-CREATE TABLE IF NOT EXISTS report_work_notes (
-  id INTEGER PRIMARY KEY,
-  work_key TEXT NOT NULL REFERENCES report_work(work_key) ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users(id),
-  kind TEXT NOT NULL DEFAULT 'note',
-  revision_no INTEGER NOT NULL DEFAULT 0,
-  note TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
+  CREATE INDEX IF NOT EXISTS idx_website_review_task ON website_task_reviews (task_id, id);
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_website_review_pending ON website_task_reviews (task_id)
+  WHERE
+    status = 'pending';
+
+  CREATE TABLE IF NOT EXISTS extra_work (
+    id INTEGER PRIMARY KEY,
+    vertical_id INTEGER NOT NULL REFERENCES verticals(id),
+    title TEXT NOT NULL,
+    client_label TEXT NOT NULL DEFAULT '',
+    work_type TEXT NOT NULL DEFAULT 'Graphic',
+    reporting_team TEXT NOT NULL DEFAULT 'social' CHECK (
+      reporting_team IN ('social', 'development', 'other')
+    ),
+    parent_task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+    continued_from_key TEXT NOT NULL DEFAULT '',
+    report_date TEXT NOT NULL,
+    assignee_id INTEGER NOT NULL REFERENCES users(id),
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    remarks TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS report_work (
+    work_key TEXT PRIMARY KEY,
+    task_id INTEGER UNIQUE REFERENCES tasks(id) ON DELETE CASCADE,
+    extra_id INTEGER UNIQUE REFERENCES extra_work(id) ON DELETE CASCADE,
+    state TEXT NOT NULL DEFAULT 'Not Started',
+    first_started_at TEXT,
+    completed_at TEXT,
+    revision_no INTEGER NOT NULL DEFAULT 0,
+    revision_pending INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    CHECK (
+      (
+        task_id IS NOT NULL
+        AND extra_id IS NULL
+      )
+      OR (
+        task_id IS NULL
+        AND extra_id IS NOT NULL
+      )
+    )
+  );
+
+  CREATE TABLE IF NOT EXISTS report_work_sessions (
+    id INTEGER PRIMARY KEY,
+    work_key TEXT NOT NULL REFERENCES report_work(work_key) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    revision_no INTEGER NOT NULL DEFAULT 0,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    duration_ms INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_report_one_running_user ON report_work_sessions (user_id)
+  WHERE
+    ended_at IS NULL;
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_report_one_running_work ON report_work_sessions (work_key)
+  WHERE
+    ended_at IS NULL;
+
+  CREATE TABLE IF NOT EXISTS report_work_notes (
+    id INTEGER PRIMARY KEY,
+    work_key TEXT NOT NULL REFERENCES report_work(work_key) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    kind TEXT NOT NULL DEFAULT 'note',
+    revision_no INTEGER NOT NULL DEFAULT 0,
+    note TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
 `;
 
 export function initExistingWork(db, now = new Date().toISOString()) {
   for (const r of db.all(
-    'SELECT d.task_id,t.status,d.updated_at,d.created_by,d.start_time,d.completion_time,d.delay_reason FROM daily_reporting d JOIN tasks t ON t.id=d.task_id',
+    `
+      SELECT
+        d.task_id,
+        t.status,
+        d.updated_at,
+        d.created_by,
+        d.start_time,
+        d.completion_time,
+        d.delay_reason
+      FROM
+        daily_reporting d
+        JOIN tasks t ON t.id = d.task_id
+    `,
   )) {
     const state =
       r.status === 'done'
@@ -146,7 +184,19 @@ export function workTotals(db, key, at) {
 }
 export function addWorkNote(ctx, key, note, kind = 'note', revision = 0) {
   ctx.db.run(
-    'INSERT INTO report_work_notes (work_key,user_id,kind,revision_no,note,created_at) VALUES (?,?,?,?,?,?)',
+    `
+      INSERT INTO
+        report_work_notes (
+          work_key,
+          user_id,
+          kind,
+          revision_no,
+          note,
+          created_at
+        )
+      VALUES
+        (?, ?, ?, ?, ?, ?)
+    `,
     key,
     ctx.user.id,
     kind,
@@ -191,8 +241,19 @@ export function stopInterval(ctx, key) {
 
 export function initSocialDailyRows(db, now = new Date().toISOString(), projectId) {
   const rows = db.all(
-    "SELECT t.*,p.service_details,p.owner_id FROM tasks t JOIN projects p ON p.id=t.project_id LEFT JOIN daily_reporting d ON d.task_id=t.id WHERE p.service_type='social' AND d.task_id IS NULL" +
-      (projectId ? ' AND p.id=?' : ''),
+    `
+      SELECT
+        t.*,
+        p.service_details,
+        p.owner_id
+      FROM
+        tasks t
+        JOIN projects p ON p.id = t.project_id
+        LEFT JOIN daily_reporting d ON d.task_id = t.id
+      WHERE
+        p.service_type = 'social'
+        AND d.task_id IS NULL
+    ` + (projectId ? ' AND p.id=?' : ''),
     ...(projectId ? [projectId] : []),
   );
   for (const t of rows) {
@@ -212,7 +273,21 @@ export function initSocialDailyRows(db, now = new Date().toISOString(), projectI
       todayIn('Asia/Kolkata', new Date(now));
     const state = t.status === 'done' ? 'Done' : t.status === 'todo' ? 'Not Started' : 'Paused';
     db.run(
-      'INSERT INTO daily_reporting (task_id,report_date,work_type,social_id,status,remarks,created_by,updated_at) VALUES (?,?,?,?,?,?,?,?)',
+      `
+        INSERT INTO
+          daily_reporting (
+            task_id,
+            report_date,
+            work_type,
+            social_id,
+            status,
+            remarks,
+            created_by,
+            updated_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       t.id,
       date,
       'Still',
@@ -223,7 +298,18 @@ export function initSocialDailyRows(db, now = new Date().toISOString(), projectI
       t.updated_at || now,
     );
     db.run(
-      'INSERT OR IGNORE INTO report_work (work_key,task_id,state,completed_at,updated_at) VALUES (?,?,?,?,?)',
+      `
+        INSERT OR IGNORE INTO
+          report_work (
+            work_key,
+            task_id,
+            state,
+            completed_at,
+            updated_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?)
+      `,
       'task-' + t.id,
       t.id,
       state,
@@ -235,8 +321,16 @@ export function initSocialDailyRows(db, now = new Date().toISOString(), projectI
 
 export function initWebsiteDailyRows(db, now = new Date().toISOString(), projectId) {
   const rows = db.all(
-    "SELECT t.*,p.owner_id FROM tasks t JOIN projects p ON p.id=t.project_id WHERE p.service_type IN ('website','software')" +
-      (projectId ? ' AND p.id=?' : ''),
+    `
+      SELECT
+        t.*,
+        p.owner_id
+      FROM
+        tasks t
+        JOIN projects p ON p.id = t.project_id
+      WHERE
+        p.service_type IN ('website', 'software')
+    ` + (projectId ? ' AND p.id=?' : ''),
     ...(projectId ? [projectId] : []),
   );
   for (const t of rows) {
@@ -257,7 +351,21 @@ export function initWebsiteDailyRows(db, now = new Date().toISOString(), project
       todayIn('Asia/Kolkata', new Date(now));
     const state = t.status === 'done' ? 'Done' : t.status === 'todo' ? 'Not Started' : 'Paused';
     db.run(
-      'INSERT INTO daily_reporting (task_id,report_date,work_type,social_id,status,remarks,created_by,updated_at) VALUES (?,?,?,NULL,?,?,?,?)',
+      `
+        INSERT INTO
+          daily_reporting (
+            task_id,
+            report_date,
+            work_type,
+            social_id,
+            status,
+            remarks,
+            created_by,
+            updated_at
+          )
+        VALUES
+          (?, ?, ?, NULL, ?, ?, ?, ?)
+      `,
       t.id,
       date,
       phase,
@@ -267,7 +375,18 @@ export function initWebsiteDailyRows(db, now = new Date().toISOString(), project
       t.updated_at || now,
     );
     db.run(
-      'INSERT OR IGNORE INTO report_work (work_key,task_id,state,completed_at,updated_at) VALUES (?,?,?,?,?)',
+      `
+        INSERT OR IGNORE INTO
+          report_work (
+            work_key,
+            task_id,
+            state,
+            completed_at,
+            updated_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?)
+      `,
       'task-' + t.id,
       t.id,
       state,

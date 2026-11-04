@@ -73,10 +73,16 @@ export default function CalendarPage() {
           />
         </div>
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       <div className="cal-layout">
         <section className="card flush">
-          <div className="row between" style={{ padding: '14px 16px' }}>
+          <div
+            className="row between"
+            style={{ padding: '14px 16px' }}
+          >
             <div className="row">
               <button
                 type="button"
@@ -111,7 +117,10 @@ export default function CalendarPage() {
           </div>
           <div className="mcal">
             {[1, 2, 3, 4, 5, 6, 0].map((d) => (
-              <div key={d} className="mcal-dow">
+              <div
+                key={d}
+                className="mcal-dow"
+              >
                 {DOW[d]}
               </div>
             ))}
@@ -139,7 +148,10 @@ export default function CalendarPage() {
                             color: it.type === 'key' ? '#fff' : 'var(--text)',
                           }}
                         >
-                          <Ic size={10} fill={it.type === 'key' ? '#fff' : 'none'} />
+                          <Ic
+                            size={10}
+                            fill={it.type === 'key' ? '#fff' : 'none'}
+                          />
                           {it.type === 'task'
                             ? it.title
                             : it.type === 'milestone'
@@ -155,7 +167,10 @@ export default function CalendarPage() {
             })}
           </div>
           {loading && (
-            <div className="xs muted" style={{ padding: '0 16px 12px' }}>
+            <div
+              className="xs muted"
+              style={{ padding: '0 16px 12px' }}
+            >
               Updating…
             </div>
           )}
@@ -168,7 +183,11 @@ export default function CalendarPage() {
                 : `${MONTHS[m - 1]} at a glance`}
             </h3>
             {sel && (
-              <button type="button" className="link" onClick={() => setSel(null)}>
+              <button
+                type="button"
+                className="link"
+                onClick={() => setSel(null)}
+              >
                 Whole month
               </button>
             )}
@@ -180,7 +199,12 @@ export default function CalendarPage() {
               {agenda.map((it, i) => {
                 const Ic = it.type === 'task' && it.done ? CircleCheck : ICON[it.type];
                 return (
-                  <button key={i} type="button" className="agenda-it" onClick={() => open(it)}>
+                  <button
+                    key={i}
+                    type="button"
+                    className="agenda-it"
+                    onClick={() => open(it)}
+                  >
                     <span className="agenda-date">
                       {!sel && (
                         <>
@@ -193,9 +217,15 @@ export default function CalendarPage() {
                       className="file-ic sm"
                       style={{ background: alpha(it.color, 0.14), color: it.color }}
                     >
-                      <Ic size={14} fill={it.type === 'key' ? it.color : 'none'} />
+                      <Ic
+                        size={14}
+                        fill={it.type === 'key' ? it.color : 'none'}
+                      />
                     </span>
-                    <span className="grow" style={{ minWidth: 0 }}>
+                    <span
+                      className="grow"
+                      style={{ minWidth: 0 }}
+                    >
                       <span
                         className={`small b6 ellipsis ${it.done ? 'muted' : ''}`}
                         style={{
@@ -223,9 +253,15 @@ export default function CalendarPage() {
             </div>
           )}
           <div className="divider" />
-          <div className="cal-legend" style={{ padding: 0 }}>
+          <div
+            className="cal-legend"
+            style={{ padding: 0 }}
+          >
             <span>
-              <Diamond size={12} fill="var(--text-2)" />
+              <Diamond
+                size={12}
+                fill="var(--text-2)"
+              />
               Event, show or launch
             </span>
             <span>
@@ -237,10 +273,19 @@ export default function CalendarPage() {
               Task
             </span>
           </div>
-          <div className="row wrap mt-8" style={{ gap: 10 }}>
+          <div
+            className="row wrap mt-8"
+            style={{ gap: 10 }}
+          >
             {verticals.map((v) => (
-              <span key={v.id} className="row gap-6 xs">
-                <span className="dot" style={{ background: v.color }} />
+              <span
+                key={v.id}
+                className="row gap-6 xs"
+              >
+                <span
+                  className="dot"
+                  style={{ background: v.color }}
+                />
                 {v.short}
               </span>
             ))}

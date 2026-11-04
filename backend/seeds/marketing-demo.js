@@ -117,7 +117,22 @@ export async function seedMarketingDemo(db, { today, passwordHash, reset = false
           );
       } else
         ids[p.key] = db.run(
-          "INSERT INTO users (name,email,password_hash,role,title,color,active,must_change_password,created_at) VALUES (?,?,?,'member',?,?,1,0,?)",
+          `
+            INSERT INTO
+              users (
+                name,
+                email,
+                password_hash,
+                role,
+                title,
+                color,
+                active,
+                must_change_password,
+                created_at
+              )
+            VALUES
+              (?, ?, ?, 'member', ?, ?, 1, 0, ?)
+          `,
           p.name,
           email,
           passwordHash,
@@ -126,7 +141,15 @@ export async function seedMarketingDemo(db, { today, passwordHash, reset = false
           now,
         ).id;
       db.run(
-        'INSERT INTO user_verticals (user_id,vertical_id,level) VALUES (?,?,?) ON CONFLICT(user_id,vertical_id) DO UPDATE SET level=excluded.level',
+        `
+          INSERT INTO
+            user_verticals (user_id, vertical_id, level)
+          VALUES
+            (?, ?, ?)
+          ON CONFLICT (user_id, vertical_id) DO UPDATE
+          SET
+            level = excluded.level
+        `,
         ids[p.key],
         vertical.id,
         p.level,
@@ -154,7 +177,48 @@ export async function seedMarketingDemo(db, { today, passwordHash, reset = false
         sales_id: ids.sales,
       };
       const { id } = db.run(
-        "INSERT INTO projects (code,vertical_id,name,client,description,status,health,priority,stages,stage,owner_id,start_date,created_by,created_at,updated_at,service_type,service_details) VALUES (?,?,?,?,?,'active','on_track','medium',?,?,?,?,?,?,?,'social',?)",
+        `
+          INSERT INTO
+            projects (
+              code,
+              vertical_id,
+              name,
+              client,
+              description,
+              status,
+              health,
+              priority,
+              stages,
+              stage,
+              owner_id,
+              start_date,
+              created_by,
+              created_at,
+              updated_at,
+              service_type,
+              service_details
+            )
+          VALUES
+            (
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              'active',
+              'on_track',
+              'medium',
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              ?,
+              'social',
+              ?
+            )
+        `,
         code,
         vertical.id,
         name + ' — Social media',

@@ -30,20 +30,51 @@ import { timeAgo } from './format.js';
 export function Logo({ size = '' }) {
   return (
     <div className={`logo ${size}`}>
-      <img className="brand-logo" src={brand.main} alt="BrainADZ — Marketing, Live and Exhibits" />
+      <img
+        className="brand-logo"
+        src={brand.main}
+        alt="BrainADZ — Marketing, Live and Exhibits"
+      />
     </div>
   );
 }
 
 function Leaf() {
   return (
-    <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
-      <path d="M95 118c-6-30-4-58 14-92" stroke="#3f8f3a" strokeWidth="2.5" fill="none" />
-      <path d="M100 70c-24-6-38-24-36-46 22 2 38 20 36 46z" fill="#5cb85c" />
-      <path d="M100 70c-10-14-20-26-36-46" stroke="#3f8f3a" strokeWidth="1.5" fill="none" />
-      <path d="M104 95c18-10 26-30 18-52-20 8-28 30-18 52z" fill="#7ccf5e" />
-      <path d="M97 105c-22 2-40-10-46-30 22-4 40 8 46 30z" fill="#4aa84a" />
-      <path d="M108 40c6-16 4-30-6-40-8 12-8 28 6 40z" fill="#8fdc6a" />
+    <svg
+      width="120"
+      height="120"
+      viewBox="0 0 120 120"
+      aria-hidden="true"
+    >
+      <path
+        d="M95 118c-6-30-4-58 14-92"
+        stroke="#3f8f3a"
+        strokeWidth="2.5"
+        fill="none"
+      />
+      <path
+        d="M100 70c-24-6-38-24-36-46 22 2 38 20 36 46z"
+        fill="#5cb85c"
+      />
+      <path
+        d="M100 70c-10-14-20-26-36-46"
+        stroke="#3f8f3a"
+        strokeWidth="1.5"
+        fill="none"
+      />
+      <path
+        d="M104 95c18-10 26-30 18-52-20 8-28 30-18 52z"
+        fill="#7ccf5e"
+      />
+      <path
+        d="M97 105c-22 2-40-10-46-30 22-4 40 8 46 30z"
+        fill="#4aa84a"
+      />
+      <path
+        d="M108 40c6-16 4-30-6-40-8 12-8 28 6 40z"
+        fill="#8fdc6a"
+      />
     </svg>
   );
 }
@@ -61,11 +92,18 @@ function VerticalLogo({ v, active, onClick }) {
       }
     >
       {logo ? (
-        <img className="vertical-brand-logo" src={logo} alt={v.name} />
+        <img
+          className="vertical-brand-logo"
+          src={logo}
+          alt={v.name}
+        />
       ) : (
         <>
           <span className="b">BrainADZ</span>
-          <span className="n" style={{ color: v.color }}>
+          <span
+            className="n"
+            style={{ color: v.color }}
+          >
             {v.short}
           </span>
           <span className="t">{v.tagline}</span>
@@ -120,8 +158,16 @@ function Sidebar({ open, onClose, counts, mini, onToggleMini, onFloat }) {
 
   return (
     <>
-      {open && <div className="scrim" onClick={onClose} />}
-      <aside ref={asideRef} className={`sidebar ${open ? 'open' : ''} ${mini ? 'mini' : ''}`}>
+      {open && (
+        <div
+          className="scrim"
+          onClick={onClose}
+        />
+      )}
+      <aside
+        ref={asideRef}
+        className={`sidebar ${open ? 'open' : ''} ${mini ? 'mini' : ''}`}
+      >
         <div className="brand">
           <div className="brand-full">
             <Logo />
@@ -145,9 +191,15 @@ function Sidebar({ open, onClose, counts, mini, onToggleMini, onFloat }) {
           aria-label={mini ? 'Expand the menu' : 'Collapse the menu'}
           title={`${mini ? 'Expand' : 'Collapse'} the menu  [`}
         >
-          <ChevronLeft size={15} strokeWidth={2.4} />
+          <ChevronLeft
+            size={15}
+            strokeWidth={2.4}
+          />
         </button>
-        <nav className="nav" aria-label="Main">
+        <nav
+          className="nav"
+          aria-label="Main"
+        >
           {items.map((n) => (
             <Link
               key={n.to}
@@ -182,13 +234,21 @@ function Sidebar({ open, onClose, counts, mini, onToggleMini, onFloat }) {
             onBlur={() => setTip(null)}
           >
             <span className="nav-act-ic">
-              <Monogram size={15} color="#fff" title="" />
+              <Monogram
+                size={15}
+                color="#fff"
+                title=""
+              />
             </span>
             <span className="lbl">Floating menu</span>
           </button>
         </nav>
         {mini && tip && (
-          <div className="side-tip" style={{ top: tip.top }} role="tooltip">
+          <div
+            className="side-tip"
+            style={{ top: tip.top }}
+            role="tooltip"
+          >
             {tip.label}
           </div>
         )}
@@ -234,7 +294,10 @@ function SearchBox() {
   };
   const icon = { project: FolderOpen, task: CheckCircle2, file: FileText };
   return (
-    <div className="search" ref={ref}>
+    <div
+      className="search"
+      ref={ref}
+    >
       <Search size={18} />
       <input
         id="global-search"
@@ -252,7 +315,10 @@ function SearchBox() {
         }}
       />
       {open && q.trim().length >= 2 && (
-        <div className="dropdown" style={{ left: 0, right: 'auto', width: 'max(100%, 340px)' }}>
+        <div
+          className="dropdown"
+          style={{ left: 0, right: 'auto', width: 'max(100%, 340px)' }}
+        >
           {results.length === 0 && <div className="item muted">No matches in your verticals</div>}
           {results.map((r, i) => {
             const Ic = icon[r.type];
@@ -313,7 +379,10 @@ function Notifications() {
     loadBoot();
   };
   return (
-    <div className="menu-wrap" ref={ref}>
+    <div
+      className="menu-wrap"
+      ref={ref}
+    >
       <button
         type="button"
         className="icon-btn"
@@ -328,7 +397,11 @@ function Notifications() {
           <div className="head">
             Notifications
             {unread > 0 && (
-              <button type="button" className="link" onClick={readAll}>
+              <button
+                type="button"
+                className="link"
+                onClick={readAll}
+              >
                 Mark all read
               </button>
             )}
@@ -354,7 +427,10 @@ function Notifications() {
                   }}
                 />
                 <div style={{ minWidth: 0 }}>
-                  <div className="small" style={{ lineHeight: 1.4 }}>
+                  <div
+                    className="small"
+                    style={{ lineHeight: 1.4 }}
+                  >
                     {n.text}
                   </div>
                   <div className="xs muted mt-4">{timeAgo(n.created_at)}</div>
@@ -376,7 +452,11 @@ function IPhoneInstall({ onClose }) {
       sub="It opens full screen, like any other app"
       onClose={onClose}
       footer={
-        <button type="button" className="btn primary" onClick={onClose}>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={onClose}
+        >
           Got it
         </button>
       }
@@ -400,7 +480,11 @@ function IPhoneInstall({ onClose }) {
         </li>
         <li>
           <span className="step-ic">
-            <Monogram size={18} color="#fff" title="" />
+            <Monogram
+              size={18}
+              color="#fff"
+              title=""
+            />
           </span>
           <span>
             Tap <b>Add</b>. BrainADZ appears on your home screen with the Br icon.
@@ -424,7 +508,10 @@ function UserMenu({ onSignOut }) {
       ? 'Admin · all verticals'
       : verticals.map((v) => v.short).join(' · ') || 'No verticals yet';
   return (
-    <div className="menu-wrap" ref={ref}>
+    <div
+      className="menu-wrap"
+      ref={ref}
+    >
       <button
         type="button"
         className="user-chip"
@@ -432,18 +519,35 @@ function UserMenu({ onSignOut }) {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <Avatar name={me.name} color={me.color} photo={me.photo} size={40} />
+        <Avatar
+          name={me.name}
+          color={me.color}
+          photo={me.photo}
+          size={40}
+        />
         <span className="who">
           <div className="nm">{me.name}</div>
           <div className="rl">{role}</div>
         </span>
-        <ChevronDown size={16} className="hide-sm" />
+        <ChevronDown
+          size={16}
+          className="hide-sm"
+        />
       </button>
       {open && (
-        <div className="dropdown menu" role="menu">
-          <div className="head" style={{ display: 'block' }}>
+        <div
+          className="dropdown menu"
+          role="menu"
+        >
+          <div
+            className="head"
+            style={{ display: 'block' }}
+          >
             <div className="b6">{me.name}</div>
-            <div className="xs muted" style={{ fontWeight: 500 }}>
+            <div
+              className="xs muted"
+              style={{ fontWeight: 500 }}
+            >
               {me.email}
             </div>
           </div>
@@ -585,7 +689,13 @@ export function Layout({ children, onSignOut }) {
         onToggleMini={toggleMini}
         onFloat={goFloating}
       />
-      {floating && <FloatingNav counts={counts} onDock={dock} focusOnMount={focusFloat} />}
+      {floating && (
+        <FloatingNav
+          counts={counts}
+          onDock={dock}
+          focusOnMount={focusFloat}
+        />
+      )}
       <div className="main">
         <header className="topbar">
           <button
@@ -598,11 +708,18 @@ export function Layout({ children, onSignOut }) {
           </button>
           {floating && (
             <span className="app-mark">
-              <Monogram size={30} title="BrainADZ Projects" />
+              <Monogram
+                size={30}
+                title="BrainADZ Projects"
+              />
             </span>
           )}
           {verticals.length > 1 && (
-            <div className="verticals" role="group" aria-label="Filter by vertical">
+            <div
+              className="verticals"
+              role="group"
+              aria-label="Filter by vertical"
+            >
               {verticals.map((v) => (
                 <VerticalLogo
                   key={v.id}
@@ -615,7 +732,11 @@ export function Layout({ children, onSignOut }) {
           )}
           {verticals.length === 1 && (
             <div className="verticals">
-              <VerticalLogo v={verticals[0]} active onClick={() => {}} />
+              <VerticalLogo
+                v={verticals[0]}
+                active
+                onClick={() => {}}
+              />
             </div>
           )}
           <div className="spacer" />
@@ -624,7 +745,11 @@ export function Layout({ children, onSignOut }) {
           <UserMenu onSignOut={onSignOut} />
         </header>
         {verticals.length > 1 && (
-          <div className="vfilter-sm" role="group" aria-label="Filter by vertical">
+          <div
+            className="vfilter-sm"
+            role="group"
+            aria-label="Filter by vertical"
+          >
             <button
               type="button"
               className={`pick-chip ${!vertical ? 'on' : ''}`}

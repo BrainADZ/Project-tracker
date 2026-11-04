@@ -99,7 +99,10 @@ function ProjectTable({ items, showVertical, onOpen, today }) {
               <th className="hide-sm">Stage / month</th>
               <th className="hide-sm">Owner</th>
               <th>Key date</th>
-              <th style={{ width: 150 }} className="hide-sm">
+              <th
+                style={{ width: 150 }}
+                className="hide-sm"
+              >
                 Progress
               </th>
               <th>Health</th>
@@ -111,7 +114,11 @@ function ProjectTable({ items, showVertical, onOpen, today }) {
               const date = p.key_date || p.due_date;
               const n = date ? daysFrom(today, date) : null;
               return (
-                <tr key={p.id} className="click" onClick={() => onOpen(p)}>
+                <tr
+                  key={p.id}
+                  className="click"
+                  onClick={() => onOpen(p)}
+                >
                   <td style={{ maxWidth: 360 }}>
                     <div className="row gap-6">
                       <span className="b6 ellipsis">{p.name}</span>
@@ -132,7 +139,10 @@ function ProjectTable({ items, showVertical, onOpen, today }) {
                   </td>
                   {showVertical && (
                     <td>
-                      <VChip name={p.vertical} color={p.vertical_color} />
+                      <VChip
+                        name={p.vertical}
+                        color={p.vertical_color}
+                      />
                     </td>
                   )}
                   <td className="hide-sm small">
@@ -146,7 +156,11 @@ function ProjectTable({ items, showVertical, onOpen, today }) {
                   </td>
                   <td className="hide-sm">
                     <div className="row gap-6">
-                      <Avatar name={p.owner_name} color={p.owner_color} size={26} />
+                      <Avatar
+                        name={p.owner_name}
+                        color={p.owner_color}
+                        size={26}
+                      />
                       <span className="small nowrap">{p.owner_name}</span>
                     </div>
                   </td>
@@ -161,9 +175,15 @@ function ProjectTable({ items, showVertical, onOpen, today }) {
                   <td className="hide-sm">
                     <div className="row gap-6">
                       <div className="grow">
-                        <Progress value={p.progress} color={p.vertical_color} />
+                        <Progress
+                          value={p.progress}
+                          color={p.vertical_color}
+                        />
                       </div>
-                      <span className="xs muted" style={{ width: 54 }}>
+                      <span
+                        className="xs muted"
+                        style={{ width: 54 }}
+                      >
                         {p.monthly?.done ?? p.task_done}/{p.monthly?.target ?? p.task_total}
                       </span>
                     </div>
@@ -177,7 +197,10 @@ function ProjectTable({ items, showVertical, onOpen, today }) {
                     <HealthBadge health={p.health} />
                   </td>
                   <td>
-                    <StatusBadge status={p.status} readyLabel={p.ready_label} />
+                    <StatusBadge
+                      status={p.status}
+                      readyLabel={p.ready_label}
+                    />
                   </td>
                 </tr>
               );
@@ -238,7 +261,10 @@ export function newSummary(p) {
 
 function NewCount({ p }) {
   return (
-    <span className="new-tag" title={newSummary(p)}>
+    <span
+      className="new-tag"
+      title={newSummary(p)}
+    >
       {p.new_items} new
     </span>
   );
@@ -253,7 +279,10 @@ function ProjectCard({ p, today, showVertical }) {
   const date = p.key_date || p.due_date;
   return (
     <>
-      <Cover file={p.cover} color={p.vertical_color} />
+      <Cover
+        file={p.cover}
+        color={p.vertical_color}
+      />
       <div className="kb-body">
         <Labels
           items={[
@@ -291,7 +320,11 @@ function ProjectCard({ p, today, showVertical }) {
             />
           </Badges>
           <span className="kb-people">
-            <Avatar name={p.owner_name} color={p.owner_color} size={26} />
+            <Avatar
+              name={p.owner_name}
+              color={p.owner_color}
+              size={26}
+            />
           </span>
         </div>
         {(p.monthly?.target || p.task_total) > 0 && (
@@ -337,7 +370,11 @@ function ProjectBoard({
       columns={columns}
       today={today}
       renderCard={(p) => (
-        <ProjectCard p={p} today={today} showVertical={verticalsInView.length > 1} />
+        <ProjectCard
+          p={p}
+          today={today}
+          showVertical={verticalsInView.length > 1}
+        />
       )}
       onOpen={onOpen}
       onMove={onMove}
@@ -358,7 +395,10 @@ function ProjectBoard({
             aria-label="Vertical"
           >
             {manageable.map((v) => (
-              <option key={v.id} value={v.id}>
+              <option
+                key={v.id}
+                value={v.id}
+              >
                 {v.name}
               </option>
             ))}
@@ -401,12 +441,22 @@ function Timeline({ items, onOpen, today }) {
   return (
     <div className="card flush">
       <div className="tl-scroll">
-        <div className="tl" style={{ width: width + 240 }}>
+        <div
+          className="tl"
+          style={{ width: width + 240 }}
+        >
           <div className="tl-head">
             <div className="tl-name">Project</div>
-            <div className="tl-grid" style={{ width }}>
+            <div
+              className="tl-grid"
+              style={{ width }}
+            >
               {months.map((m) => (
-                <div key={m} className="tl-month" style={{ left: x(m) }}>
+                <div
+                  key={m}
+                  className="tl-month"
+                  style={{ left: x(m) }}
+                >
                   {MONTHS[Number(m.slice(5, 7)) - 1]} {m.slice(2, 4)}
                 </div>
               ))}
@@ -427,16 +477,29 @@ function Timeline({ items, onOpen, today }) {
                 onKeyDown={(ev) => ev.key === 'Enter' && onOpen(p)}
               >
                 <div className="tl-name">
-                  <span className="dot" style={{ background: p.vertical_color }} />
+                  <span
+                    className="dot"
+                    style={{ background: p.vertical_color }}
+                  />
                   <span className="ellipsis">
                     <b>{p.client || p.code}</b> <span className="muted">{p.name}</span>
                   </span>
                 </div>
-                <div className="tl-grid" style={{ width }}>
+                <div
+                  className="tl-grid"
+                  style={{ width }}
+                >
                   {months.map((m) => (
-                    <span key={m} className="tl-line" style={{ left: x(m) }} />
+                    <span
+                      key={m}
+                      className="tl-line"
+                      style={{ left: x(m) }}
+                    />
                   ))}
-                  <span className="tl-today" style={{ left: x(today) }} />
+                  <span
+                    className="tl-today"
+                    style={{ left: x(today) }}
+                  />
                   <div
                     className="tl-bar"
                     style={{
@@ -467,9 +530,16 @@ function Timeline({ items, onOpen, today }) {
           })}
         </div>
       </div>
-      <div className="row gap-16 xs muted" style={{ padding: '10px 16px' }}>
+      <div
+        className="row gap-16 xs muted"
+        style={{ padding: '10px 16px' }}
+      >
         <span className="row gap-6">
-          <Diamond size={12} fill="var(--text-2)" color="#fff" />
+          <Diamond
+            size={12}
+            fill="var(--text-2)"
+            color="#fff"
+          />
           Event, show or launch date
         </span>
         <span className="row gap-6">
@@ -642,7 +712,11 @@ export default function Projects() {
             <span className="hide-sm">Export</span>
           </button>
           {manageableVerticals.length > 0 && (
-            <button type="button" className="btn primary" onClick={() => setCreating(true)}>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => setCreating(true)}
+            >
               <Plus size={18} />
               New project
             </button>
@@ -672,7 +746,10 @@ export default function Projects() {
           >
             <option value="">All open statuses</option>
             {['planning', 'active', 'on_hold'].map((s) => (
-              <option key={s} value={s}>
+              <option
+                key={s}
+                value={s}
+              >
                 {PROJECT_STATUS[s].label}
               </option>
             ))}
@@ -680,7 +757,10 @@ export default function Projects() {
               .filter((v) => v.ready_label && (!vertical || v.id === vertical))
               .slice(0, 1)
               .map((v) => (
-                <option key="ready" value="ready">
+                <option
+                  key="ready"
+                  value="ready"
+                >
                   {v.ready_label}
                 </option>
               ))}
@@ -695,7 +775,10 @@ export default function Projects() {
         >
           <option value="">Any health</option>
           {Object.entries(HEALTH).map(([k, h]) => (
-            <option key={k} value={k}>
+            <option
+              key={k}
+              value={k}
+            >
               {h.label}
             </option>
           ))}
@@ -712,7 +795,10 @@ export default function Projects() {
           {owners
             .filter((u) => u.id !== me.id)
             .map((u) => (
-              <option key={u.id} value={u.id}>
+              <option
+                key={u.id}
+                value={u.id}
+              >
                 {u.name}
               </option>
             ))}
@@ -744,7 +830,10 @@ export default function Projects() {
         )}
       </div>
 
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : items.length === 0 && view !== 'board' ? (
@@ -755,7 +844,11 @@ export default function Projects() {
             action={
               !filtersOn &&
               manageableVerticals.length > 0 && (
-                <button type="button" className="btn primary" onClick={() => setCreating(true)}>
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => setCreating(true)}
+                >
                   <Plus size={17} />
                   Create the first one
                 </button>
@@ -791,7 +884,11 @@ export default function Projects() {
           }
         />
       ) : (
-        <Timeline items={items} onOpen={(p) => navigate(`/projects/${p.id}`)} today={today} />
+        <Timeline
+          items={items}
+          onOpen={(p) => navigate(`/projects/${p.id}`)}
+          today={today}
+        />
       )}
       {creating && (
         <ProjectForm

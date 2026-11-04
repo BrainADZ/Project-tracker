@@ -90,7 +90,10 @@ export function TaskModal({ id, onClose, onChanged }) {
   const setChecklist = (list) => save({ checklist: list });
 
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div
         className="modal xwide task-modal"
         role="dialog"
@@ -105,7 +108,11 @@ export function TaskModal({ id, onClose, onChanged }) {
           <div className="modal-body">
             <Empty title="Task not found">{error.message}</Empty>
             <div className="center">
-              <button type="button" className="btn" onClick={onClose}>
+              <button
+                type="button"
+                className="btn"
+                onClick={onClose}
+              >
                 Close
               </button>
             </div>
@@ -114,8 +121,15 @@ export function TaskModal({ id, onClose, onChanged }) {
           t && (
             <>
               <div className="modal-head">
-                <div className="row gap-6" style={{ minWidth: 0 }}>
-                  <VChip name={t.project.vertical} color={t.project.vertical_color} small />
+                <div
+                  className="row gap-6"
+                  style={{ minWidth: 0 }}
+                >
+                  <VChip
+                    name={t.project.vertical}
+                    color={t.project.vertical_color}
+                    small
+                  />
                   <Link
                     to={`/projects/${t.project.id}`}
                     onClick={onClose}
@@ -135,14 +149,22 @@ export function TaskModal({ id, onClose, onChanged }) {
                       <Trash2 size={16} />
                     </button>
                   )}
-                  <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={onClose}
+                    aria-label="Close"
+                  >
                     <X size={20} />
                   </button>
                 </div>
               </div>
               <div className="task-layout">
                 <div className="task-main">
-                  <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
+                  <div
+                    className="row"
+                    style={{ gap: 10, alignItems: 'flex-start' }}
+                  >
                     <button
                       type="button"
                       className={`check-btn lg ${t.status === 'done' ? 'on' : ''}`}
@@ -155,7 +177,12 @@ export function TaskModal({ id, onClose, onChanged }) {
                       }
                       aria-label={t.status === 'done' ? 'Reopen task' : 'Mark task done'}
                     >
-                      {t.status === 'done' && <Check size={16} strokeWidth={3} />}
+                      {t.status === 'done' && (
+                        <Check
+                          size={16}
+                          strokeWidth={3}
+                        />
+                      )}
                     </button>
                     {canPlanEdit ? (
                       <textarea
@@ -174,7 +201,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                         maxLength={240}
                       />
                     ) : (
-                      <h2 className="title-input" style={{ border: 0 }}>
+                      <h2
+                        className="title-input"
+                        style={{ border: 0 }}
+                      >
                         {t.title}
                       </h2>
                     )}
@@ -210,7 +240,11 @@ export function TaskModal({ id, onClose, onChanged }) {
                       .
                     </div>
                   )}
-                  <Field label="Notes" className="mt-16" htmlFor="task-desc">
+                  <Field
+                    label="Notes"
+                    className="mt-16"
+                    htmlFor="task-desc"
+                  >
                     <textarea
                       id="task-desc"
                       className="textarea"
@@ -227,7 +261,10 @@ export function TaskModal({ id, onClose, onChanged }) {
 
                   <div className="mt-16">
                     <div className="row between mb-8">
-                      <label className="b6 small" style={{ color: 'var(--text-2)' }}>
+                      <label
+                        className="b6 small"
+                        style={{ color: 'var(--text-2)' }}
+                      >
                         Checklist{' '}
                         {t.checklist.length > 0 && (
                           <span className="muted">
@@ -238,7 +275,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                     </div>
                     <div className="checklist">
                       {t.checklist.map((c, i) => (
-                        <div key={i} className={`ci ${c.done ? 'done' : ''}`}>
+                        <div
+                          key={i}
+                          className={`ci ${c.done ? 'done' : ''}`}
+                        >
                           <button
                             type="button"
                             className={`check-btn sm ${c.done ? 'on' : ''}`}
@@ -250,7 +290,12 @@ export function TaskModal({ id, onClose, onChanged }) {
                             }
                             aria-label={c.done ? `Untick ${c.text}` : `Tick ${c.text}`}
                           >
-                            {c.done && <Check size={11} strokeWidth={3} />}
+                            {c.done && (
+                              <Check
+                                size={11}
+                                strokeWidth={3}
+                              />
+                            )}
                           </button>
                           <span className="grow small">{c.text}</span>
                           {canWork && (
@@ -276,7 +321,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                             }
                           }}
                         >
-                          <Plus size={16} className="muted" />
+                          <Plus
+                            size={16}
+                            className="muted"
+                          />
                           <input
                             id="task-checklist-new"
                             className="input sm"
@@ -292,12 +340,23 @@ export function TaskModal({ id, onClose, onChanged }) {
 
                   <div className="mt-16">
                     <div className="row between mb-8">
-                      <label className="b6 small" style={{ color: 'var(--text-2)' }}>
-                        <Paperclip size={14} style={{ verticalAlign: '-2px' }} /> Files{' '}
+                      <label
+                        className="b6 small"
+                        style={{ color: 'var(--text-2)' }}
+                      >
+                        <Paperclip
+                          size={14}
+                          style={{ verticalAlign: '-2px' }}
+                        />{' '}
+                        Files{' '}
                         {t.files.length > 0 && <span className="muted">{t.files.length}</span>}
                       </label>
                       {canWork && (
-                        <button type="button" className="link" onClick={() => setLinking(true)}>
+                        <button
+                          type="button"
+                          className="link"
+                          onClick={() => setLinking(true)}
+                        >
                           Add link
                         </button>
                       )}
@@ -339,7 +398,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                   )}
 
                   <div className="mt-16">
-                    <label className="b6 small" style={{ color: 'var(--text-2)' }}>
+                    <label
+                      className="b6 small"
+                      style={{ color: 'var(--text-2)' }}
+                    >
                       Comments
                     </label>
                     <div className="feed mt-8">
@@ -365,7 +427,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                 </div>
 
                 <aside className="task-side">
-                  <Field label="Status" htmlFor="task-status">
+                  <Field
+                    label="Status"
+                    htmlFor="task-status"
+                  >
                     <select
                       id="task-status"
                       className="select"
@@ -374,13 +439,19 @@ export function TaskModal({ id, onClose, onChanged }) {
                       onChange={(e) => save({ status: e.target.value })}
                     >
                       {Object.entries(TASK_STATUS).map(([k, s]) => (
-                        <option key={k} value={k}>
+                        <option
+                          key={k}
+                          value={k}
+                        >
                           {s.label}
                         </option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="Assigned to" htmlFor="task-assignee">
+                  <Field
+                    label="Assigned to"
+                    htmlFor="task-assignee"
+                  >
                     <UserSelect
                       id="task-assignee"
                       value={t.assignee_id}
@@ -409,7 +480,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                       onChange={(e) => save({ due_date: e.target.value || null })}
                     />
                   </Field>
-                  <Field label="Start date" htmlFor="task-start">
+                  <Field
+                    label="Start date"
+                    htmlFor="task-start"
+                  >
                     <input
                       id="task-start"
                       type="date"
@@ -419,7 +493,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                       onChange={(e) => save({ start_date: e.target.value || null })}
                     />
                   </Field>
-                  <Field label="Priority" htmlFor="task-priority">
+                  <Field
+                    label="Priority"
+                    htmlFor="task-priority"
+                  >
                     <select
                       id="task-priority"
                       className="select"
@@ -428,13 +505,19 @@ export function TaskModal({ id, onClose, onChanged }) {
                       onChange={(e) => save({ priority: e.target.value })}
                     >
                       {Object.entries(PRIORITY).map(([k, p]) => (
-                        <option key={k} value={k}>
+                        <option
+                          key={k}
+                          value={k}
+                        >
                           {p.label}
                         </option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="Stage" htmlFor="task-stage">
+                  <Field
+                    label="Stage"
+                    htmlFor="task-stage"
+                  >
                     <select
                       id="task-stage"
                       className="select"
@@ -457,7 +540,10 @@ export function TaskModal({ id, onClose, onChanged }) {
                     </button>
                   )}
                   <div className="divider" />
-                  <div className="xs muted" style={{ lineHeight: 1.6 }}>
+                  <div
+                    className="xs muted"
+                    style={{ lineHeight: 1.6 }}
+                  >
                     Added {t.created_by_user ? `by ${t.created_by_user.name} ` : ''}
                     {timeAgo(t.created_at)}
                     {t.completed_at && (
@@ -476,7 +562,11 @@ export function TaskModal({ id, onClose, onChanged }) {
                         History
                       </div>
                       {t.history.slice(0, 8).map((h) => (
-                        <div key={h.id} className="xs mb-8" style={{ lineHeight: 1.45 }}>
+                        <div
+                          key={h.id}
+                          className="xs mb-8"
+                          style={{ lineHeight: 1.45 }}
+                        >
                           <b>{h.user_name}</b> {describe(h)}{' '}
                           <span className="muted">· {timeAgo(h.created_at)}</span>
                         </div>

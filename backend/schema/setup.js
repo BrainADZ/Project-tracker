@@ -56,7 +56,17 @@ function upgradeTo2(db) {
     addColumn(db, 'projects', 'board_sort', 'REAL');
   }
   db.run(
-    "UPDATE verticals SET ready_label = 'Ready for Event / Exhibition' WHERE code = 'EXH' AND (ready_label IS NULL OR ready_label = '')",
+    `
+      UPDATE verticals
+      SET
+        ready_label = 'Ready for Event / Exhibition'
+      WHERE
+        code = 'EXH'
+        AND (
+          ready_label IS NULL
+          OR ready_label = ''
+        )
+    `,
   );
 }
 
@@ -65,7 +75,15 @@ function upgradeTo3(db) {
   addColumn(db, 'tasks', 'assigned_at', 'TEXT');
   addColumn(db, 'tasks', 'assigned_by', 'INTEGER');
   db.run(
-    'UPDATE tasks SET assigned_at = created_at, assigned_by = created_by WHERE assignee_id IS NOT NULL AND assigned_at IS NULL',
+    `
+      UPDATE tasks
+      SET
+        assigned_at = created_at,
+        assigned_by = created_by
+      WHERE
+        assignee_id IS NOT NULL
+        AND assigned_at IS NULL
+    `,
   );
   // Everything that existed before the upgrade counts as already seen.
   const now = new Date().toISOString();
@@ -174,18 +192,44 @@ export function migrate(db) {
   addColumn(db, 'users', 'employee_code', 'TEXT');
   addColumn(db, 'users', 'profile_json', "TEXT NOT NULL DEFAULT '{}'");
   db.exec(
-    'CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL; CREATE UNIQUE INDEX IF NOT EXISTS idx_users_employee_code ON users(employee_code) WHERE employee_code IS NOT NULL;',
+    `
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username COLLATE NOCASE)
+      WHERE
+        username IS NOT NULL;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_employee_code ON users (employee_code)
+      WHERE
+        employee_code IS NOT NULL;
+    `,
   );
   // The profile branches used overlapping version numbers; check each column
   // so databases created by either branch can upgrade safely.
   addColumn(db, 'users', 'photo', "TEXT DEFAULT ''");
   addColumn(db, 'users', 'profile_data', "TEXT DEFAULT '{}'");
   db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_extra_parent_task ON extra_work(parent_task_id); CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_continuation ON extra_work(continued_from_key,report_date,assignee_id) WHERE continued_from_key != '';",
+    `
+      CREATE INDEX IF NOT EXISTS idx_extra_parent_task ON extra_work (parent_task_id);
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_continuation ON extra_work (
+        continued_from_key,
+        report_date,
+        assignee_id
+      )
+      WHERE
+        continued_from_key != '';
+    `,
   );
   db.exec('CREATE INDEX IF NOT EXISTS idx_files_message ON files(message_id);');
   db.run(
-    "INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    `
+      INSERT INTO
+        settings (key, value)
+      VALUES
+        ('schema_version', ?)
+      ON CONFLICT (key) DO UPDATE
+      SET
+        value = excluded.value
+    `,
     String(SCHEMA_VERSION),
   );
 }
@@ -196,7 +240,22 @@ export function seedBasics(db, now = new Date().toISOString()) {
     db.run("INSERT OR IGNORE INTO settings (key, value) VALUES ('company_name', 'BrainADZ')");
     for (const v of DEFAULT_VERTICALS) {
       const { id } = db.run(
-        'INSERT INTO verticals (name, short, code, tagline, color, key_date_label, ready_label, sort, active) VALUES (?,?,?,?,?,?,?,?,1)',
+        `
+          INSERT INTO
+            verticals (
+              name,
+              short,
+              code,
+              tagline,
+              color,
+              key_date_label,
+              ready_label,
+              sort,
+              active
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `,
         v.name,
         v.short,
         v.code,
@@ -208,7 +267,20 @@ export function seedBasics(db, now = new Date().toISOString()) {
       );
       for (const t of DEFAULT_TEMPLATES[v.short] || []) {
         db.run(
-          'INSERT INTO templates (vertical_id, name, description, stages, tasks, milestones, created_at) VALUES (?,?,?,?,?,?,?)',
+          `
+            INSERT INTO
+              templates (
+                vertical_id,
+                name,
+                description,
+                stages,
+                tasks,
+                milestones,
+                created_at
+              )
+            VALUES
+              (?, ?, ?, ?, ?, ?, ?)
+          `,
           id,
           t.name,
           t.description,

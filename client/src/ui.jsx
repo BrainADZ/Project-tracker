@@ -95,10 +95,18 @@ export function AvatarStack({ people = [], max = 4, size = 28 }) {
   return (
     <span className="avatar-stack">
       {shown.map((p) => (
-        <Avatar key={p.id} name={p.name} color={p.color} size={size} />
+        <Avatar
+          key={p.id}
+          name={p.name}
+          color={p.color}
+          size={size}
+        />
       ))}
       {people.length > max && (
-        <span className="avatar more" style={{ width: size, height: size }}>
+        <span
+          className="avatar more"
+          style={{ width: size, height: size }}
+        >
           +{people.length - max}
         </span>
       )}
@@ -109,7 +117,11 @@ export function AvatarStack({ people = [], max = 4, size = 28 }) {
 export function Person({ name, color, sub, size = 34 }) {
   return (
     <div className="person">
-      <Avatar name={name} color={color} size={size} />
+      <Avatar
+        name={name}
+        color={color}
+        size={size}
+      />
       <div style={{ minWidth: 0 }}>
         <div className="pn ellipsis">{name}</div>
         {sub && <div className="ps ellipsis">{sub}</div>}
@@ -143,8 +155,14 @@ export function StatusBadge({ status, readyLabel }) {
 export function HealthBadge({ health, compact }) {
   const h = HEALTH[health] || HEALTH.on_track;
   return (
-    <span className="status-dot" title={`Health: ${h.label}`}>
-      <span className="dot" style={{ background: h.color }} />
+    <span
+      className="status-dot"
+      title={`Health: ${h.label}`}
+    >
+      <span
+        className="dot"
+        style={{ background: h.color }}
+      />
       {!compact && h.label}
     </span>
   );
@@ -159,8 +177,16 @@ export function PriorityFlag({ priority, label = false }) {
   const p = PRIORITY[priority] || PRIORITY.medium;
   if (!label && (priority === 'medium' || priority === 'low')) return null;
   return (
-    <span className="prio" style={{ color: p.color }} title={`${p.label} priority`}>
-      <Flag size={13} fill={p.color} strokeWidth={2} />
+    <span
+      className="prio"
+      style={{ color: p.color }}
+      title={`${p.label} priority`}
+    >
+      <Flag
+        size={13}
+        fill={p.color}
+        strokeWidth={2}
+      />
       {label && p.label}
     </span>
   );
@@ -215,7 +241,14 @@ export function Ring({ value = 0, size = 64, stroke = 7, color = 'var(--blue)' }
       role="img"
       aria-label={`${value}% complete`}
     >
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#edf1f7" strokeWidth={stroke} />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="#edf1f7"
+        strokeWidth={stroke}
+      />
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -264,7 +297,10 @@ export function DateBox({ date, color }) {
 export function Loading({ label = 'Loading…' }) {
   return (
     <div className="loading">
-      <Loader2 size={18} className="spin" />
+      <Loader2
+        size={18}
+        className="spin"
+      />
       {label}
     </div>
   );
@@ -275,12 +311,18 @@ export function Empty({ icon: Icon = Inbox, title, children, action }) {
     <div className="empty">
       <Icon size={34} />
       {title && (
-        <div className="b6" style={{ color: 'var(--text-2)', marginBottom: 4 }}>
+        <div
+          className="b6"
+          style={{ color: 'var(--text-2)', marginBottom: 4 }}
+        >
           {title}
         </div>
       )}
       {children && (
-        <div className="small" style={{ maxWidth: 380, margin: '0 auto', lineHeight: 1.5 }}>
+        <div
+          className="small"
+          style={{ maxWidth: 380, margin: '0 auto', lineHeight: 1.5 }}
+        >
           {children}
         </div>
       )}
@@ -295,7 +337,11 @@ export function ErrorNote({ error, retry }) {
     <div className="alert error mb-12">
       <span style={{ flex: 1 }}>{error.message || String(error)}</span>
       {retry && (
-        <button type="button" className="btn xs" onClick={retry}>
+        <button
+          type="button"
+          className="btn xs"
+          onClick={retry}
+        >
           Try again
         </button>
       )}
@@ -338,7 +384,10 @@ export function Modal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <div
+      className="overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
+    >
       <div
         ref={ref}
         className={`modal ${size}`}
@@ -351,7 +400,12 @@ export function Modal({
             <h3 id={labelId}>{title}</h3>
             {sub && <div className="small muted mt-4">{sub}</div>}
           </div>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
             <X size={20} />
           </button>
         </div>
@@ -364,7 +418,11 @@ export function Modal({
 
 export function Seg({ value, onChange, options, label }) {
   return (
-    <div className="seg" role="radiogroup" aria-label={label}>
+    <div
+      className="seg"
+      role="radiogroup"
+      aria-label={label}
+    >
       {options.map((o) => (
         <button
           key={o.value}
@@ -376,7 +434,10 @@ export function Seg({ value, onChange, options, label }) {
           title={o.title || o.label}
         >
           {o.icon && (
-            <o.icon size={15} style={{ verticalAlign: '-3px', marginRight: o.label ? 6 : 0 }} />
+            <o.icon
+              size={15}
+              style={{ verticalAlign: '-3px', marginRight: o.label ? 6 : 0 }}
+            />
           )}
           {o.label && <span className={o.icon ? 'hide-sm' : ''}>{o.label}</span>}
         </button>
@@ -407,7 +468,10 @@ export function Menu({
   const shown = items.filter(Boolean);
   if (!shown.length) return null;
   return (
-    <div className="menu-wrap" ref={ref}>
+    <div
+      className="menu-wrap"
+      ref={ref}
+    >
       <button
         type="button"
         className={buttonClass}
@@ -464,7 +528,10 @@ export function UserSelect({
     >
       <option value="">{placeholder}</option>
       {people.map((u) => (
-        <option key={u.id} value={u.id}>
+        <option
+          key={u.id}
+          value={u.id}
+        >
           {u.name}
           {u.title ? ` · ${u.title}` : ''}
         </option>
@@ -495,7 +562,10 @@ export function fileVisual(file) {
 export function FileIcon({ file, size = 20 }) {
   const { Icon, color } = fileVisual(file);
   return (
-    <span className="file-ic" style={{ background: alpha(color, 0.12), color }}>
+    <span
+      className="file-ic"
+      style={{ background: alpha(color, 0.12), color }}
+    >
       <Icon size={size} />
     </span>
   );
@@ -516,14 +586,29 @@ function SampleArt({ file }) {
       height="100%"
       aria-hidden="true"
     >
-      <rect width="160" height="100" fill={sky} />
-      <polygon points="0,72 160,62 160,100 0,100" fill={night ? '#2d3a5f' : '#dfe6f1'} />
+      <rect
+        width="160"
+        height="100"
+        fill={sky}
+      />
+      <polygon
+        points="0,72 160,62 160,100 0,100"
+        fill={night ? '#2d3a5f' : '#dfe6f1'}
+      />
       <polygon
         points={`${80 - w},70 ${80 + w},64 ${80 + w},30 ${80 - w},34`}
         fill={c}
         opacity="0.92"
       />
-      <rect x={80 - w / 2} y="44" width={w * 0.9} height="9" rx="2" fill="#fff" opacity="0.85" />
+      <rect
+        x={80 - w / 2}
+        y="44"
+        width={w * 0.9}
+        height="9"
+        rx="2"
+        fill="#fff"
+        opacity="0.85"
+      />
       <polygon
         points={`${70 - w / 3},84 ${92 + w / 3},80 ${92 + w / 3},70 ${70 - w / 3},73`}
         fill="#fff"
@@ -571,15 +656,25 @@ export function FileThumb({ file }) {
   if (isImage && url)
     return (
       <div className="thumb">
-        <img src={url} alt="" loading="lazy" />
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+        />
       </div>
     );
   const { Icon, color } = fileVisual(file);
   const ext =
     file.kind === 'link' ? 'LINK' : (file.name.split('.').pop() || '').slice(0, 4).toUpperCase();
   return (
-    <div className="thumb icon" style={{ background: alpha(color, 0.08), color }}>
-      <Icon size={30} strokeWidth={1.6} />
+    <div
+      className="thumb icon"
+      style={{ background: alpha(color, 0.08), color }}
+    >
+      <Icon
+        size={30}
+        strokeWidth={1.6}
+      />
       <span>{ext}</span>
     </div>
   );

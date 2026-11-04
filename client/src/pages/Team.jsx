@@ -114,19 +114,35 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
       size="wide"
       footer={
         <>
-          <button type="button" className="btn" onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button type="submit" form="person-form" className="btn primary" disabled={saving}>
+          <button
+            type="submit"
+            form="person-form"
+            className="btn primary"
+            disabled={saving}
+          >
             {editing ? 'Save' : 'Add person'}
           </button>
         </>
       }
     >
-      <form id="person-form" className="modal-body" onSubmit={submit}>
+      <form
+        id="person-form"
+        className="modal-body"
+        onSubmit={submit}
+      >
         {err && <div className="alert error mb-12">{err}</div>}
         <div className="form-grid">
-          <Field label="Full name" htmlFor="pp-name">
+          <Field
+            label="Full name"
+            htmlFor="pp-name"
+          >
             <input
               id="pp-name"
               className="input"
@@ -136,7 +152,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               maxLength={120}
             />
           </Field>
-          <Field label="Work email" htmlFor="pp-email">
+          <Field
+            label="Work email"
+            htmlFor="pp-email"
+          >
             <input
               id="pp-email"
               type="email"
@@ -147,7 +166,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
             />
           </Field>
           {editing && (
-            <Field label="Login username" htmlFor="pp-username">
+            <Field
+              label="Login username"
+              htmlFor="pp-username"
+            >
               <input
                 id="pp-username"
                 className="input"
@@ -158,7 +180,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               />
             </Field>
           )}
-          <Field label="Job title" htmlFor="pp-title">
+          <Field
+            label="Job title"
+            htmlFor="pp-title"
+          >
             <input
               id="pp-title"
               className="input"
@@ -167,7 +192,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               maxLength={120}
             />
           </Field>
-          <Field label="Phone" htmlFor="pp-phone">
+          <Field
+            label="Phone"
+            htmlFor="pp-phone"
+          >
             <input
               id="pp-phone"
               className="input"
@@ -228,7 +256,11 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
                 location: 'Work location',
                 join_date: 'Joining date',
               }).map(([key, label]) => (
-                <Field key={key} label={label} htmlFor={'pp-' + key}>
+                <Field
+                  key={key}
+                  label={label}
+                  htmlFor={'pp-' + key}
+                >
                   <input
                     id={'pp-' + key}
                     className="input"
@@ -241,7 +273,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
                   />
                 </Field>
               ))}
-              <Field label="Reporting manager" htmlFor="pp-manager">
+              <Field
+                label="Reporting manager"
+                htmlFor="pp-manager"
+              >
                 <select
                   id="pp-manager"
                   className="select"
@@ -254,7 +289,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
                   {users
                     .filter((u) => u.id !== person.id)
                     .map((u) => (
-                      <option key={u.id} value={u.id}>
+                      <option
+                        key={u.id}
+                        value={u.id}
+                      >
                         {u.name}
                       </option>
                     ))}
@@ -263,7 +301,10 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               <div className="form-section">Vertical access</div>
             </>
           )}
-          <div className="full col" style={{ gap: 10 }}>
+          <div
+            className="full col"
+            style={{ gap: 10 }}
+          >
             {f.role === 'admin' ? (
               <div className="alert info">
                 <ShieldCheck size={16} />
@@ -271,9 +312,19 @@ function PersonForm({ person, verticals, onClose, onSaved }) {
               </div>
             ) : (
               verticals.map((v) => (
-                <div key={v.id} className="row" style={{ gap: 12 }}>
-                  <span className="row gap-6" style={{ width: 170 }}>
-                    <span className="dot" style={{ background: v.color }} />
+                <div
+                  key={v.id}
+                  className="row"
+                  style={{ gap: 12 }}
+                >
+                  <span
+                    className="row gap-6"
+                    style={{ width: 170 }}
+                  >
+                    <span
+                      className="dot"
+                      style={{ background: v.color }}
+                    />
                     <b>{v.name}</b>
                   </span>
                   <AccessSelect
@@ -365,12 +416,19 @@ export default function Team() {
             verticals they have access to.
           </div>
         </div>
-        <button type="button" className="btn primary" onClick={() => setEditing('new')}>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={() => setEditing('new')}
+        >
           <UserPlus size={18} />
           Add person
         </button>
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : (
@@ -378,7 +436,11 @@ export default function Team() {
           <>
             <div className="kpis">
               {data.verticals.map((v) => (
-                <div key={v.id} className="card tight row" style={{ gap: 14 }}>
+                <div
+                  key={v.id}
+                  className="card tight row"
+                  style={{ gap: 14 }}
+                >
                   <span
                     className="vbadge"
                     style={{ background: alpha(v.color, 0.15), color: ink(v.color) }}
@@ -425,7 +487,10 @@ export default function Team() {
                       {data.verticals.map((v) => (
                         <th key={v.id}>
                           <span className="row gap-6">
-                            <span className="dot" style={{ background: v.color }} />
+                            <span
+                              className="dot"
+                              style={{ background: v.color }}
+                            />
                             {v.short}
                           </span>
                         </th>
@@ -437,10 +502,17 @@ export default function Team() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} style={!u.active ? { opacity: 0.55 } : undefined}>
+                      <tr
+                        key={u.id}
+                        style={!u.active ? { opacity: 0.55 } : undefined}
+                      >
                         <td>
                           <div className="person">
-                            <Avatar name={u.name} color={u.color} size={34} />
+                            <Avatar
+                              name={u.name}
+                              color={u.color}
+                              size={34}
+                            />
                             <div style={{ minWidth: 0 }}>
                               <div className="pn">
                                 {u.name}{' '}
@@ -480,14 +552,21 @@ export default function Team() {
                             )}
                           </td>
                         ))}
-                        <td className="hide-sm num" style={{ textAlign: 'left' }}>
+                        <td
+                          className="hide-sm num"
+                          style={{ textAlign: 'left' }}
+                        >
                           {u.open_tasks}
                         </td>
                         <td className="hide-sm small muted">
                           {u.last_login_at ? timeAgo(u.last_login_at) : 'Never'}
                         </td>
                         <td className="right">
-                          <button type="button" className="btn xs" onClick={() => setEditing(u)}>
+                          <button
+                            type="button"
+                            className="btn xs"
+                            onClick={() => setEditing(u)}
+                          >
                             <Pencil size={13} />
                             Edit
                           </button>

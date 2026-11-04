@@ -27,7 +27,21 @@ function marketing(ctx, write = false, manage = false) {
 function client(ctx, id, write = false, manage = false) {
   const v = marketing(ctx, write, manage);
   const c = ctx.db.get(
-    'SELECT c.*, p.name, p.client AS client_name, p.description, p.owner_id, p.status FROM marketing_clients c JOIN projects p ON p.id = c.project_id WHERE c.id = ? AND p.vertical_id = ?',
+    `
+      SELECT
+        c.*,
+        p.name,
+        p.client AS client_name,
+        p.description,
+        p.owner_id,
+        p.status
+      FROM
+        marketing_clients c
+        JOIN projects p ON p.id = c.project_id
+      WHERE
+        c.id = ?
+        AND p.vertical_id = ?
+    `,
     toId(id, 'Client'),
     v.id,
   );
@@ -46,7 +60,19 @@ function person(ctx, id, vid) {
 function notifySocial(ctx, userId, projectId, taskId, title, clientId) {
   if (!userId || userId === ctx.user.id) return;
   ctx.db.run(
-    'INSERT INTO notifications (user_id, project_id, task_id, text, link, created_at) VALUES (?,?,?,?,?,?)',
+    `
+      INSERT INTO
+        notifications (
+          user_id,
+          project_id,
+          task_id,
+          text,
+          link,
+          created_at
+        )
+      VALUES
+        (?, ?, ?, ?, ?, ?)
+    `,
     userId,
     projectId,
     taskId,
@@ -75,12 +101,40 @@ const workflow = (row) =>
         blocked: 'Pending',
         done: 'Done',
       }[row.task_status] || row.workflow;
-const JOB_QUERY = `SELECT j.*, t.title, t.description, t.status AS task_status, t.completed_at AS task_completed_at, t.priority, t.assignee_id, t.due_date,
-  p.client AS client_name, p.id AS project_id, p.status AS client_status,p.vertical_id,p.owner_id,p.service_details,
-  u.name AS designer_name, s.name AS social_name,
-  (SELECT COUNT(*) FROM files f WHERE f.task_id = t.id) AS asset_count
-  FROM marketing_jobs j JOIN tasks t ON t.id = j.task_id JOIN marketing_clients c ON c.id = j.client_id
-  JOIN projects p ON p.id = c.project_id LEFT JOIN users u ON u.id = t.assignee_id LEFT JOIN users s ON s.id = j.social_owner_id`;
+const JOB_QUERY = `
+  SELECT
+    j.*,
+    t.title,
+    t.description,
+    t.status AS task_status,
+    t.completed_at AS task_completed_at,
+    t.priority,
+    t.assignee_id,
+    t.due_date,
+    p.client AS client_name,
+    p.id AS project_id,
+    p.status AS client_status,
+    p.vertical_id,
+    p.owner_id,
+    p.service_details,
+    u.name AS designer_name,
+    s.name AS social_name,
+    (
+      SELECT
+        COUNT(*)
+      FROM
+        files f
+      WHERE
+        f.task_id = t.id
+    ) AS asset_count
+  FROM
+    marketing_jobs j
+    JOIN tasks t ON t.id = j.task_id
+    JOIN marketing_clients c ON c.id = j.client_id
+    JOIN projects p ON p.id = c.project_id
+    LEFT JOIN users u ON u.id = t.assignee_id
+    LEFT JOIN users s ON s.id = j.social_owner_id
+`;
 function jobs(ctx, v) {
   return ctx.db
     .all(JOB_QUERY + ' WHERE p.vertical_id = ? ORDER BY j.work_date DESC, t.id DESC', v.id)
@@ -118,19 +172,78 @@ export function registerMarketing(route, call) {
   route('GET', '/marketing', (ctx) => {
     const v = marketing(ctx);
     const clients = ctx.db.all(
-      `SELECT c.*, p.client AS name, p.description, p.owner_id, p.status, o.name AS owner_name,
-      (SELECT COUNT(*) FROM marketing_jobs j JOIN tasks t ON t.id = j.task_id WHERE j.client_id = c.id AND t.status != 'done') AS open_jobs,
-      (SELECT COUNT(*) FROM marketing_jobs j JOIN tasks t ON t.id = j.task_id WHERE j.client_id = c.id AND t.status != 'done' AND t.due_date < ?) AS overdue_jobs,
-      (SELECT COUNT(*) FROM files f WHERE f.project_id = p.id) AS asset_count
-      FROM marketing_clients c JOIN projects p ON p.id = c.project_id LEFT JOIN users o ON o.id = p.owner_id WHERE p.vertical_id = ? AND ${projectVisibilitySql(ctx.user)} ORDER BY p.client COLLATE NOCASE`,
+      `
+        SELECT
+          c.*,
+          p.client AS name,
+          p.description,
+          p.owner_id,
+          p.status,
+          o.name AS owner_name,
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              marketing_jobs j
+              JOIN tasks t ON t.id = j.task_id
+            WHERE
+              j.client_id = c.id
+              AND t.status != 'done'
+          ) AS open_jobs,
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              marketing_jobs j
+              JOIN tasks t ON t.id = j.task_id
+            WHERE
+              j.client_id = c.id
+              AND t.status != 'done'
+              AND t.due_date < ?
+          ) AS overdue_jobs,
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              files f
+            WHERE
+              f.project_id = p.id
+          ) AS asset_count
+        FROM
+          marketing_clients c
+          JOIN projects p ON p.id = c.project_id
+          LEFT JOIN users o ON o.id = p.owner_id
+        WHERE
+          p.vertical_id = ?
+          AND ${projectVisibilitySql(ctx.user)}
+        ORDER BY
+          p.client COLLATE NOCASE
+      `,
       ctx.today,
       v.id,
     );
     const reports = ctx.db
       .all(
-        `SELECT r.*, u.name AS user_name, p.client AS client_name,p.id AS project_id,p.vertical_id,p.owner_id,p.service_details FROM marketing_reports r
-      JOIN users u ON u.id = r.user_id JOIN marketing_clients c ON c.id = r.client_id JOIN projects p ON p.id = c.project_id
-      WHERE p.vertical_id = ? ORDER BY r.report_date DESC, r.updated_at DESC`,
+        `
+          SELECT
+            r.*,
+            u.name AS user_name,
+            p.client AS client_name,
+            p.id AS project_id,
+            p.vertical_id,
+            p.owner_id,
+            p.service_details
+          FROM
+            marketing_reports r
+            JOIN users u ON u.id = r.user_id
+            JOIN marketing_clients c ON c.id = r.client_id
+            JOIN projects p ON p.id = c.project_id
+          WHERE
+            p.vertical_id = ?
+          ORDER BY
+            r.report_date DESC,
+            r.updated_at DESC
+        `,
         v.id,
       )
       .filter(
@@ -157,7 +270,16 @@ export function registerMarketing(route, call) {
     const name = required(b.name, 'Client name');
     if (
       ctx.db.get(
-        'SELECT 1 AS n FROM marketing_clients c JOIN projects p ON p.id = c.project_id WHERE p.vertical_id = ? AND lower(p.client) = lower(?)',
+        `
+          SELECT
+            1 AS n
+          FROM
+            marketing_clients c
+            JOIN projects p ON p.id = c.project_id
+          WHERE
+            p.vertical_id = ?
+            AND lower(p.client) = lower(?)
+        `,
         v.id,
         name,
       )
@@ -184,7 +306,24 @@ export function registerMarketing(route, call) {
         stages: ['Brief', 'Content', 'Design', 'Review', 'Publish'],
       });
       const { id } = ctx.db.run(
-        'INSERT INTO marketing_clients (project_id, contact_name, contact_email, contact_phone, platforms, brand_notes, monthly_target, social_id, designer_id, manager_id, head_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        `
+          INSERT INTO
+            marketing_clients (
+              project_id,
+              contact_name,
+              contact_email,
+              contact_phone,
+              platforms,
+              brand_notes,
+              monthly_target,
+              social_id,
+              designer_id,
+              manager_id,
+              head_id
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         p.id,
         ...Object.values(f),
       );
@@ -199,7 +338,17 @@ export function registerMarketing(route, call) {
     const name = required(b.name, 'Client name');
     if (
       ctx.db.get(
-        'SELECT 1 AS n FROM marketing_clients c JOIN projects p ON p.id = c.project_id WHERE c.id != ? AND p.vertical_id = ? AND lower(p.client) = lower(?)',
+        `
+          SELECT
+            1 AS n
+          FROM
+            marketing_clients c
+            JOIN projects p ON p.id = c.project_id
+          WHERE
+            c.id != ?
+            AND p.vertical_id = ?
+            AND lower(p.client) = lower(?)
+        `,
         c.id,
         marketing(ctx).id,
         name,
@@ -221,7 +370,22 @@ export function registerMarketing(route, call) {
         status,
       });
       ctx.db.run(
-        'UPDATE marketing_clients SET contact_name = ?, contact_email = ?, contact_phone = ?, platforms = ?, brand_notes = ?, monthly_target = ?, social_id = ?, designer_id = ?, manager_id = ?, head_id = ? WHERE id = ?',
+        `
+          UPDATE marketing_clients
+          SET
+            contact_name = ?,
+            contact_email = ?,
+            contact_phone = ?,
+            platforms = ?,
+            brand_notes = ?,
+            monthly_target = ?,
+            social_id = ?,
+            designer_id = ?,
+            manager_id = ?,
+            head_id = ?
+          WHERE
+            id = ?
+        `,
         ...Object.values(f),
         c.id,
       );
@@ -266,7 +430,20 @@ export function registerMarketing(route, call) {
         stage: 'Content',
       });
       ctx.db.run(
-        'INSERT INTO marketing_jobs (task_id, client_id, post_type, platform, social_owner_id, work_date, publish_date) VALUES (?,?,?,?,?,?,?)',
+        `
+          INSERT INTO
+            marketing_jobs (
+              task_id,
+              client_id,
+              post_type,
+              platform,
+              social_owner_id,
+              work_date,
+              publish_date
+            )
+          VALUES
+            (?, ?, ?, ?, ?, ?, ?)
+        `,
         t.id,
         c.id,
         post,
@@ -318,7 +495,20 @@ export function registerMarketing(route, call) {
         priority: b.priority,
       });
       ctx.db.run(
-        'UPDATE marketing_jobs SET post_type = ?, platform = ?, social_owner_id = ?, work_date = ?, publish_date = ?, workflow = ?, started_at = ?, finished_at = ? WHERE task_id = ?',
+        `
+          UPDATE marketing_jobs
+          SET
+            post_type = ?,
+            platform = ?,
+            social_owner_id = ?,
+            work_date = ?,
+            publish_date = ?,
+            workflow = ?,
+            started_at = ?,
+            finished_at = ?
+          WHERE
+            task_id = ?
+        `,
         post,
         platform,
         social,
@@ -368,7 +558,26 @@ export function registerMarketing(route, call) {
     const blockers = text(b.blockers, { max: 4000 }) || '',
       plan = text(b.next_plan, { max: 4000 }) || '';
     ctx.db.run(
-      'INSERT INTO marketing_reports (client_id, user_id, report_date, accomplished, blockers, next_plan, updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(client_id, user_id, report_date) DO UPDATE SET accomplished = excluded.accomplished, blockers = excluded.blockers, next_plan = excluded.next_plan, updated_at = excluded.updated_at',
+      `
+        INSERT INTO
+          marketing_reports (
+            client_id,
+            user_id,
+            report_date,
+            accomplished,
+            blockers,
+            next_plan,
+            updated_at
+          )
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (client_id, user_id, report_date) DO UPDATE
+        SET
+          accomplished = excluded.accomplished,
+          blockers = excluded.blockers,
+          next_plan = excluded.next_plan,
+          updated_at = excluded.updated_at
+      `,
       c.id,
       ctx.user.id,
       day,

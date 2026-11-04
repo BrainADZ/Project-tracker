@@ -209,27 +209,47 @@ function LegacyProjectForm({
       size="wide"
       footer={
         <>
-          <button type="button" className="btn" onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button type="submit" form="project-form" className="btn primary" disabled={saving}>
+          <button
+            type="submit"
+            form="project-form"
+            className="btn primary"
+            disabled={saving}
+          >
             {saving ? 'Saving…' : editing ? 'Save changes' : 'Create project'}
           </button>
         </>
       }
     >
-      <form id="project-form" className="modal-body" onSubmit={submit}>
+      <form
+        id="project-form"
+        className="modal-body"
+        onSubmit={submit}
+      >
         {err && <div className="alert error mb-12">{err}</div>}
         {onFieldChange && (
           <div className="mb-16">
             <span className="small b6">Live / event project</span>
-            <button type="button" className="link ml-12" onClick={onFieldChange}>
+            <button
+              type="button"
+              className="link ml-12"
+              onClick={onFieldChange}
+            >
               Change project field
             </button>
           </div>
         )}
         <div className="form-grid">
-          <Field label="Vertical" htmlFor="pf-vertical">
+          <Field
+            label="Vertical"
+            htmlFor="pf-vertical"
+          >
             <select
               id="pf-vertical"
               className="select"
@@ -247,14 +267,21 @@ function LegacyProjectForm({
                   : [v, ...moveTargets].filter(Boolean)
                 : manageableVerticals
               ).map((x) => (
-                <option key={x.id} value={x.id}>
+                <option
+                  key={x.id}
+                  value={x.id}
+                >
                   {x.name}
                 </option>
               ))}
             </select>
           </Field>
           {!editing ? (
-            <Field label="Start from" htmlFor="pf-source" hint={sourceInfo}>
+            <Field
+              label="Start from"
+              htmlFor="pf-source"
+              hint={sourceInfo}
+            >
               <select
                 id="pf-source"
                 className="select"
@@ -264,7 +291,10 @@ function LegacyProjectForm({
                 {vTemplates.length > 0 && (
                   <optgroup label="Templates">
                     {vTemplates.map((t) => (
-                      <option key={t.id} value={`tpl:${t.id}`}>
+                      <option
+                        key={t.id}
+                        value={`tpl:${t.id}`}
+                      >
                         {t.name}
                       </option>
                     ))}
@@ -273,7 +303,10 @@ function LegacyProjectForm({
                 {pastProjects.length > 0 && (
                   <optgroup label="Copy an earlier project">
                     {pastProjects.map((p) => (
-                      <option key={p.id} value={`copy:${p.id}`}>
+                      <option
+                        key={p.id}
+                        value={`copy:${p.id}`}
+                      >
                         {p.code} · {p.client ? `${p.client} – ` : ''}
                         {p.name}
                       </option>
@@ -289,12 +322,23 @@ function LegacyProjectForm({
               </select>
             </Field>
           ) : (
-            <Field label="Status" htmlFor="pf-status">
-              <select id="pf-status" className="select" value={f.status} onChange={set('status')}>
+            <Field
+              label="Status"
+              htmlFor="pf-status"
+            >
+              <select
+                id="pf-status"
+                className="select"
+                value={f.status}
+                onChange={set('status')}
+              >
                 {Object.entries(PROJECT_STATUS)
                   .filter(([k]) => k !== 'ready' || v?.ready_label)
                   .map(([k, s]) => (
-                    <option key={k} value={k}>
+                    <option
+                      key={k}
+                      value={k}
+                    >
                       {k === 'ready' ? v.ready_label : s.label}
                     </option>
                   ))}
@@ -302,7 +346,11 @@ function LegacyProjectForm({
             </Field>
           )}
 
-          <Field label="Project name" className="full" htmlFor="pf-name">
+          <Field
+            label="Project name"
+            className="full"
+            htmlFor="pf-name"
+          >
             <input
               id="pf-name"
               className="input"
@@ -319,7 +367,10 @@ function LegacyProjectForm({
               required
             />
           </Field>
-          <Field label="Client" htmlFor="pf-client">
+          <Field
+            label="Client"
+            htmlFor="pf-client"
+          >
             <input
               id="pf-client"
               className="input"
@@ -331,11 +382,17 @@ function LegacyProjectForm({
             />
             <datalist id="pf-clients">
               {clients.map((c) => (
-                <option key={c} value={c} />
+                <option
+                  key={c}
+                  value={c}
+                />
               ))}
             </datalist>
           </Field>
-          <Field label="Project owner" htmlFor="pf-owner">
+          <Field
+            label="Project owner"
+            htmlFor="pf-owner"
+          >
             <UserSelect
               id="pf-owner"
               value={f.owner_id}
@@ -346,7 +403,10 @@ function LegacyProjectForm({
           </Field>
 
           <div className="form-section">Dates</div>
-          <Field label="Start" htmlFor="pf-start">
+          <Field
+            label="Start"
+            htmlFor="pf-start"
+          >
             <input
               id="pf-start"
               type="date"
@@ -386,7 +446,10 @@ function LegacyProjectForm({
               min={f.start_date || undefined}
             />
           </Field>
-          <Field label="Priority" htmlFor="pf-priority">
+          <Field
+            label="Priority"
+            htmlFor="pf-priority"
+          >
             <select
               id="pf-priority"
               className="select"
@@ -394,7 +457,10 @@ function LegacyProjectForm({
               onChange={set('priority')}
             >
               {Object.entries(PRIORITY).map(([k, p]) => (
-                <option key={k} value={k}>
+                <option
+                  key={k}
+                  value={k}
+                >
                   {p.label}
                 </option>
               ))}
@@ -421,7 +487,10 @@ function LegacyProjectForm({
               }
             />
           </Field>
-          <Field label="City" htmlFor="pf-city">
+          <Field
+            label="City"
+            htmlFor="pf-city"
+          >
             <input
               id="pf-city"
               className="input"
@@ -462,17 +531,32 @@ function LegacyProjectForm({
             />
           </Field>
           {editing && (
-            <Field label="Health" htmlFor="pf-health">
-              <select id="pf-health" className="select" value={f.health} onChange={set('health')}>
+            <Field
+              label="Health"
+              htmlFor="pf-health"
+            >
+              <select
+                id="pf-health"
+                className="select"
+                value={f.health}
+                onChange={set('health')}
+              >
                 {Object.entries(HEALTH).map(([k, h]) => (
-                  <option key={k} value={k}>
+                  <option
+                    key={k}
+                    value={k}
+                  >
                     {h.label}
                   </option>
                 ))}
               </select>
             </Field>
           )}
-          <Field label="Brief / description" className="full" htmlFor="pf-desc">
+          <Field
+            label="Brief / description"
+            className="full"
+            htmlFor="pf-desc"
+          >
             <textarea
               id="pf-desc"
               className="textarea"
@@ -495,7 +579,11 @@ function LegacyProjectForm({
                   disabled={u.id === f.owner_id}
                   title={u.id === f.owner_id ? 'Project owner' : u.title}
                 >
-                  <Avatar name={u.name} color={u.color} size={20} />
+                  <Avatar
+                    name={u.name}
+                    color={u.color}
+                    size={20}
+                  />
                   {u.name}
                 </button>
               ))}
@@ -552,7 +640,10 @@ export function ProjectForm(props) {
           title="Add Live project"
           onClose={props.onClose}
           footer={
-            <button className="btn" onClick={props.onClose}>
+            <button
+              className="btn"
+              onClick={props.onClose}
+            >
               Cancel
             </button>
           }
@@ -566,19 +657,31 @@ export function ProjectForm(props) {
                   onChange={(e) => changeVertical(Number(e.target.value))}
                 >
                   {manageableVerticals.map((v) => (
-                    <option key={v.id} value={v.id}>
+                    <option
+                      key={v.id}
+                      value={v.id}
+                    >
                       {v.name}
                     </option>
                   ))}
                 </select>
               </Field>
             )}
-            <Field label="Project field" className="mt-16">
+            <Field
+              label="Project field"
+              className="mt-16"
+            >
               <div className="service-choices live-choices">
-                <button type="button" onClick={() => setLiveKind('event')}>
+                <button
+                  type="button"
+                  onClick={() => setLiveKind('event')}
+                >
                   Live / event
                 </button>
-                <button type="button" onClick={() => setLiveKind('software')}>
+                <button
+                  type="button"
+                  onClick={() => setLiveKind('software')}
+                >
                   Software development
                 </button>
               </div>

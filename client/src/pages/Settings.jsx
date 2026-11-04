@@ -107,19 +107,35 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
               Delete
             </button>
           )}
-          <button type="button" className="btn" onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button type="submit" form="tpl-form" className="btn primary" disabled={saving}>
+          <button
+            type="submit"
+            form="tpl-form"
+            className="btn primary"
+            disabled={saving}
+          >
             Save template
           </button>
         </>
       }
     >
-      <form id="tpl-form" className="modal-body" onSubmit={submit}>
+      <form
+        id="tpl-form"
+        className="modal-body"
+        onSubmit={submit}
+      >
         {err && <div className="alert error mb-12">{err}</div>}
         <div className="form-grid three">
-          <Field label="Vertical" htmlFor="tf-v">
+          <Field
+            label="Vertical"
+            htmlFor="tf-v"
+          >
             <select
               id="tf-v"
               className="select"
@@ -128,13 +144,19 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
               disabled={editing}
             >
               {verticals.map((x) => (
-                <option key={x.id} value={x.id}>
+                <option
+                  key={x.id}
+                  value={x.id}
+                >
                   {x.name}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Template name" htmlFor="tf-name">
+          <Field
+            label="Template name"
+            htmlFor="tf-name"
+          >
             <input
               id="tf-name"
               className="input"
@@ -145,7 +167,10 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
               placeholder="e.g. Exhibition stall"
             />
           </Field>
-          <Field label="Used for" htmlFor="tf-desc">
+          <Field
+            label="Used for"
+            htmlFor="tf-desc"
+          >
             <input
               id="tf-desc"
               className="input"
@@ -157,12 +182,21 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
           </Field>
         </div>
 
-        <div className="form-section mt-16" style={{ marginBottom: 8 }}>
+        <div
+          className="form-section mt-16"
+          style={{ marginBottom: 8 }}
+        >
           Stages, in order
         </div>
-        <div className="row wrap" style={{ gap: 8 }}>
+        <div
+          className="row wrap"
+          style={{ gap: 8 }}
+        >
           {f.stages.map((s, i) => (
-            <div key={i} className="stage-edit">
+            <div
+              key={i}
+              className="stage-edit"
+            >
               <span className="xs muted b6">{i + 1}</span>
               <input
                 id={`tf-stage-${i}`}
@@ -204,12 +238,22 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
           </button>
         </div>
 
-        <div className="form-section mt-16" style={{ marginBottom: 8 }}>
+        <div
+          className="form-section mt-16"
+          style={{ marginBottom: 8 }}
+        >
           Milestones
         </div>
-        <div className="col" style={{ gap: 6 }}>
+        <div
+          className="col"
+          style={{ gap: 6 }}
+        >
           {f.milestones.map((m, i) => (
-            <div key={i} className="row" style={{ gap: 8 }}>
+            <div
+              key={i}
+              className="row"
+              style={{ gap: 8 }}
+            >
               <input
                 id={`tf-ms-${i}`}
                 className="input sm grow"
@@ -247,7 +291,10 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
           </div>
         </div>
 
-        <div className="form-section mt-16" style={{ marginBottom: 8 }}>
+        <div
+          className="form-section mt-16"
+          style={{ marginBottom: 8 }}
+        >
           Tasks ({f.tasks.length})
         </div>
         <div className="table-wrap">
@@ -303,7 +350,10 @@ function TemplateForm({ template, verticals, onClose, onSaved }) {
                       aria-label="Priority"
                     >
                       {Object.entries(PRIORITY).map(([k, p]) => (
-                        <option key={k} value={k}>
+                        <option
+                          key={k}
+                          value={k}
+                        >
                           {p.label}
                         </option>
                       ))}
@@ -403,24 +453,37 @@ function Templates() {
   return (
     <>
       <div className="row between mb-12">
-        <p className="muted small" style={{ maxWidth: 680, lineHeight: 1.5 }}>
+        <p
+          className="muted small"
+          style={{ maxWidth: 680, lineHeight: 1.5 }}
+        >
           Templates turn a new project into a full plan in one step. Task dates are counted back
           from the event, show or launch date, so the plan lines up with the day that matters. Tip:
           on any finished project, use <b>Save as template</b> to capture what worked.
         </p>
         {manageableVerticals.length > 0 && (
-          <button type="button" className="btn primary" onClick={() => setEditing({})}>
+          <button
+            type="button"
+            className="btn primary"
+            onClick={() => setEditing({})}
+          >
             <Plus size={17} />
             New template
           </button>
         )}
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : items.length === 0 ? (
         <div className="card">
-          <Empty icon={LayoutTemplate} title="No templates yet" />
+          <Empty
+            icon={LayoutTemplate}
+            title="No templates yet"
+          />
         </div>
       ) : (
         <div className="tpl-grid">
@@ -431,15 +494,26 @@ function Templates() {
               style={{ borderTop: `3px solid ${t.vertical_color}` }}
             >
               <div className="row between">
-                <VChip name={t.vertical} color={t.vertical_color} small />
+                <VChip
+                  name={t.vertical}
+                  color={t.vertical_color}
+                  small
+                />
                 {t.can_edit && (
-                  <button type="button" className="btn xs" onClick={() => setEditing(t)}>
+                  <button
+                    type="button"
+                    className="btn xs"
+                    onClick={() => setEditing(t)}
+                  >
                     <Pencil size={13} />
                     Edit
                   </button>
                 )}
               </div>
-              <h3 className="mt-8" style={{ fontSize: 16 }}>
+              <h3
+                className="mt-8"
+                style={{ fontSize: 16 }}
+              >
                 {t.name}
               </h3>
               {t.description && <p className="small muted mt-4">{t.description}</p>}
@@ -516,18 +590,33 @@ function VerticalForm({ vertical, onClose, onSaved }) {
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn" onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button type="submit" form="v-form" className="btn primary">
+          <button
+            type="submit"
+            form="v-form"
+            className="btn primary"
+          >
             Save
           </button>
         </>
       }
     >
-      <form id="v-form" className="modal-body form-grid" onSubmit={submit}>
+      <form
+        id="v-form"
+        className="modal-body form-grid"
+        onSubmit={submit}
+      >
         {err && <div className="alert error full">{err}</div>}
-        <Field label="Full name" htmlFor="vf-name">
+        <Field
+          label="Full name"
+          htmlFor="vf-name"
+        >
           <input
             id="vf-name"
             className="input"
@@ -537,7 +626,10 @@ function VerticalForm({ vertical, onClose, onSaved }) {
             placeholder="BrainADZ Retail"
           />
         </Field>
-        <Field label="Short name" htmlFor="vf-short">
+        <Field
+          label="Short name"
+          htmlFor="vf-short"
+        >
           <input
             id="vf-short"
             className="input"
@@ -591,7 +683,11 @@ function VerticalForm({ vertical, onClose, onSaved }) {
             placeholder="Ready for Event / Exhibition"
           />
         </Field>
-        <Field label="Tagline" htmlFor="vf-tag" className="full">
+        <Field
+          label="Tagline"
+          htmlFor="vf-tag"
+          className="full"
+        >
           <input
             id="vf-tag"
             className="input"
@@ -600,7 +696,10 @@ function VerticalForm({ vertical, onClose, onSaved }) {
             maxLength={120}
           />
         </Field>
-        <Field label="Colour" htmlFor="vf-color">
+        <Field
+          label="Colour"
+          htmlFor="vf-color"
+        >
           <input
             id="vf-color"
             type="color"
@@ -611,7 +710,10 @@ function VerticalForm({ vertical, onClose, onSaved }) {
           />
         </Field>
         {vertical && (
-          <label className="check" style={{ alignSelf: 'end', paddingBottom: 10 }}>
+          <label
+            className="check"
+            style={{ alignSelf: 'end', paddingBottom: 10 }}
+          >
             <input
               id="vf-active"
               type="checkbox"
@@ -633,17 +735,27 @@ function Verticals() {
   return (
     <>
       <div className="row between mb-12">
-        <p className="muted small" style={{ maxWidth: 680, lineHeight: 1.5 }}>
+        <p
+          className="muted small"
+          style={{ maxWidth: 680, lineHeight: 1.5 }}
+        >
           Each vertical keeps its projects private to the people who have access to it. Add a
           vertical when you start a new line of business, then set who can see it under Team &
           Access.
         </p>
-        <button type="button" className="btn primary" onClick={() => setEditing({})}>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={() => setEditing({})}
+        >
           <Plus size={17} />
           Add vertical
         </button>
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : (
@@ -663,9 +775,15 @@ function Verticals() {
               </thead>
               <tbody>
                 {data.items.map((v) => (
-                  <tr key={v.id} style={!v.active ? { opacity: 0.55 } : undefined}>
+                  <tr
+                    key={v.id}
+                    style={!v.active ? { opacity: 0.55 } : undefined}
+                  >
                     <td>
-                      <div className="row" style={{ gap: 12 }}>
+                      <div
+                        className="row"
+                        style={{ gap: 12 }}
+                      >
                         <span
                           className="vbadge"
                           style={{ background: alpha(v.color, 0.15), color: ink(v.color) }}
@@ -684,7 +802,11 @@ function Verticals() {
                     <td className="num">{v.people}</td>
                     <td className="num">{v.projects}</td>
                     <td className="right">
-                      <button type="button" className="btn xs" onClick={() => setEditing(v)}>
+                      <button
+                        type="button"
+                        className="btn xs"
+                        onClick={() => setEditing(v)}
+                      >
                         <Pencil size={13} />
                         Edit
                       </button>
@@ -729,7 +851,10 @@ function Company() {
         }
       }}
     >
-      <Field label="Company name" htmlFor="co-name">
+      <Field
+        label="Company name"
+        htmlFor="co-name"
+      >
         <input
           id="co-name"
           className="input"
@@ -738,7 +863,10 @@ function Company() {
           maxLength={80}
         />
       </Field>
-      <button type="submit" className="btn primary mt-16">
+      <button
+        type="submit"
+        className="btn primary mt-16"
+      >
         Save
       </button>
     </form>
@@ -771,7 +899,10 @@ export default function Settings({ tab = 'templates' }) {
               navigate(k === 'templates' ? '/settings' : `/settings/${k}`, { replace: true })
             }
           >
-            <Ic size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            <Ic
+              size={15}
+              style={{ verticalAlign: '-2px', marginRight: 6 }}
+            />
             {l}
           </button>
         ))}

@@ -35,7 +35,15 @@ try {
     const targetTables = new Set(
       (
         await client.query(
-          "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'",
+          `
+            SELECT
+              table_name
+            FROM
+              information_schema.tables
+            WHERE
+              table_schema = 'public'
+              AND table_type = 'BASE TABLE'
+          `,
         )
       ).rows.map((row) => row.table_name),
     );
@@ -63,7 +71,12 @@ try {
     }
     for (const table of tables) {
       const identity = await client.query(
-        "SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name=$1 AND column_name='id' AND is_identity='YES'",
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = $1
+           AND column_name = 'id'
+           AND is_identity = 'YES'`,
         [table],
       );
       if (!identity.rowCount) continue;

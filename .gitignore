@@ -9,5 +9,4 @@ data/
 *.db-wal
 *.db-shm
 .DS_Store
-.tmp-hrms-profile/
-.tmp-hrms-credentials/
+.tmp*/

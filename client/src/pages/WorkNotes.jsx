@@ -52,7 +52,10 @@ export default function WorkNotes({ id, department, initialAction, onClose, onCh
       size="wide"
     >
       <div className="modal-body">
-        <ErrorNote error={error || saveError} retry={reload} />
+        <ErrorNote
+          error={error || saveError}
+          retry={reload}
+        />
         {loading && !r ? (
           <Loading />
         ) : (
@@ -81,7 +84,10 @@ export default function WorkNotes({ id, department, initialAction, onClose, onCh
               {(r.notes || [])
                 .filter((n) => n.kind !== 'event')
                 .map((n) => (
-                  <div className="work-note" key={n.id}>
+                  <div
+                    className="work-note"
+                    key={n.id}
+                  >
                     <div className="row between">
                       <b>
                         {n.author_name}
@@ -93,7 +99,10 @@ export default function WorkNotes({ id, department, initialAction, onClose, onCh
                   </div>
                 ))}
               {r.can_note && (
-                <form className="col mt-16" onSubmit={submit}>
+                <form
+                  className="col mt-16"
+                  onSubmit={submit}
+                >
                   <Field label="Add note / changes">
                     <textarea
                       className="input"
@@ -120,7 +129,10 @@ export default function WorkNotes({ id, department, initialAction, onClose, onCh
                         <option value="reopen">Start working on revision</option>
                       )}
                     </select>
-                    <button className="btn primary" disabled={busy}>
+                    <button
+                      className="btn primary"
+                      disabled={busy}
+                    >
                       {busy
                         ? 'Saving…'
                         : action === 'reopen'
@@ -136,7 +148,10 @@ export default function WorkNotes({ id, department, initialAction, onClose, onCh
                 <details className="mt-16">
                   <summary className="small muted">Timer history</summary>
                   {r.sessions.map((s) => (
-                    <div className="work-note small" key={s.id}>
+                    <div
+                      className="work-note small"
+                      key={s.id}
+                    >
                       {s.revision_no ? 'Revision ' + s.revision_no : 'Original'} · {s.designer_name}
                       <p>
                         {stamp(s.started_at)} → {s.ended_at ? stamp(s.ended_at) : 'Running'} ·{' '}

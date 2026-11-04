@@ -156,7 +156,10 @@ export const freshTotal = (counts) =>
 export function CountBadge({ c }) {
   if (!c) return null;
   return (
-    <span className={`count ${c.fresh ? '' : 'seen'}`} title={c.title}>
+    <span
+      className={`count ${c.fresh ? '' : 'seen'}`}
+      title={c.title}
+    >
       {c.value}
     </span>
   );

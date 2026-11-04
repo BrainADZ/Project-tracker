@@ -69,7 +69,10 @@ export default function Login() {
             Plan events, exhibitions and campaigns, keep each team on deadline, and find any past
             project with its files in seconds.
           </p>
-          <div className="row wrap" style={{ gap: 18, marginTop: 28 }}>
+          <div
+            className="row wrap"
+            style={{ gap: 18, marginTop: 28 }}
+          >
             {[
               [FolderKanban, 'Projects & stages'],
               [ListChecks, 'Tasks & deadlines'],
@@ -96,9 +99,16 @@ export default function Login() {
           <>
             <h1 style={{ fontSize: 28, letterSpacing: '-0.5px' }}>Sign in</h1>
             <p className="muted mt-8">Welcome back to {company} Projects.</p>
-            <form className="col" style={{ gap: 14, marginTop: 24 }} onSubmit={signIn}>
+            <form
+              className="col"
+              style={{ gap: 14, marginTop: 24 }}
+              onSubmit={signIn}
+            >
               {err && <div className="alert error">{err}</div>}
-              <Field label="Work email or username" htmlFor="login-email">
+              <Field
+                label="Work email or username"
+                htmlFor="login-email"
+              >
                 <input
                   id="login-email"
                   type="text"
@@ -110,7 +120,10 @@ export default function Login() {
                   autoFocus
                 />
               </Field>
-              <Field label="Password" htmlFor="login-pass">
+              <Field
+                label="Password"
+                htmlFor="login-pass"
+              >
                 <input
                   id="login-pass"
                   type="password"
@@ -121,7 +134,11 @@ export default function Login() {
                   required
                 />
               </Field>
-              <button type="submit" className="btn primary lg block" disabled={busy}>
+              <button
+                type="submit"
+                className="btn primary lg block"
+                disabled={busy}
+              >
                 {busy ? 'Signing in…' : 'Sign in'}
               </button>
               <p className="xs muted">
@@ -140,7 +157,10 @@ export default function Login() {
                 }}
               >
                 <div className="b6">Temporary test access</div>
-                <p className="xs muted" style={{ lineHeight: 1.5 }}>
+                <p
+                  className="xs muted"
+                  style={{ lineHeight: 1.5 }}
+                >
                   Choose an account to fill the form, then click Sign in. Password:{' '}
                   <code>demo1234</code>
                 </p>
@@ -156,8 +176,14 @@ export default function Login() {
                       setErr(null);
                     }}
                   >
-                    <span className="grow" style={{ minWidth: 0, textAlign: 'left' }}>
-                      <span className="b6" style={{ display: 'block' }}>
+                    <span
+                      className="grow"
+                      style={{ minWidth: 0, textAlign: 'left' }}
+                    >
+                      <span
+                        className="b6"
+                        style={{ display: 'block' }}
+                      >
                         {account.label}
                       </span>
                       <span
@@ -167,10 +193,16 @@ export default function Login() {
                         {account.email}
                       </span>
                     </span>
-                    <LogIn size={17} className="muted" />
+                    <LogIn
+                      size={17}
+                      className="muted"
+                    />
                   </button>
                 ))}
-                <p className="xs muted" style={{ lineHeight: 1.5 }}>
+                <p
+                  className="xs muted"
+                  style={{ lineHeight: 1.5 }}
+                >
                   Marketing accounts: <code>npm run seed:marketing</code>. Other sample accounts:{' '}
                   <code>npm run seed:demo</code>.
                 </p>

@@ -356,12 +356,19 @@ export function GeneralDailyReporting({
           </div>
         </div>
         <div className="head-actions">
-          <button className="btn" disabled={!items.length} onClick={exportRows}>
+          <button
+            className="btn"
+            disabled={!items.length}
+            onClick={exportRows}
+          >
             <Download size={16} />
             Export
           </button>
           {report.data?.can_add && (
-            <button className="btn primary" onClick={() => open(null)}>
+            <button
+              className="btn primary"
+              onClick={() => open(null)}
+            >
               <Plus size={16} />
               {websiteContext ? 'Add task' : designerMode ? 'Add own work' : 'Add / assign work'}
             </button>
@@ -383,7 +390,10 @@ export function GeneralDailyReporting({
             ['Paused', items.filter((r) => r.status === 'Paused').length],
             ['Done', items.filter((r) => r.status === 'Done').length],
           ].map(([title, n]) => (
-            <div className="card" key={title}>
+            <div
+              className="card"
+              key={title}
+            >
               <span className="muted small">{title}</span>
               <b>{n}</b>
             </div>
@@ -435,7 +445,10 @@ export function GeneralDailyReporting({
             >
               <option value="">All team members</option>
               {reportPeople.map((u) => (
-                <option key={u.id} value={u.id}>
+                <option
+                  key={u.id}
+                  value={u.id}
+                >
                   {u.name}
                 </option>
               ))}
@@ -449,7 +462,10 @@ export function GeneralDailyReporting({
           </>
         )}
         {projectId && !embedded && (
-          <Link className="btn" to={'/projects/' + projectId}>
+          <Link
+            className="btn"
+            to={'/projects/' + projectId}
+          >
             Back to project
           </Link>
         )}
@@ -495,7 +511,10 @@ export function GeneralDailyReporting({
                 <tr>
                   <th scope="col">#</th>
                   {scope === 'month' && <th scope="col">Date</th>}
-                  <th scope="col" className="work-client">
+                  <th
+                    scope="col"
+                    className="work-client"
+                  >
                     Client / project
                   </th>
                   <th scope="col">
@@ -523,7 +542,10 @@ export function GeneralDailyReporting({
                   <th scope="col">Status</th>
                   <th scope="col">Total time</th>
                   <th scope="col">Notes</th>
-                  <th scope="col" className="work-action-cell">
+                  <th
+                    scope="col"
+                    className="work-action-cell"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -532,24 +554,36 @@ export function GeneralDailyReporting({
                 {items.map((r, i) => {
                   const busy = busyRows.includes(r.id);
                   return (
-                    <tr key={r.work_key} className={r.running_since ? 'work-row-running' : ''}>
+                    <tr
+                      key={r.work_key}
+                      className={r.running_since ? 'work-row-running' : ''}
+                    >
                       <td className="muted">{i + 1}</td>
                       {scope === 'month' && <td className="nowrap">{fmtDate(r.report_date)}</td>}
                       <td className="work-client">
                         {r.project_id ? (
-                          <Link className="b6" to={'/projects/' + r.project_id}>
+                          <Link
+                            className="b6"
+                            to={'/projects/' + r.project_id}
+                          >
                             {r.client || r.project_name}
                           </Link>
                         ) : (
                           <b>{r.client || 'Extra work'}</b>
                         )}
-                        <div className="xs muted daily-project-name" title={r.project_name}>
+                        <div
+                          className="xs muted daily-project-name"
+                          title={r.project_name}
+                        >
                           {r.project_name}
                         </div>
                       </td>
                       <td className="daily-work-title">
                         {websiteContext && r.project_id ? (
-                          <Link className="b6" to={'/projects/' + r.project_id + '/tasks/' + r.id}>
+                          <Link
+                            className="b6"
+                            to={'/projects/' + r.project_id + '/tasks/' + r.id}
+                          >
                             {r.title}
                           </Link>
                         ) : (
@@ -580,10 +614,16 @@ export function GeneralDailyReporting({
                           {r.due_date ? fmtDate(r.due_date) : '—'}
                         </td>
                       )}
-                      <td className="report-time-cell" title={stamp(r.first_started_at)}>
+                      <td
+                        className="report-time-cell"
+                        title={stamp(r.first_started_at)}
+                      >
                         {clock(r.first_started_at)}
                       </td>
-                      <td className="report-time-cell" title={stamp(r.completed_at)}>
+                      <td
+                        className="report-time-cell"
+                        title={stamp(r.completed_at)}
+                      >
                         {clock(r.completed_at)}
                       </td>
                       <td>
@@ -602,11 +642,17 @@ export function GeneralDailyReporting({
                         )}
                       </td>
                       <td className="work-note-cell">
-                        <button className="link small" onClick={() => setNotes({ id: r.id })}>
+                        <button
+                          className="link small"
+                          onClick={() => setNotes({ id: r.id })}
+                        >
                           <MessageSquare size={13} />
                           {r.note_count ? r.note_count + ' notes' : 'Add note'}
                         </button>
-                        <p className="xs muted" title={r.last_note || r.remarks || ''}>
+                        <p
+                          className="xs muted"
+                          title={r.last_note || r.remarks || ''}
+                        >
                           {r.last_note || r.remarks || '—'}
                         </p>
                       </td>
@@ -742,7 +788,10 @@ export function GeneralDailyReporting({
           size="wide"
           footer={
             <>
-              <button className="btn" onClick={() => setForm(null)}>
+              <button
+                className="btn"
+                onClick={() => setForm(null)}
+              >
                 Cancel
               </button>
               <button
@@ -756,7 +805,11 @@ export function GeneralDailyReporting({
             </>
           }
         >
-          <form id="daily-work-form" className="modal-body form-grid" onSubmit={save}>
+          <form
+            id="daily-work-form"
+            className="modal-body form-grid"
+            onSubmit={save}
+          >
             <div className="full">
               <ErrorNote error={error} />
             </div>
@@ -769,7 +822,10 @@ export function GeneralDailyReporting({
               >
                 <option value="">Other / extra work — no project</option>
                 {(form === 'new' ? active : projectList).map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option
+                    key={p.id}
+                    value={p.id}
+                  >
                     {p.client ? p.client + ' · ' : ''}
                     {p.name}
                   </option>
@@ -786,7 +842,10 @@ export function GeneralDailyReporting({
               />
             </Field>
             {!f.project_id && (
-              <Field label="Client / requested by (optional)" className="full">
+              <Field
+                label="Client / requested by (optional)"
+                className="full"
+              >
                 <input
                   className="input"
                   maxLength={160}
@@ -811,7 +870,11 @@ export function GeneralDailyReporting({
             </Field>
             {!websiteForm && (
               <Field label="Work type">
-                <select className="select" value={f.work_type} onChange={set('work_type')}>
+                <select
+                  className="select"
+                  value={f.work_type}
+                  onChange={set('work_type')}
+                >
                   {[...new Set([f.work_type, ...workTypes])].map((v) => (
                     <option key={v}>{v}</option>
                   ))}
@@ -849,7 +912,10 @@ export function GeneralDailyReporting({
                     >
                       <option value="">Not applicable</option>
                       {pool.map((u) => (
-                        <option key={u.id} value={u.id}>
+                        <option
+                          key={u.id}
+                          value={u.id}
+                        >
                           {u.name}
                         </option>
                       ))}
@@ -874,7 +940,10 @@ export function GeneralDailyReporting({
                   >
                     <option value="">Choose assigned person</option>
                     {developerPool.map((u) => (
-                      <option key={u.id} value={u.id}>
+                      <option
+                        key={u.id}
+                        value={u.id}
+                      >
                         {u.name}
                       </option>
                     ))}
@@ -896,7 +965,10 @@ export function GeneralDailyReporting({
             ) : (
               <p className="small muted">Assigned to you: {me.name}</p>
             )}
-            <Field label="Brief / notes" className="full">
+            <Field
+              label="Brief / notes"
+              className="full"
+            >
               <textarea
                 className="input"
                 rows={3}
@@ -937,6 +1009,9 @@ export default function DailyReporting(props) {
   return department === 'development' ? (
     <DevelopmentReporting {...props} />
   ) : (
-    <GeneralDailyReporting {...props} department={department} />
+    <GeneralDailyReporting
+      {...props}
+      department={department}
+    />
   );
 }

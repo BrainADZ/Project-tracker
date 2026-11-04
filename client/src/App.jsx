@@ -30,15 +30,49 @@ function Routes() {
   if (path === '/my') return dailyReportingOnly ? <DailyReporting /> : <MyWork />;
   if (path === '/projects') return <Projects />;
   if ((m = match('/projects/:id/tasks/:taskId', path)))
-    return <Project id={m.id} tab="tasks" taskId={m.taskId} />;
-  if ((m = match('/projects/:id/:tab', path))) return <Project id={m.id} tab={m.tab} />;
+    return (
+      <Project
+        id={m.id}
+        tab="tasks"
+        taskId={m.taskId}
+      />
+    );
+  if ((m = match('/projects/:id/:tab', path)))
+    return (
+      <Project
+        id={m.id}
+        tab={m.tab}
+      />
+    );
   if ((m = match('/projects/:id', path))) return <Project id={m.id} />;
   if (path === '/daily-reporting/social' || path === '/marketing')
-    return <DailyReporting key="social" department="social" />;
+    return (
+      <DailyReporting
+        key="social"
+        department="social"
+      />
+    );
   if (path === '/daily-reporting/development')
-    return <DailyReporting key="development" department="development" />;
-  if (path === '/daily-reporting/seo') return <DailyReporting key="seo" department="seo" />;
-  if (path === '/daily-reporting/other') return <DailyReporting key="other" department="other" />;
+    return (
+      <DailyReporting
+        key="development"
+        department="development"
+      />
+    );
+  if (path === '/daily-reporting/seo')
+    return (
+      <DailyReporting
+        key="seo"
+        department="seo"
+      />
+    );
+  if (path === '/daily-reporting/other')
+    return (
+      <DailyReporting
+        key="other"
+        department="other"
+      />
+    );
   if (path === '/daily-reporting') return <DailyReporting department={reportingDepartment} />;
   if ((m = match('/daily-reporting/:id', path))) return <DailyReporting projectId={m.id} />;
   if (match('/marketing/:id', path)) return <DailyReporting />;
@@ -80,7 +114,11 @@ export default function App() {
       <div className="demo-boot">
         <b>Could not reach the server</b>
         <span>{bootError}</span>
-        <button type="button" className="btn primary" onClick={loadBoot}>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={loadBoot}
+        >
           Try again
         </button>
       </div>
