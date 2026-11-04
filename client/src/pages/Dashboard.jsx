@@ -38,9 +38,16 @@ function greeting() {
 
 function Kpi({ icon: Icon, tone, label, value, sub, onClick }) {
   return (
-    <button type="button" className="card kpi kpi-btn" onClick={onClick}>
+    <button
+      type="button"
+      className="card kpi kpi-btn"
+      onClick={onClick}
+    >
       <div className={`ic tone-${tone}`}>
-        <Icon size={30} strokeWidth={2} />
+        <Icon
+          size={30}
+          strokeWidth={2}
+        />
       </div>
       <div style={{ minWidth: 0, textAlign: 'left' }}>
         <div className="lbl">{label}</div>
@@ -55,8 +62,14 @@ function Kpi({ icon: Icon, tone, label, value, sub, onClick }) {
 
 export function NoAccess() {
   return (
-    <div className="card" style={{ maxWidth: 560, margin: '40px auto' }}>
-      <Empty icon={Lock} title="You have not been added to a vertical yet">
+    <div
+      className="card"
+      style={{ maxWidth: 560, margin: '40px auto' }}
+    >
+      <Empty
+        icon={Lock}
+        title="You have not been added to a vertical yet"
+      >
         Projects are shared by vertical. Ask an admin to give you access to BrainADZ Live, Marketing
         or Exhibits, then refresh this page.
       </Empty>
@@ -124,23 +137,36 @@ export default function Dashboard() {
           <div className="sub">Here is where your projects stand in {scope}.</div>
         </div>
         <div className="head-actions">
-          <Link to="/projects" className="btn">
+          <Link
+            to="/projects"
+            className="btn"
+          >
             All projects
           </Link>
           {dailyReportingOnly && (
-            <Link to={defaultReportingPath} className="btn primary">
+            <Link
+              to={defaultReportingPath}
+              className="btn primary"
+            >
               Daily Reporting
             </Link>
           )}
           {manageableVerticals.length > 0 && (
-            <button type="button" className="btn primary" onClick={() => setCreating(true)}>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => setCreating(true)}
+            >
               <Plus size={18} />
               New project
             </button>
           )}
         </div>
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : (
@@ -188,12 +214,18 @@ export default function Dashboard() {
                       {data.attention.length ? `${data.attention.length} projects` : ''}
                     </span>
                   </h3>
-                  <Link to="/projects" className="link">
+                  <Link
+                    to="/projects"
+                    className="link"
+                  >
                     View projects <ArrowUpRight size={14} />
                   </Link>
                 </div>
                 {data.attention.length === 0 ? (
-                  <Empty icon={CalendarCheck} title="Everything is on track">
+                  <Empty
+                    icon={CalendarCheck}
+                    title="Everything is on track"
+                  >
                     No project is late, at risk or carrying overdue tasks.
                   </Empty>
                 ) : (
@@ -220,19 +252,32 @@ export default function Dashboard() {
                             >
                               <td>
                                 <div className="row gap-6">
-                                  <span className="dot" style={{ background: p.vertical_color }} />
-                                  <span className="b6 ellipsis" style={{ maxWidth: 280 }}>
+                                  <span
+                                    className="dot"
+                                    style={{ background: p.vertical_color }}
+                                  />
+                                  <span
+                                    className="b6 ellipsis"
+                                    style={{ maxWidth: 280 }}
+                                  >
                                     {p.client ? `${p.client} · ` : ''}
                                     {p.name}
                                   </span>
                                 </div>
-                                <div className="xs muted" style={{ marginLeft: 14 }}>
+                                <div
+                                  className="xs muted"
+                                  style={{ marginLeft: 14 }}
+                                >
                                   {p.code} · {p.stage}
                                 </div>
                               </td>
                               <td className="hide-sm">
                                 <div className="row gap-6">
-                                  <Avatar name={p.owner_name} color={p.owner_color} size={26} />
+                                  <Avatar
+                                    name={p.owner_name}
+                                    color={p.owner_color}
+                                    size={26}
+                                  />
                                   <span className="small">{p.owner_name?.split(' ')[0]}</span>
                                 </div>
                               </td>
@@ -252,9 +297,15 @@ export default function Dashboard() {
                               <td>
                                 <div className="row gap-6">
                                   <div className="grow">
-                                    <Progress value={p.progress} color={p.vertical_color} />
+                                    <Progress
+                                      value={p.progress}
+                                      color={p.vertical_color}
+                                    />
                                   </div>
-                                  <span className="xs muted" style={{ width: 30 }}>
+                                  <span
+                                    className="xs muted"
+                                    style={{ width: 30 }}
+                                  >
                                     {p.progress}%
                                   </span>
                                 </div>
@@ -272,7 +323,10 @@ export default function Dashboard() {
                 <section className="card span-4">
                   <div className="card-head">
                     <h3>My tasks</h3>
-                    <Link to="/my" className="link">
+                    <Link
+                      to="/my"
+                      className="link"
+                    >
                       My work <ArrowUpRight size={14} />
                     </Link>
                   </div>
@@ -283,7 +337,10 @@ export default function Dashboard() {
                   ) : (
                     <div>
                       {data.my_tasks.map((t) => (
-                        <div key={t.id} className="list-item">
+                        <div
+                          key={t.id}
+                          className="list-item"
+                        >
                           <button
                             type="button"
                             className="check-btn"
@@ -320,7 +377,10 @@ export default function Dashboard() {
                   <h3>
                     Coming up <span className="sub">next 60 days</span>
                   </h3>
-                  <Link to="/calendar" className="link">
+                  <Link
+                    to="/calendar"
+                    className="link"
+                  >
                     Calendar <ArrowUpRight size={14} />
                   </Link>
                 </div>
@@ -329,8 +389,15 @@ export default function Dashboard() {
                 ) : (
                   <div>
                     {data.upcoming.map((u, i) => (
-                      <Link key={i} to={`/projects/${u.project.id}`} className="list-item plain">
-                        <DateBox date={u.date} color={u.project.vertical_color} />
+                      <Link
+                        key={i}
+                        to={`/projects/${u.project.id}`}
+                        className="list-item plain"
+                      >
+                        <DateBox
+                          date={u.date}
+                          color={u.project.vertical_color}
+                        />
                         <div className="grow">
                           <div className="b6 small ellipsis">
                             {u.type === 'key' ? (
@@ -355,8 +422,15 @@ export default function Dashboard() {
                             {u.project.city ? ` · ${u.project.city}` : ''}
                           </div>
                         </div>
-                        <VChip name={u.project.vertical} color={u.project.vertical_color} small />
-                        <span className="xs muted nowrap" style={{ width: 72, textAlign: 'right' }}>
+                        <VChip
+                          name={u.project.vertical}
+                          color={u.project.vertical_color}
+                          small
+                        />
+                        <span
+                          className="xs muted nowrap"
+                          style={{ width: 72, textAlign: 'right' }}
+                        >
                           {relDay(today, u.date)}
                         </span>
                       </Link>
@@ -369,14 +443,23 @@ export default function Dashboard() {
                 <div className="card-head">
                   <h3>By vertical</h3>
                 </div>
-                <div className="col" style={{ gap: 16 }}>
+                <div
+                  className="col"
+                  style={{ gap: 16 }}
+                >
                   {data.by_vertical.map((v) => {
                     const max = Math.max(1, ...data.by_vertical.map((x) => x.open));
                     return (
-                      <div key={v.id} className="vbar">
+                      <div
+                        key={v.id}
+                        className="vbar"
+                      >
                         <div className="row between">
                           <span className="row gap-6">
-                            <span className="dot" style={{ background: v.color }} />
+                            <span
+                              className="dot"
+                              style={{ background: v.color }}
+                            />
                             <b>{v.short}</b>
                           </span>
                           <span className="small muted">
@@ -412,11 +495,17 @@ export default function Dashboard() {
                   })}
                   <div className="row gap-16 xs muted">
                     <span className="row gap-6">
-                      <span className="sw" style={{ background: 'var(--text-2)' }} />
+                      <span
+                        className="sw"
+                        style={{ background: 'var(--text-2)' }}
+                      />
                       Active
                     </span>
                     <span className="row gap-6">
-                      <span className="sw" style={{ background: alpha('#3b4866', 0.35) }} />
+                      <span
+                        className="sw"
+                        style={{ background: alpha('#3b4866', 0.35) }}
+                      />
                       Planning or on hold
                     </span>
                   </div>
@@ -427,7 +516,10 @@ export default function Dashboard() {
                 <div className="card-head">
                   <h3>Recent activity</h3>
                 </div>
-                <ActivityList items={data.activity} showProject />
+                <ActivityList
+                  items={data.activity}
+                  showProject
+                />
               </section>
             </div>
           </>

@@ -52,7 +52,12 @@ async function readPhoto(file) {
 function Person({ person }) {
   return (
     <div className="profile-person">
-      <Avatar name={person.name} color={person.color} photo={person.photo} size={32} />
+      <Avatar
+        name={person.name}
+        color={person.color}
+        photo={person.photo}
+        size={32}
+      />
       <div>
         <b>{person.name}</b>
         <span>{person.title || 'Team member'}</span>
@@ -115,10 +120,22 @@ export default function ProfileOverview({ forced = false }) {
         <header className="profile-header">
           <div className="profile-photo">
             <div className="profile-photo-wrap">
-              <Avatar name={me.name} color={me.color} photo={p.photo || me.photo} size={102} />
-              <span className="profile-active" title="Active account" />
+              <Avatar
+                name={me.name}
+                color={me.color}
+                photo={p.photo || me.photo}
+                size={102}
+              />
+              <span
+                className="profile-active"
+                title="Active account"
+              />
             </div>
-            <button className="btn sm" disabled={busy} onClick={() => photoRef.current?.click()}>
+            <button
+              className="btn sm"
+              disabled={busy}
+              onClick={() => photoRef.current?.click()}
+            >
               <Camera size={14} />
               Change photo
             </button>
@@ -142,7 +159,10 @@ export default function ProfileOverview({ forced = false }) {
                 </div>
                 <p className="muted mt-4">{me.title || 'Team member'}</p>
               </div>
-              <Link className="btn primary" to="/profile/edit">
+              <Link
+                className="btn primary"
+                to="/profile/edit"
+              >
                 <Pencil size={15} />
                 Edit Profile
               </Link>
@@ -184,7 +204,10 @@ export default function ProfileOverview({ forced = false }) {
             </div>
           </div>
         </header>
-        <nav className="profile-tabs" aria-label="Profile sections">
+        <nav
+          className="profile-tabs"
+          aria-label="Profile sections"
+        >
           <span aria-current="page">Overview</span>
         </nav>
         <div className="profile-columns">
@@ -214,7 +237,10 @@ export default function ProfileOverview({ forced = false }) {
               <div className="row wrap gap-6 mt-12">
                 {skills.length ? (
                   skills.map((s, i) => (
-                    <span className="profile-skill" key={i}>
+                    <span
+                      className="profile-skill"
+                      key={i}
+                    >
                       {s}
                     </span>
                   ))
@@ -227,8 +253,14 @@ export default function ProfileOverview({ forced = false }) {
               <h3>Certifications</h3>
               {p.certifications?.length ? (
                 p.certifications.map((c, i) => (
-                  <div className="profile-cert" key={i}>
-                    <CheckCircle2 className="green" size={17} />
+                  <div
+                    className="profile-cert"
+                    key={i}
+                  >
+                    <CheckCircle2
+                      className="green"
+                      size={17}
+                    />
                     <div className="grow">
                       {c.name}
                       {c.issuer && <span className="muted"> · {c.issuer}</span>}
@@ -261,7 +293,10 @@ export default function ProfileOverview({ forced = false }) {
                     <span className="profile-org-line" />
                     <div className="row wrap gap-6 center">
                       {reports.slice(0, 4).map((u) => (
-                        <div className="profile-org-node" key={u.id}>
+                        <div
+                          className="profile-org-node"
+                          key={u.id}
+                        >
                           <Person person={u} />
                         </div>
                       ))}
@@ -275,7 +310,10 @@ export default function ProfileOverview({ forced = false }) {
             </section>
             <section className="card profile-panel">
               <h3>Login details</h3>
-              <Link to="/profile/password" className="link small">
+              <Link
+                to="/profile/password"
+                className="link small"
+              >
                 Change password
               </Link>
               <Details
@@ -296,7 +334,10 @@ export default function ProfileOverview({ forced = false }) {
               <h3>Team ({team.length})</h3>
               {team.length ? (
                 team.map((u) => (
-                  <div className="profile-team-row" key={u.id}>
+                  <div
+                    className="profile-team-row"
+                    key={u.id}
+                  >
                     <Person person={u} />
                   </div>
                 ))
@@ -334,7 +375,11 @@ export function ProfileEditor() {
     [error, setError] = useState('');
   const set = (key) => (e) => setForm((v) => ({ ...v, [key]: e.target.value }));
   const field = (key, label, type = 'text', readOnly = false) => (
-    <Field label={label} htmlFor={'profile-' + key} key={key}>
+    <Field
+      label={label}
+      htmlFor={'profile-' + key}
+      key={key}
+    >
       <input
         id={'profile-' + key}
         className="input"
@@ -372,7 +417,10 @@ export function ProfileEditor() {
   };
   return (
     <div className="profile-page">
-      <Link className="link row gap-6 mb-16" to="/profile">
+      <Link
+        className="link row gap-6 mb-16"
+        to="/profile"
+      >
         <ArrowLeft size={16} />
         Back to profile
       </Link>
@@ -382,14 +430,25 @@ export function ProfileEditor() {
           <p className="sub">Update your personal profile and contact information.</p>
         </div>
       </div>
-      <form onSubmit={save} className="card profile-editor">
+      <form
+        onSubmit={save}
+        className="card profile-editor"
+      >
         {error && (
-          <div className="alert error mb-16" role="alert">
+          <div
+            className="alert error mb-16"
+            role="alert"
+          >
             {error}
           </div>
         )}
         <div className="row gap-12 mb-16">
-          <Avatar name={form.name} color={form.color} photo={form.photo || me.photo} size={72} />
+          <Avatar
+            name={form.name}
+            color={form.color}
+            photo={form.photo || me.photo}
+            size={72}
+          />
           <button
             type="button"
             className="btn"
@@ -425,7 +484,11 @@ export function ProfileEditor() {
           {field('title', 'Job title', 'text', !canEmployment)}
           {field('phone', 'Phone', 'tel')}
           {field('dob', 'Date of birth', 'date')}
-          <Field label="About" htmlFor="profile-about" className="full">
+          <Field
+            label="About"
+            htmlFor="profile-about"
+            className="full"
+          >
             <textarea
               id="profile-about"
               className="textarea"
@@ -435,7 +498,11 @@ export function ProfileEditor() {
               onChange={set('about')}
             />
           </Field>
-          <Field label="Address" htmlFor="profile-address" className="full">
+          <Field
+            label="Address"
+            htmlFor="profile-address"
+            className="full"
+          >
             <textarea
               id="profile-address"
               className="textarea"
@@ -449,7 +516,10 @@ export function ProfileEditor() {
           <div className="full">
             <h3>Certifications</h3>
             {form.certifications.map((cert, i) => (
-              <div className="profile-cert-edit" key={i}>
+              <div
+                className="profile-cert-edit"
+                key={i}
+              >
                 {[
                   ['name', 'Certification name', 'text'],
                   ['issuer', 'Issuer', 'text'],
@@ -522,7 +592,10 @@ export function ProfileEditor() {
                 !canEmployment,
               ),
             )}
-          <Field label="Reporting manager" htmlFor="profile-manager">
+          <Field
+            label="Reporting manager"
+            htmlFor="profile-manager"
+          >
             <select
               id="profile-manager"
               className="select"
@@ -534,7 +607,10 @@ export function ProfileEditor() {
               {users
                 .filter((u) => u.id !== me.id)
                 .map((u) => (
-                  <option value={u.id} key={u.id}>
+                  <option
+                    value={u.id}
+                    key={u.id}
+                  >
                     {u.name}
                   </option>
                 ))}
@@ -546,8 +622,15 @@ export function ProfileEditor() {
             ['Login username', me.username],
             ['Work email', me.email],
           ].map(([label, value]) => (
-            <Field label={label} key={label}>
-              <input className="input" readOnly value={value || ''} />
+            <Field
+              label={label}
+              key={label}
+            >
+              <input
+                className="input"
+                readOnly
+                value={value || ''}
+              />
             </Field>
           ))}
           <p className="small muted full">
@@ -563,7 +646,10 @@ export function ProfileEditor() {
           >
             Cancel
           </button>
-          <button className="btn primary" disabled={saving || reading}>
+          <button
+            className="btn primary"
+            disabled={saving || reading}
+          >
             {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
@@ -602,7 +688,10 @@ export function ProfilePassword({ forced = false }) {
     >
       <h2>{forced ? 'Set your password' : 'Change password'}</h2>
       {error && (
-        <p className="alert error" role="alert">
+        <p
+          className="alert error"
+          role="alert"
+        >
           {error}
         </p>
       )}
@@ -640,11 +729,17 @@ export function ProfilePassword({ forced = false }) {
           onChange={(e) => setAgain(e.target.value)}
         />
       </Field>
-      <button className="btn primary mt-16" disabled={busy}>
+      <button
+        className="btn primary mt-16"
+        disabled={busy}
+      >
         Save password
       </button>
       {!forced && (
-        <Link className="btn mt-16" to="/profile">
+        <Link
+          className="btn mt-16"
+          to="/profile"
+        >
           Cancel
         </Link>
       )}

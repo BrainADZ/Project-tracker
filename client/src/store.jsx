@@ -171,14 +171,26 @@ export function AppProvider({ children }) {
   return (
     <AppCtx.Provider value={value}>
       {children}
-      <div className="toasts" role="status" aria-live="polite">
+      <div
+        className="toasts"
+        role="status"
+        aria-live="polite"
+      >
         {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.type}`}>
+          <div
+            key={t.id}
+            className={`toast ${t.type}`}
+          >
             {t.message}
           </div>
         ))}
       </div>
-      {confirmState && <ConfirmDialog state={confirmState} close={() => setConfirmState(null)} />}
+      {confirmState && (
+        <ConfirmDialog
+          state={confirmState}
+          close={() => setConfirmState(null)}
+        />
+      )}
     </AppCtx.Provider>
   );
 }
@@ -196,19 +208,34 @@ function ConfirmDialog({ state, close }) {
       onMouseDown={(e) => e.target === e.currentTarget && done(false)}
       onKeyDown={(e) => e.key === 'Escape' && done(false)}
     >
-      <div className="modal narrow" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div
+        className="modal narrow"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+      >
         <div className="modal-body">
-          <h3 id="confirm-title" style={{ fontSize: 18 }}>
+          <h3
+            id="confirm-title"
+            style={{ fontSize: 18 }}
+          >
             {state.title}
           </h3>
           {state.message && (
-            <p className="muted mt-8" style={{ lineHeight: 1.5 }}>
+            <p
+              className="muted mt-8"
+              style={{ lineHeight: 1.5 }}
+            >
               {state.message}
             </p>
           )}
         </div>
         <div className="modal-foot">
-          <button type="button" className="btn" onClick={() => done(false)}>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => done(false)}
+          >
             Cancel
           </button>
           <button

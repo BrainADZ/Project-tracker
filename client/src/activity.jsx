@@ -173,8 +173,15 @@ export function ActivityList({ items, showProject = false }) {
   return (
     <div className="feed">
       {items.map((a) => (
-        <div key={`${a.kind || 'a'}-${a.id}`} className="feed-item">
-          <Avatar name={a.user_name || 'Someone'} color={a.user_color} size={30} />
+        <div
+          key={`${a.kind || 'a'}-${a.id}`}
+          className="feed-item"
+        >
+          <Avatar
+            name={a.user_name || 'Someone'}
+            color={a.user_color}
+            size={30}
+          />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="feed-text">
               <b>{a.user_name || 'Someone'}</b> {describe(a)}
@@ -219,7 +226,10 @@ export function Composer({
     if (ok !== false) setBody('');
   };
   return (
-    <form className="composer" onSubmit={submit}>
+    <form
+      className="composer"
+      onSubmit={submit}
+    >
       <textarea
         id="composer-body"
         className="textarea"
@@ -232,7 +242,11 @@ export function Composer({
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(e);
         }}
       />
-      <button type="submit" className="btn primary" disabled={busy || !body.trim()}>
+      <button
+        type="submit"
+        className="btn primary"
+        disabled={busy || !body.trim()}
+      >
         <Send size={16} />
         Post
       </button>
@@ -248,7 +262,10 @@ function Mentions({ text }) {
     <>
       {parts.map((s, i) =>
         s.startsWith('@') ? (
-          <b key={i} className="mention">
+          <b
+            key={i}
+            className="mention"
+          >
             {s}
           </b>
         ) : (
@@ -263,11 +280,20 @@ export function CommentBody({ text }) {
     <>
       {text.split(URL_RE).map((s, i) =>
         i % 2 ? (
-          <a key={i} href={s} target="_blank" rel="noopener noreferrer" className="t-link">
+          <a
+            key={i}
+            href={s}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="t-link"
+          >
             {s}
           </a>
         ) : (
-          <Mentions key={i} text={s} />
+          <Mentions
+            key={i}
+            text={s}
+          />
         ),
       )}
     </>
@@ -383,7 +409,12 @@ export function DeleteControls({ c, base, noun = 'comment', onChanged, floating 
       )}
       <div className="c-actions">
         {inWindow && (
-          <button type="button" className="link xs" onClick={del} disabled={busy}>
+          <button
+            type="button"
+            className="link xs"
+            onClick={del}
+            disabled={busy}
+          >
             <Trash2 size={12} />
             Delete <span className="c-count">{Math.ceil(left / 1000)}s</span>
           </button>
@@ -401,7 +432,12 @@ export function DeleteControls({ c, base, noun = 'comment', onChanged, floating 
               <ShieldCheck size={12} />
               Deletion approved{c.decided_by_name ? ` by ${c.decided_by_name}` : ''}
             </span>
-            <button type="button" className="link xs red" onClick={del} disabled={busy}>
+            <button
+              type="button"
+              className="link xs red"
+              onClick={del}
+              disabled={busy}
+            >
               <Trash2 size={12} />
               Delete
             </button>
@@ -454,22 +490,37 @@ export function DeleteControls({ c, base, noun = 'comment', onChanged, floating 
 export function CommentItem({ c, onChanged, taskLink, size = 34 }) {
   return (
     <div className={`feed-item comment ${c.is_new ? 'is-new' : ''}`}>
-      <Avatar name={c.user_name} color={c.user_color} size={size} />
-      <div className="grow" style={{ minWidth: 0 }}>
+      <Avatar
+        name={c.user_name}
+        color={c.user_color}
+        size={size}
+      />
+      <div
+        className="grow"
+        style={{ minWidth: 0 }}
+      >
         <div className="row between">
           <span className="small">
             {c.is_new && <span className="new-tag">New</span>}
             <b>{c.user_name}</b>
             {taskLink}
           </span>
-          <span className="xs muted nowrap" title={fmtTime(c.created_at)}>
+          <span
+            className="xs muted nowrap"
+            title={fmtTime(c.created_at)}
+          >
             {timeAgo(c.created_at)}
           </span>
         </div>
         <div className="bubble">
           <CommentBody text={c.body} />
         </div>
-        <DeleteControls c={c} base={`/comments/${c.id}`} noun="comment" onChanged={onChanged} />
+        <DeleteControls
+          c={c}
+          base={`/comments/${c.id}`}
+          noun="comment"
+          onChanged={onChanged}
+        />
       </div>
     </div>
   );

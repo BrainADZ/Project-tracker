@@ -26,7 +26,10 @@ export default function WebsiteProgress({ summary: s, software = false }) {
         aria-valuemax={100}
         aria-valuenow={s.percent}
       >
-        <Progress value={s.percent} color="var(--blue)" />
+        <Progress
+          value={s.percent}
+          color="var(--blue)"
+        />
       </div>
       <div className="website-phases">
         {s.phases.map((p, i) => (

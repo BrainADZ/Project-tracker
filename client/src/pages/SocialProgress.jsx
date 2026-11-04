@@ -8,7 +8,11 @@ export default function SocialProgress({ summary: s, month, onMonthChange, loadi
     timeZone: 'UTC',
   }).format(new Date(s.month + '-01T00:00:00Z'));
   return (
-    <section className="social-monthly" aria-label="Monthly creative progress" aria-busy={loading}>
+    <section
+      className="social-monthly"
+      aria-label="Monthly creative progress"
+      aria-busy={loading}
+    >
       <div className="row wrap between">
         <div>
           <h3>{label} · Monthly work</h3>
@@ -27,7 +31,11 @@ export default function SocialProgress({ summary: s, month, onMonthChange, loadi
             }}
           />
           {month && (
-            <button type="button" className="btn sm" onClick={() => onMonthChange('')}>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => onMonthChange('')}
+            >
               This month
             </button>
           )}
@@ -47,7 +55,10 @@ export default function SocialProgress({ summary: s, month, onMonthChange, loadi
         aria-valuenow={s.percent}
         aria-valuetext={s.done + ' of ' + s.target + ' creatives done'}
       >
-        <Progress value={s.percent} color="var(--cyan)" />
+        <Progress
+          value={s.percent}
+          color="var(--cyan)"
+        />
       </div>
       <div className="social-work-counts">
         <span>

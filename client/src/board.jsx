@@ -41,7 +41,10 @@ function AddCard({ onAdd, onClose, placeholder, extra }) {
     }
   };
   return (
-    <form className="kb-add-form" onSubmit={submit}>
+    <form
+      className="kb-add-form"
+      onSubmit={submit}
+    >
       <textarea
         ref={ref}
         className="kb-add-input"
@@ -58,10 +61,19 @@ function AddCard({ onAdd, onClose, placeholder, extra }) {
       />
       {extra}
       <div className="row gap-6">
-        <button type="submit" className="btn sm primary" disabled={busy || !title.trim()}>
+        <button
+          type="submit"
+          className="btn sm primary"
+          disabled={busy || !title.trim()}
+        >
           Add card
         </button>
-        <button type="button" className="icon-btn sm-x" onClick={onClose} aria-label="Cancel">
+        <button
+          type="button"
+          className="icon-btn sm-x"
+          onClick={onClose}
+          aria-label="Cancel"
+        >
           <X size={18} />
         </button>
       </div>
@@ -73,7 +85,10 @@ function ColumnMenu({ items }) {
   const [open, setOpen] = useState(false);
   const ref = useClickOutside(() => setOpen(false));
   return (
-    <div className="menu-wrap" ref={ref}>
+    <div
+      className="menu-wrap"
+      ref={ref}
+    >
       <button
         type="button"
         className="icon-btn sm-x"
@@ -84,8 +99,15 @@ function ColumnMenu({ items }) {
         <MoreHorizontal size={17} />
       </button>
       {open && (
-        <div className="dropdown menu" role="menu" style={{ minWidth: 200 }}>
-          <div className="head" style={{ fontSize: 13 }}>
+        <div
+          className="dropdown menu"
+          role="menu"
+          style={{ minWidth: 200 }}
+        >
+          <div
+            className="head"
+            style={{ fontSize: 13 }}
+          >
             List actions
           </div>
           {items.filter(Boolean).map((it, i) => (
@@ -190,7 +212,10 @@ export function Board({
               onClick={() => setCollapsed(collapsed.filter((k) => k !== col.key))}
               title={`Expand ${col.title}`}
             >
-              <span className="kb-col-bar" style={{ background: col.color }} />
+              <span
+                className="kb-col-bar"
+                style={{ background: col.color }}
+              />
               <span className="kb-vtitle">{col.title}</span>
               <span className="pill-num">{col.cards.length}</span>
             </button>
@@ -252,9 +277,15 @@ export function Board({
             }}
           >
             <header className="kb-head">
-              <span className="kb-col-bar" style={{ background: col.color }} />
+              <span
+                className="kb-col-bar"
+                style={{ background: col.color }}
+              />
               <h4 title={col.title}>{col.title}</h4>
-              <CountPill n={list.length} fresh={col.fresh} />
+              <CountPill
+                n={list.length}
+                fresh={col.fresh}
+              />
               <ColumnMenu
                 items={[
                   col.canAdd && {
@@ -283,7 +314,10 @@ export function Board({
                 {col.blockedText || 'Cannot move this card here'}
               </div>
             )}
-            <div className="kb-list" ref={(el) => (lists.current[col.key] = el)}>
+            <div
+              className="kb-list"
+              ref={(el) => (lists.current[col.key] = el)}
+            >
               {rendered}
               {showLine && over.index >= k && <div className="kb-drop" />}
               {list.length === 0 && !showLine && (
@@ -299,7 +333,11 @@ export function Board({
                   extra={composerExtra}
                 />
               ) : (
-                <button type="button" className="kb-add" onClick={() => setAdding(col.key)}>
+                <button
+                  type="button"
+                  className="kb-add"
+                  onClick={() => setAdding(col.key)}
+                >
                   <Plus size={16} />
                   Add a card
                 </button>
@@ -391,13 +429,19 @@ export function Badges({ checklist, comments, files, children }) {
         </span>
       )}
       {comments > 0 && (
-        <span className="kb-badge" title="Comments">
+        <span
+          className="kb-badge"
+          title="Comments"
+        >
           <MessageSquare size={13} />
           {comments}
         </span>
       )}
       {files > 0 && (
-        <span className="kb-badge" title="Attachments">
+        <span
+          className="kb-badge"
+          title="Attachments"
+        >
           <Paperclip size={13} />
           {files}
         </span>

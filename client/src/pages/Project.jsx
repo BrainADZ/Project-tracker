@@ -89,7 +89,16 @@ function StageStepper({ stages, current, onPick, stats, disabled }) {
             aria-current={i === idx ? 'step' : undefined}
             title={disabled ? s : `Move project to ${s}`}
           >
-            <span className="c">{i < idx ? <Check size={15} strokeWidth={3} /> : i + 1}</span>
+            <span className="c">
+              {i < idx ? (
+                <Check
+                  size={15}
+                  strokeWidth={3}
+                />
+              ) : (
+                i + 1
+              )}
+            </span>
             <span className="l">{s}</span>
             {st && (
               <span className="s">
@@ -168,11 +177,18 @@ function Milestones({ p, reload }) {
     <section className="card">
       <div className="card-head">
         <h3>
-          <Flag size={17} color="var(--purple)" />
+          <Flag
+            size={17}
+            color="var(--purple)"
+          />
           Milestones
         </h3>
         {can && !adding && (
-          <button type="button" className="link" onClick={() => setAdding(true)}>
+          <button
+            type="button"
+            className="link"
+            onClick={() => setAdding(true)}
+          >
             <Plus size={14} />
             Add
           </button>
@@ -187,7 +203,10 @@ function Milestones({ p, reload }) {
         {p.milestones.map((m) => {
           const late = !m.done && m.due_date && m.due_date < today;
           return (
-            <div key={m.id} className={`ms ${m.done ? 'done' : ''}`}>
+            <div
+              key={m.id}
+              className={`ms ${m.done ? 'done' : ''}`}
+            >
               <button
                 type="button"
                 className={`check-btn ${m.done ? 'on' : ''}`}
@@ -195,7 +214,12 @@ function Milestones({ p, reload }) {
                 aria-label={m.done ? `Reopen ${m.title}` : `Mark ${m.title} reached`}
                 onClick={() => toggle(m)}
               >
-                {m.done && <Check size={13} strokeWidth={3} />}
+                {m.done && (
+                  <Check
+                    size={13}
+                    strokeWidth={3}
+                  />
+                )}
               </button>
               <div className="grow">
                 <div className="small b6">{m.title}</div>
@@ -220,7 +244,11 @@ function Milestones({ p, reload }) {
         })}
       </div>
       {adding && (
-        <form className="col mt-12" style={{ gap: 8 }} onSubmit={add}>
+        <form
+          className="col mt-12"
+          style={{ gap: 8 }}
+          onSubmit={add}
+        >
           <input
             id="ms-title"
             className="input sm"
@@ -238,10 +266,17 @@ function Milestones({ p, reload }) {
               onChange={(e) => setDue(e.target.value)}
               aria-label="Milestone date"
             />
-            <button type="submit" className="btn sm primary">
+            <button
+              type="submit"
+              className="btn sm primary"
+            >
               Add
             </button>
-            <button type="button" className="btn sm" onClick={() => setAdding(false)}>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => setAdding(false)}
+            >
               Cancel
             </button>
           </div>
@@ -270,7 +305,10 @@ function Team({ p, reload, onEdit }) {
     <section className="card">
       <div className="card-head">
         <h3>
-          <Users size={17} color="var(--blue)" />
+          <Users
+            size={17}
+            color="var(--blue)"
+          />
           Team <span className="sub">{p.members.length}</span>
         </h3>
         {p.permissions.edit && (
@@ -290,10 +328,20 @@ function Team({ p, reload, onEdit }) {
           </button>
         )}
       </div>
-      <div className="col" style={{ gap: 10 }}>
+      <div
+        className="col"
+        style={{ gap: 10 }}
+      >
         {p.members.map((m) => (
-          <div key={m.id} className="person">
-            <Avatar name={m.name} color={m.color} size={32} />
+          <div
+            key={m.id}
+            className="person"
+          >
+            <Avatar
+              name={m.name}
+              color={m.color}
+              size={32}
+            />
             <div style={{ minWidth: 0 }}>
               <div className="pn small ellipsis">
                 {m.name}
@@ -334,10 +382,18 @@ function Team({ p, reload, onEdit }) {
           onClose={() => setOpen(false)}
           footer={
             <>
-              <button type="button" className="btn" onClick={() => setOpen(false)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </button>
-              <button type="button" className="btn primary" onClick={save}>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={save}
+              >
                 Save team
               </button>
             </>
@@ -354,7 +410,11 @@ function Team({ p, reload, onEdit }) {
                   setSel((s) => (s.includes(u.id) ? s.filter((x) => x !== u.id) : [...s, u.id]))
                 }
               >
-                <Avatar name={u.name} color={u.color} size={20} />
+                <Avatar
+                  name={u.name}
+                  color={u.color}
+                  size={20}
+                />
                 {u.name}
               </button>
             ))}
@@ -369,7 +429,10 @@ function Overview({ p, reload, onEdit }) {
   const { today } = useApp();
   return (
     <div className="grid">
-      <div className="span-8 col" style={{ gap: 16 }}>
+      <div
+        className="span-8 col"
+        style={{ gap: 16 }}
+      >
         <section className="card">
           <div className="card-head">
             <h3>Brief</h3>
@@ -402,7 +465,10 @@ function Overview({ p, reload, onEdit }) {
             </div>
           )}
           {p.description ? (
-            <p className="prose" style={{ whiteSpace: 'pre-wrap' }}>
+            <p
+              className="prose"
+              style={{ whiteSpace: 'pre-wrap' }}
+            >
               {p.description}
             </p>
           ) : (
@@ -414,9 +480,15 @@ function Overview({ p, reload, onEdit }) {
             </p>
           )}
           {p.tags.length > 0 && (
-            <div className="row wrap mt-12" style={{ gap: 6 }}>
+            <div
+              className="row wrap mt-12"
+              style={{ gap: 6 }}
+            >
               {p.tags.map((t) => (
-                <span key={t} className="chip gray">
+                <span
+                  key={t}
+                  className="chip gray"
+                >
                   {t}
                 </span>
               ))}
@@ -426,7 +498,10 @@ function Overview({ p, reload, onEdit }) {
         <section className="card">
           <div className="card-head">
             <h3>{p.service_type === 'social' ? 'Pending work' : 'Up next'}</h3>
-            <Link to={`/projects/${p.id}/tasks`} className="link">
+            <Link
+              to={`/projects/${p.id}/tasks`}
+              className="link"
+            >
               {p.service_type === 'social' ? 'Daily work' : 'All tasks'}
             </Link>
           </div>
@@ -443,7 +518,10 @@ function Overview({ p, reload, onEdit }) {
                 }
                 className="list-item plain"
               >
-                <span className="dot" style={{ background: TASK_STATUS[t.status].color }} />
+                <span
+                  className="dot"
+                  style={{ background: TASK_STATUS[t.status].color }}
+                />
                 <div className="grow">
                   <div className="small b6 ellipsis">{t.title}</div>
                   <div className="xs muted">
@@ -453,7 +531,11 @@ function Overview({ p, reload, onEdit }) {
                 </div>
                 <PriorityFlag priority={t.priority} />
                 {t.assignee_name ? (
-                  <Avatar name={t.assignee_name} color={t.assignee_color} size={26} />
+                  <Avatar
+                    name={t.assignee_name}
+                    color={t.assignee_color}
+                    size={26}
+                  />
                 ) : (
                   <span className="xs faint">Unassigned</span>
                 )}
@@ -472,12 +554,19 @@ function Overview({ p, reload, onEdit }) {
             <div className="card-head">
               <h3>Progress by stage</h3>
             </div>
-            <div className="col" style={{ gap: 12 }}>
+            <div
+              className="col"
+              style={{ gap: 12 }}
+            >
               {p.stages.map((s) => {
                 const st = p.stage_stats.find((x) => x.stage === s) || { total: 0, done: 0 };
                 const pct = st.total ? Math.round((st.done / st.total) * 100) : 0;
                 return (
-                  <div key={s} className="row" style={{ gap: 12 }}>
+                  <div
+                    key={s}
+                    className="row"
+                    style={{ gap: 12 }}
+                  >
                     <span
                       className="small"
                       style={{ width: 130, fontWeight: s === p.stage ? 700 : 500 }}
@@ -490,7 +579,10 @@ function Overview({ p, reload, onEdit }) {
                         color={pct === 100 ? 'var(--green)' : p.vertical_color}
                       />
                     </div>
-                    <span className="xs muted" style={{ width: 70, textAlign: 'right' }}>
+                    <span
+                      className="xs muted"
+                      style={{ width: 70, textAlign: 'right' }}
+                    >
                       {st.done}/{st.total} done
                     </span>
                   </div>
@@ -500,14 +592,29 @@ function Overview({ p, reload, onEdit }) {
           </section>
         )}
       </div>
-      <div className="span-4 col" style={{ gap: 16 }}>
-        {p.service_type !== 'social' && <Milestones p={p} reload={reload} />}
-        <Team p={p} reload={reload} onEdit={onEdit} />
+      <div
+        className="span-4 col"
+        style={{ gap: 16 }}
+      >
+        {p.service_type !== 'social' && (
+          <Milestones
+            p={p}
+            reload={reload}
+          />
+        )}
+        <Team
+          p={p}
+          reload={reload}
+          onEdit={onEdit}
+        />
         <section className="card">
           <div className="card-head">
             <h3>Details</h3>
           </div>
-          <dl className="kv" style={{ gridTemplateColumns: '110px 1fr' }}>
+          <dl
+            className="kv"
+            style={{ gridTemplateColumns: '110px 1fr' }}
+          >
             <dt>Code</dt>
             <dd>{p.code}</dd>
             <dt>Client</dt>
@@ -520,7 +627,10 @@ function Overview({ p, reload, onEdit }) {
             <dd>{p.budget ? inr(p.budget) : '—'}</dd>
             <dt>Priority</dt>
             <dd>
-              <PriorityFlag priority={p.priority} label />
+              <PriorityFlag
+                priority={p.priority}
+                label
+              />
             </dd>
             <dt>Created</dt>
             <dd>
@@ -554,7 +664,10 @@ function TaskCard({ t, today }) {
   const pr = PRIORITY[t.priority];
   return (
     <>
-      <Cover file={t.cover} color="#1a6df0" />
+      <Cover
+        file={t.cover}
+        color="#1a6df0"
+      />
       <div className="kb-body">
         <Labels
           items={[
@@ -577,11 +690,19 @@ function TaskCard({ t, today }) {
             comments={t.comment_count}
             files={t.file_count}
           >
-            <DueBadge date={t.due_date} today={today} done={t.status === 'done'} />
+            <DueBadge
+              date={t.due_date}
+              today={today}
+              done={t.status === 'done'}
+            />
           </Badges>
           {t.assignee_name && (
             <span className="kb-people">
-              <Avatar name={t.assignee_name} color={t.assignee_color} size={26} />
+              <Avatar
+                name={t.assignee_name}
+                color={t.assignee_color}
+                size={26}
+              />
             </span>
           )}
         </div>
@@ -602,7 +723,12 @@ function TaskBoard({ p, tasks, today, onOpen, onMove, onAdd, onSort }) {
     <Board
       id="tasks"
       columns={columns}
-      renderCard={(t) => <TaskCard t={t} today={today} />}
+      renderCard={(t) => (
+        <TaskCard
+          t={t}
+          today={today}
+        />
+      )}
       onOpen={onOpen}
       onMove={onMove}
       onAdd={onAdd}
@@ -643,8 +769,14 @@ function QuickAdd({ p, onAdded, defaultStage }) {
     setBusy(false);
   };
   return (
-    <form className="quick-add" onSubmit={submit}>
-      <Plus size={18} className="muted" />
+    <form
+      className="quick-add"
+      onSubmit={submit}
+    >
+      <Plus
+        size={18}
+        className="muted"
+      />
       <input
         id="qa-title"
         className="grow qa-title"
@@ -681,7 +813,11 @@ function QuickAdd({ p, onAdded, defaultStage }) {
         onChange={(e) => setDue(e.target.value)}
         aria-label="Due date"
       />
-      <button type="submit" className="btn sm primary" disabled={busy || !title.trim()}>
+      <button
+        type="submit"
+        className="btn sm primary"
+        disabled={busy || !title.trim()}
+      >
         Add
       </button>
     </form>
@@ -698,9 +834,18 @@ function TaskRow({ t, p, onOpen, onToggle, today }) {
         onClick={() => onToggle(t)}
         aria-label={t.status === 'done' ? `Reopen ${t.title}` : `Mark ${t.title} done`}
       >
-        {t.status === 'done' && <Check size={13} strokeWidth={3} />}
+        {t.status === 'done' && (
+          <Check
+            size={13}
+            strokeWidth={3}
+          />
+        )}
       </button>
-      <button type="button" className="trow-main" onClick={() => onOpen(t)}>
+      <button
+        type="button"
+        className="trow-main"
+        onClick={() => onOpen(t)}
+      >
         <span className="ttitle">
           {t.is_new && <NewTag />}
           {t.title}
@@ -728,7 +873,11 @@ function TaskRow({ t, p, onOpen, onToggle, today }) {
       <span className="tassignee">
         {t.assignee_name ? (
           <>
-            <Avatar name={t.assignee_name} color={t.assignee_color} size={26} />
+            <Avatar
+              name={t.assignee_name}
+              color={t.assignee_color}
+              size={26}
+            />
             <span className="small hide-sm ellipsis">{t.assignee_name.split(' ')[0]}</span>
           </>
         ) : (
@@ -804,8 +953,14 @@ function TasksTab({ p, reloadProject, onSeen }) {
 
   return (
     <>
-      <div className="row wrap between mb-12" style={{ gap: 10 }}>
-        <div className="row wrap" style={{ gap: 10 }}>
+      <div
+        className="row wrap between mb-12"
+        style={{ gap: 10 }}
+      >
+        <div
+          className="row wrap"
+          style={{ gap: 10 }}
+        >
           <Seg
             value={view}
             onChange={setView}
@@ -829,7 +984,10 @@ function TasksTab({ p, reloadProject, onSeen }) {
             {people
               .filter(([id]) => id !== me.id)
               .map(([id, name]) => (
-                <option key={id} value={id}>
+                <option
+                  key={id}
+                  value={id}
+                >
                   {name}
                 </option>
               ))}
@@ -846,11 +1004,19 @@ function TasksTab({ p, reloadProject, onSeen }) {
             </label>
           )}
         </div>
-        <div className="row" style={{ gap: 10 }}>
+        <div
+          className="row"
+          style={{ gap: 10 }}
+        >
           <span className="small muted">
             {done} of {total} done
           </span>
-          <button type="button" className="btn sm" onClick={exportCsv} disabled={!total}>
+          <button
+            type="button"
+            className="btn sm"
+            onClick={exportCsv}
+            disabled={!total}
+          >
             <Download size={15} />
             Export
           </button>
@@ -865,7 +1031,10 @@ function TasksTab({ p, reloadProject, onSeen }) {
           }}
         />
       )}
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : total === 0 && view === 'list' ? (
@@ -877,7 +1046,10 @@ function TasksTab({ p, reloadProject, onSeen }) {
           </Empty>
         </div>
       ) : view === 'list' ? (
-        <div className="col" style={{ gap: 14 }}>
+        <div
+          className="col"
+          style={{ gap: 14 }}
+        >
           {[
             ...p.stages,
             ...new Set(tasks.map((t) => t.stage).filter((s) => !p.stages.includes(s))),
@@ -887,14 +1059,20 @@ function TasksTab({ p, reloadProject, onSeen }) {
             if (!list.length) return null;
             const d = list.filter((t) => t.status === 'done').length;
             return (
-              <section key={stage} className="card flush">
+              <section
+                key={stage}
+                className="card flush"
+              >
                 <div className="stage-head">
                   <b>{stage}</b>
                   {stage === p.stage && <span className="badge b-blue">Current stage</span>}
                   <span className="xs muted">
                     {d}/{list.length} done
                   </span>
-                  <div className="grow" style={{ maxWidth: 160, marginLeft: 'auto' }}>
+                  <div
+                    className="grow"
+                    style={{ maxWidth: 160, marginLeft: 'auto' }}
+                  >
                     <Progress
                       value={(d / list.length) * 100}
                       color={d === list.length ? 'var(--green)' : p.vertical_color}
@@ -903,10 +1081,20 @@ function TasksTab({ p, reloadProject, onSeen }) {
                   </div>
                 </div>
                 {shown.map((t) => (
-                  <TaskRow key={t.id} t={t} p={p} onOpen={open} onToggle={toggle} today={today} />
+                  <TaskRow
+                    key={t.id}
+                    t={t}
+                    p={p}
+                    onOpen={open}
+                    onToggle={toggle}
+                    today={today}
+                  />
                 ))}
                 {shown.length === 0 && (
-                  <div className="xs muted" style={{ padding: '10px 16px' }}>
+                  <div
+                    className="xs muted"
+                    style={{ padding: '10px 16px' }}
+                  >
                     All {list.length} tasks done.
                   </div>
                 )}
@@ -1017,26 +1205,56 @@ export function FilesTab({ p, reloadProject, onSeen }) {
   return (
     <>
       {p.permissions.contribute && (
-        <div className="row wrap mb-16" style={{ gap: 12, alignItems: 'stretch' }}>
-          <div className="grow" style={{ minWidth: 260 }}>
-            <UploadZone projectId={p.id} onUploaded={after} />
+        <div
+          className="row wrap mb-16"
+          style={{ gap: 12, alignItems: 'stretch' }}
+        >
+          <div
+            className="grow"
+            style={{ minWidth: 260 }}
+          >
+            <UploadZone
+              projectId={p.id}
+              onUploaded={after}
+            />
           </div>
-          <div className="col" style={{ gap: 8, justifyContent: 'center' }}>
+          <div
+            className="col"
+            style={{ gap: 8, justifyContent: 'center' }}
+          >
             <AddLinkButton onClick={() => setLinking(true)} />
           </div>
         </div>
       )}
-      <div className="row wrap between mb-12" style={{ gap: 10 }}>
-        <div className="tabs pills" style={{ marginBottom: 0 }}>
-          <button type="button" className={!cat ? 'on' : ''} onClick={() => setCat('')}>
-            All <CountPill n={items.length} fresh={fresh(items)} />
+      <div
+        className="row wrap between mb-12"
+        style={{ gap: 10 }}
+      >
+        <div
+          className="tabs pills"
+          style={{ marginBottom: 0 }}
+        >
+          <button
+            type="button"
+            className={!cat ? 'on' : ''}
+            onClick={() => setCat('')}
+          >
+            All{' '}
+            <CountPill
+              n={items.length}
+              fresh={fresh(items)}
+            />
           </button>
           <button
             type="button"
             className={cat === 'final' ? 'on' : ''}
             onClick={() => setCat('final')}
           >
-            Final assets <CountPill n={finals} fresh={fresh(items.filter((f) => f.is_final))} />
+            Final assets{' '}
+            <CountPill
+              n={finals}
+              fresh={fresh(items.filter((f) => f.is_final))}
+            />
           </button>
           {categories
             .filter((c) => counts[c])
@@ -1047,7 +1265,11 @@ export function FilesTab({ p, reloadProject, onSeen }) {
                 className={cat === c ? 'on' : ''}
                 onClick={() => setCat(c)}
               >
-                {c} <CountPill n={counts[c]} fresh={fresh(items.filter((f) => f.category === c))} />
+                {c}{' '}
+                <CountPill
+                  n={counts[c]}
+                  fresh={fresh(items.filter((f) => f.category === c))}
+                />
               </button>
             ))}
         </div>
@@ -1061,7 +1283,10 @@ export function FilesTab({ p, reloadProject, onSeen }) {
           ]}
         />
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : shown.length === 0 ? (
@@ -1089,7 +1314,11 @@ export function FilesTab({ p, reloadProject, onSeen }) {
       ) : (
         <div className="card">
           {shown.map((f) => (
-            <FileRow key={f.id} file={f} onOpen={setPreview} />
+            <FileRow
+              key={f.id}
+              file={f}
+              onOpen={setPreview}
+            />
           ))}
         </div>
       )}
@@ -1175,7 +1404,10 @@ function Discussion({ p, onSeen }) {
           </div>
         )}
         <div className="row between mt-16 mb-8">
-          <div className="tabs pills" style={{ marginBottom: 0 }}>
+          <div
+            className="tabs pills"
+            style={{ marginBottom: 0 }}
+          >
             <button
               type="button"
               className={filter === 'all' ? 'on' : ''}
@@ -1221,12 +1453,18 @@ function Discussion({ p, onSeen }) {
             )}
           </div>
         </div>
-        <ErrorNote error={error} retry={reload} />
+        <ErrorNote
+          error={error}
+          retry={reload}
+        />
         {loading && !data ? (
           <Loading />
         ) : merged.length === 0 ? (
           <div className="card">
-            <Empty icon={MessageSquare} title="No updates yet" />
+            <Empty
+              icon={MessageSquare}
+              title="No updates yet"
+            />
           </div>
         ) : (
           <div className="card">
@@ -1247,7 +1485,10 @@ function Discussion({ p, onSeen }) {
                     }
                   />
                 ) : (
-                  <ActivityList key={`a${x.id}`} items={[x]} />
+                  <ActivityList
+                    key={`a${x.id}`}
+                    items={[x]}
+                  />
                 ),
               )}
             </div>
@@ -1259,7 +1500,10 @@ function Discussion({ p, onSeen }) {
           <div className="card-head">
             <h3>Tips</h3>
           </div>
-          <ul className="small muted" style={{ paddingLeft: 18, lineHeight: 1.7, margin: 0 }}>
+          <ul
+            className="small muted"
+            style={{ paddingLeft: 18, lineHeight: 1.7, margin: 0 }}
+          >
             <li>
               Type <b>@</b> and a teammate's first name to send them a notification.
             </li>
@@ -1326,12 +1570,18 @@ export default function Project({ id, tab = 'overview', taskId }) {
   if (loading && !p) return <Loading />;
   if (error && !p) {
     return (
-      <div className="card" style={{ maxWidth: 560, margin: '40px auto' }}>
+      <div
+        className="card"
+        style={{ maxWidth: 560, margin: '40px auto' }}
+      >
         <Empty
           icon={Lock}
           title={error.status === 404 ? 'Project not found' : 'Could not open this project'}
           action={
-            <Link to="/projects" className="btn">
+            <Link
+              to="/projects"
+              className="btn"
+            >
               Back to projects
             </Link>
           }
@@ -1446,16 +1696,31 @@ export default function Project({ id, tab = 'overview', taskId }) {
         <ArrowLeft size={15} />
         Back
       </button>
-      <section className="card phead" style={{ borderTop: `4px solid ${p.vertical_color}` }}>
-        <div className="row wrap between" style={{ gap: 16, alignItems: 'flex-start' }}>
+      <section
+        className="card phead"
+        style={{ borderTop: `4px solid ${p.vertical_color}` }}
+      >
+        <div
+          className="row wrap between"
+          style={{ gap: 16, alignItems: 'flex-start' }}
+        >
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="row wrap" style={{ gap: 8 }}>
-              <VChip name={p.vertical_name} color={p.vertical_color} />
+            <div
+              className="row wrap"
+              style={{ gap: 8 }}
+            >
+              <VChip
+                name={p.vertical_name}
+                color={p.vertical_color}
+              />
               <span className="small muted b6">{p.code}</span>
               {p.service_type && (
                 <span className="badge b-gray">{SERVICE_TYPES[p.service_type]}</span>
               )}
-              <StatusBadge status={p.status} readyLabel={p.ready_label} />
+              <StatusBadge
+                status={p.status}
+                readyLabel={p.ready_label}
+              />
               {p.permissions.edit ? (
                 <select
                   id="ph-health"
@@ -1466,7 +1731,10 @@ export default function Project({ id, tab = 'overview', taskId }) {
                   style={{ color: HEALTH[p.health].color }}
                 >
                   {Object.entries(HEALTH).map(([k, h]) => (
-                    <option key={k} value={k}>
+                    <option
+                      key={k}
+                      value={k}
+                    >
                       ● {h.label}
                     </option>
                   ))}
@@ -1474,7 +1742,10 @@ export default function Project({ id, tab = 'overview', taskId }) {
               ) : (
                 <HealthBadge health={p.health} />
               )}
-              <PriorityFlag priority={p.priority} label />
+              <PriorityFlag
+                priority={p.priority}
+                label
+              />
               {!p.permissions.contribute && (
                 <span className="badge b-gray">
                   <Lock size={12} />
@@ -1489,7 +1760,10 @@ export default function Project({ id, tab = 'overview', taskId }) {
           </div>
           <div className="head-actions">
             {p.vertical === 'Marketing' && (
-              <Link to={'/daily-reporting/' + p.id} className="btn">
+              <Link
+                to={'/daily-reporting/' + p.id}
+                className="btn"
+              >
                 <List size={16} />
                 Daily reporting
               </Link>
@@ -1531,7 +1805,11 @@ export default function Project({ id, tab = 'overview', taskId }) {
               !social &&
               !closed &&
               (!p.ready_label || p.status === 'ready') && (
-                <button type="button" className="btn success" onClick={close}>
+                <button
+                  type="button"
+                  className="btn success"
+                  onClick={close}
+                >
                   <CheckCircle2 size={17} />
                   Mark delivered
                 </button>
@@ -1547,7 +1825,11 @@ export default function Project({ id, tab = 'overview', taskId }) {
               </button>
             )}
             {p.permissions.edit && (
-              <button type="button" className="btn" onClick={() => setEditing(true)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setEditing(true)}
+              >
                 <Pencil size={16} />
                 Edit
               </button>
@@ -1655,43 +1937,70 @@ export default function Project({ id, tab = 'overview', taskId }) {
             }
           >
             <span className="row gap-6">
-              <Avatar name={p.owner_name} color={p.owner_color} size={20} />
+              <Avatar
+                name={p.owner_name}
+                color={p.owner_color}
+                size={20}
+              />
               {p.owner_name || '—'}
             </span>
           </Fact>
           {website && (
-            <Fact icon={Users} label="Developers">
+            <Fact
+              icon={Users}
+              label="Developers"
+            >
               {p.service_details.developer_ids?.length || 0} developers
             </Fact>
           )}
           {p.service_type === 'social' && (
-            <Fact icon={List} label="Monthly target">
+            <Fact
+              icon={List}
+              label="Monthly target"
+            >
               {p.service_details.monthly_target || '—'} creatives
             </Fact>
           )}
           {p.service_details.lead_id && (
-            <Fact icon={Users} label="Client contact">
+            <Fact
+              icon={Users}
+              label="Client contact"
+            >
               {users.find((u) => u.id === p.service_details.lead_id)?.name || '—'}
             </Fact>
           )}
           {p.service_details.sales_id && (
-            <Fact icon={Users} label="Sales person">
+            <Fact
+              icon={Users}
+              label="Sales person"
+            >
               {users.find((u) => u.id === p.service_details.sales_id)?.name || '—'}
             </Fact>
           )}
           {!website && (
-            <Fact icon={IndianRupee} label="Budget">
+            <Fact
+              icon={IndianRupee}
+              label="Budget"
+            >
               {p.budget ? inr(p.budget) : '—'}
             </Fact>
           )}
           {!website && (
-            <Fact icon={MapPin} label="Location">
+            <Fact
+              icon={MapPin}
+              label="Location"
+            >
               {p.city || p.venue || '—'}
             </Fact>
           )}
           {!social && !website && (
             <div className="fact ring-fact">
-              <Ring value={p.progress} size={54} stroke={6} color={p.vertical_color} />
+              <Ring
+                value={p.progress}
+                size={54}
+                stroke={6}
+                color={p.vertical_color}
+              />
               <div className="xs muted">
                 {p.task_done} of {p.task_total} tasks
                 <br />
@@ -1710,7 +2019,10 @@ export default function Project({ id, tab = 'overview', taskId }) {
           />
         )}
         {website && (
-          <WebsiteProgress summary={p.website} software={p.service_type === 'software'} />
+          <WebsiteProgress
+            summary={p.website}
+            software={p.service_type === 'software'}
+          />
         )}
         {!social && !website && p.stages.length > 0 && (
           <StageStepper
@@ -1723,7 +2035,10 @@ export default function Project({ id, tab = 'overview', taskId }) {
         )}
       </section>
 
-      <div className="tabs mt-16" role="tablist">
+      <div
+        className="tabs mt-16"
+        role="tablist"
+      >
         {tabs.map(([k, label, n, fresh]) => (
           <button
             key={k}
@@ -1738,12 +2053,22 @@ export default function Project({ id, tab = 'overview', taskId }) {
             }
           >
             {label}
-            <CountPill n={n} fresh={fresh} style={{ marginLeft: 6 }} />
+            <CountPill
+              n={n}
+              fresh={fresh}
+              style={{ marginLeft: 6 }}
+            />
           </button>
         ))}
       </div>
 
-      {tab === 'overview' && <Overview p={p} reload={reload} onEdit={() => setEditing(true)} />}
+      {tab === 'overview' && (
+        <Overview
+          p={p}
+          reload={reload}
+          onEdit={() => setEditing(true)}
+        />
+      )}
       {tab === 'tasks' &&
         (social ? (
           <DailyReporting
@@ -1760,15 +2085,38 @@ export default function Project({ id, tab = 'overview', taskId }) {
             }}
           />
         ) : website ? (
-          <WebsiteTasks key={p.id + '-tasks'} p={p} onSeen={seen.tasks} />
+          <WebsiteTasks
+            key={p.id + '-tasks'}
+            p={p}
+            onSeen={seen.tasks}
+          />
         ) : (
-          <TasksTab p={p} reloadProject={reload} onSeen={seen.tasks} />
+          <TasksTab
+            p={p}
+            reloadProject={reload}
+            onSeen={seen.tasks}
+          />
         ))}
       {tab === 'reporting' && website && (
-        <DailyReporting key={p.id + '-reporting'} projectId={p.id} embedded />
+        <DailyReporting
+          key={p.id + '-reporting'}
+          projectId={p.id}
+          embedded
+        />
       )}
-      {tab === 'files' && <FilesTab p={p} reloadProject={reload} onSeen={seen.files} />}
-      {tab === 'activity' && <Discussion p={p} onSeen={seen.discussion} />}
+      {tab === 'files' && (
+        <FilesTab
+          p={p}
+          reloadProject={reload}
+          onSeen={seen.files}
+        />
+      )}
+      {tab === 'activity' && (
+        <Discussion
+          p={p}
+          onSeen={seen.discussion}
+        />
+      )}
 
       {taskId && (
         <TaskModal

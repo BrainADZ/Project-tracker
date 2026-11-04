@@ -126,11 +126,19 @@ export default function WebsiteTaskReview({
       <div className="row wrap gap-6">
         {review.can_review && (
           <>
-            <button className="btn sm success" disabled={busy} onClick={approve}>
+            <button
+              className="btn sm success"
+              disabled={busy}
+              onClick={approve}
+            >
               <Check size={13} />
               Approve
             </button>
-            <button className="btn sm" disabled={busy} onClick={() => open('changes')}>
+            <button
+              className="btn sm"
+              disabled={busy}
+              onClick={() => open('changes')}
+            >
               <MessageSquare size={13} />
               Changes required
             </button>
@@ -160,7 +168,10 @@ export default function WebsiteTaskReview({
         <details className="mt-12">
           <summary className="small muted">Submission history ({review.rounds})</summary>
           {review.history.map((r) => (
-            <div className="work-note" key={r.id}>
+            <div
+              className="work-note"
+              key={r.id}
+            >
               <div className="row wrap between">
                 <b>
                   {r.status === 'pending'
@@ -200,7 +211,11 @@ export default function WebsiteTaskReview({
           onClose={() => !busy && setForm('')}
           footer={
             <>
-              <button className="btn" disabled={busy} onClick={() => setForm('')}>
+              <button
+                className="btn"
+                disabled={busy}
+                onClick={() => setForm('')}
+              >
                 Cancel
               </button>
               <button

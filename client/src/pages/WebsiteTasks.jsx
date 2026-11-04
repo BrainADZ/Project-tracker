@@ -153,19 +153,29 @@ export default function WebsiteTasks({ p, onSeen }) {
           </div>
         </div>
         <div className="head-actions">
-          <button className="btn" disabled={!tasks.length} onClick={exportRows}>
+          <button
+            className="btn"
+            disabled={!tasks.length}
+            onClick={exportRows}
+          >
             <Download size={15} />
             Export
           </button>
           {can && p.open && (
-            <button className="btn primary" onClick={() => open(null)}>
+            <button
+              className="btn primary"
+              onClick={() => open(null)}
+            >
               <Plus size={15} />
               Add task
             </button>
           )}
         </div>
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : (
@@ -188,7 +198,10 @@ export default function WebsiteTasks({ p, onSeen }) {
                 {tasks.map((t) => (
                   <tr key={t.id}>
                     <td>
-                      <Link className="b6" to={'/projects/' + p.id + '/tasks/' + t.id}>
+                      <Link
+                        className="b6"
+                        to={'/projects/' + p.id + '/tasks/' + t.id}
+                      >
                         {t.title}
                       </Link>
                       {t.description && <div className="small muted mt-4">{t.description}</div>}
@@ -232,7 +245,11 @@ export default function WebsiteTasks({ p, onSeen }) {
                       {t.running && <div className="xs green mt-4">Timer running</div>}
                     </td>
                     <td>
-                      <WebsiteTaskReview task={t} compact onChanged={changed} />
+                      <WebsiteTaskReview
+                        task={t}
+                        compact
+                        onChanged={changed}
+                      />
                       {can && (
                         <button
                           className="icon-btn"
@@ -264,7 +281,10 @@ export default function WebsiteTasks({ p, onSeen }) {
           onClose={() => setForm(null)}
           footer={
             <>
-              <button className="btn" onClick={() => setForm(null)}>
+              <button
+                className="btn"
+                onClick={() => setForm(null)}
+              >
                 Cancel
               </button>
               <button
@@ -278,11 +298,18 @@ export default function WebsiteTasks({ p, onSeen }) {
             </>
           }
         >
-          <form id="website-main-task-form" className="modal-body form-grid" onSubmit={save}>
+          <form
+            id="website-main-task-form"
+            className="modal-body form-grid"
+            onSubmit={save}
+          >
             <div className="full">
               <ErrorNote error={saveError} />
             </div>
-            <Field label="Main task" className="full">
+            <Field
+              label="Main task"
+              className="full"
+            >
               <input
                 className="input"
                 required
@@ -293,7 +320,11 @@ export default function WebsiteTasks({ p, onSeen }) {
               />
             </Field>
             <Field label="Phase">
-              <select className="select" value={f.stage} onChange={set('stage')}>
+              <select
+                className="select"
+                value={f.stage}
+                onChange={set('stage')}
+              >
                 {WEBSITE_STAGES.map((v) => (
                   <option key={v}>{v}</option>
                 ))}
@@ -308,7 +339,10 @@ export default function WebsiteTasks({ p, onSeen }) {
               >
                 <option value="">Choose developer</option>
                 {developers.map((u) => (
-                  <option key={u.id} value={u.id}>
+                  <option
+                    key={u.id}
+                    value={u.id}
+                  >
                     {u.name}
                   </option>
                 ))}
@@ -333,7 +367,10 @@ export default function WebsiteTasks({ p, onSeen }) {
                 onChange={set('due_date')}
               />
             </Field>
-            <Field label="Brief / instructions" className="full">
+            <Field
+              label="Brief / instructions"
+              className="full"
+            >
               <textarea
                 className="input"
                 rows={3}

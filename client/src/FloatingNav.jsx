@@ -317,7 +317,11 @@ export function FloatingNav({ counts, onDock, focusOnMount }) {
           aria-label={`BrainADZ menu${badge ? `, ${badge} new` : ''}. Drag to move it anywhere.`}
           title="Open the menu · drag to move"
         >
-          <Monogram size={Math.round(size * 0.5)} color="#fff" title="" />
+          <Monogram
+            size={Math.round(size * 0.5)}
+            color="#fff"
+            title=""
+          />
           {badge > 0 && <span className="fnav-badge">{badge > 99 ? '99+' : badge}</span>}
         </button>
       </div>
@@ -421,9 +425,15 @@ function FloatMenu({
         style={{ ...side, top }}
       >
         <div className="fnav-head">
-          <Monogram size={30} title="BrainADZ" />
+          <Monogram
+            size={30}
+            title="BrainADZ"
+          />
           <span className="fnav-word">
-            <img src={brand.main} alt="BrainADZ" />
+            <img
+              src={brand.main}
+              alt="BrainADZ"
+            />
           </span>
           <button
             type="button"
@@ -432,10 +442,16 @@ function FloatMenu({
             aria-label={wide ? 'Show icons only' : 'Show names'}
             title={wide ? 'Show icons only' : 'Show names'}
           >
-            <ChevronsRight size={14} strokeWidth={2.4} />
+            <ChevronsRight
+              size={14}
+              strokeWidth={2.4}
+            />
           </button>
         </div>
-        <nav className="fnav-items" aria-label="Main">
+        <nav
+          className="fnav-items"
+          aria-label="Main"
+        >
           {items.map((n) => {
             const active = isActivePath(n, path);
             return (
@@ -480,7 +496,11 @@ function FloatMenu({
         </div>
       </div>
       {tip && !closing && (
-        <div className={`fnav-tip ${tip.side}`} style={{ left: tip.x, top: tip.y }} role="tooltip">
+        <div
+          className={`fnav-tip ${tip.side}`}
+          style={{ left: tip.x, top: tip.y }}
+          role="tooltip"
+        >
           {tip.label}
         </div>
       )}
@@ -506,7 +526,10 @@ function QuickBody({ items, counts, path, q, setQ, autoFocus, onGo, onMenu, onDo
   return (
     <>
       <div className="fq-search">
-        <Search size={16} aria-hidden="true" />
+        <Search
+          size={16}
+          aria-hidden="true"
+        />
         <input
           id="quick-search"
           autoFocus={autoFocus}
@@ -529,12 +552,18 @@ function QuickBody({ items, counts, path, q, setQ, autoFocus, onGo, onMenu, onDo
                 className={`fq-tile ${isActivePath(n, path) ? 'active' : ''}`}
                 onClick={() => onGo(n.to)}
               >
-                <span className="fq-ic" style={{ background: n.tint }}>
+                <span
+                  className="fq-ic"
+                  style={{ background: n.tint }}
+                >
                   <n.icon size={30} />
                 </span>
                 <span className="fq-lbl">{n.label}</span>
                 {c && (
-                  <span className={`fq-count ${c.fresh ? '' : 'seen'}`} title={c.title}>
+                  <span
+                    className={`fq-count ${c.fresh ? '' : 'seen'}`}
+                    title={c.title}
+                  >
                     {c.value}
                   </span>
                 )}
@@ -548,11 +577,19 @@ function QuickBody({ items, counts, path, q, setQ, autoFocus, onGo, onMenu, onDo
         </div>
       )}
       <div className="fq-foot">
-        <button type="button" className="fq-link" onClick={onMenu}>
+        <button
+          type="button"
+          className="fq-link"
+          onClick={onMenu}
+        >
           <MenuIcon size={15} />
           Full menu
         </button>
-        <button type="button" className="fq-link" onClick={onDock}>
+        <button
+          type="button"
+          className="fq-link"
+          onClick={onDock}
+        >
           <PanelLeft size={15} />
           Show the side menu
         </button>
@@ -616,11 +653,27 @@ function QuickAccess({ anchor, items, counts, path, closing, onGo, onMenu, onDoc
         style={{ width }}
         className={`fnav-panel fnav-quick ${closing ? 'closing' : ''} ${anchor.onRight ? 'from-right' : 'from-left'}`}
       >
-        <div className="fq-head" {...drag.handlers} title="Drag to move">
-          <GripHorizontal size={16} className="fq-grip" aria-hidden="true" />
-          <Monogram size={22} title="BrainADZ" />
+        <div
+          className="fq-head"
+          {...drag.handlers}
+          title="Drag to move"
+        >
+          <GripHorizontal
+            size={16}
+            className="fq-grip"
+            aria-hidden="true"
+          />
+          <Monogram
+            size={22}
+            title="BrainADZ"
+          />
           <b>Quick Access</b>
-          <button type="button" className="fq-x" onClick={onClose} aria-label="Close Quick Access">
+          <button
+            type="button"
+            className="fq-x"
+            onClick={onClose}
+            aria-label="Close Quick Access"
+          >
             <X size={17} />
           </button>
         </div>
@@ -692,9 +745,15 @@ function QuickSheet({ items, counts, path, closing, onGo, onMenu, onDock, onClos
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          <span className="fq-handle" aria-hidden="true" />
+          <span
+            className="fq-handle"
+            aria-hidden="true"
+          />
           <div className="fq-head">
-            <Monogram size={24} title="BrainADZ" />
+            <Monogram
+              size={24}
+              title="BrainADZ"
+            />
             <b>Quick Access</b>
             <button
               type="button"

@@ -80,10 +80,19 @@ export function UploadZone({ projectId, taskId, onUploaded, compact = false }) {
         }}
       />
       {busy.length ? (
-        <div className="col" style={{ gap: 6, width: '100%' }}>
+        <div
+          className="col"
+          style={{ gap: 6, width: '100%' }}
+        >
           {busy.map((b, i) => (
-            <div key={i} className="row gap-6 small">
-              <Loader2 size={15} className="spin" />
+            <div
+              key={i}
+              className="row gap-6 small"
+            >
+              <Loader2
+                size={15}
+                className="spin"
+              />
               <span className="ellipsis grow">{b.name}</span>
               <span className="muted">{Math.round(b.progress * 100)}%</span>
             </div>
@@ -94,7 +103,11 @@ export function UploadZone({ projectId, taskId, onUploaded, compact = false }) {
           <Upload size={compact ? 18 : 26} />
           <div>
             <b>Drop files here</b> or{' '}
-            <button type="button" className="link" onClick={() => input.current?.click()}>
+            <button
+              type="button"
+              className="link"
+              onClick={() => input.current?.click()}
+            >
               browse
             </button>
             {!compact && (
@@ -135,18 +148,35 @@ export function LinkForm({ projectId, taskId, onClose, onSaved }) {
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn" onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button type="submit" form="link-form" className="btn primary" disabled={saving}>
+          <button
+            type="submit"
+            form="link-form"
+            className="btn primary"
+            disabled={saving}
+          >
             Add link
           </button>
         </>
       }
     >
-      <form id="link-form" className="modal-body col" style={{ gap: 14 }} onSubmit={submit}>
+      <form
+        id="link-form"
+        className="modal-body col"
+        style={{ gap: 14 }}
+        onSubmit={submit}
+      >
         {err && <div className="alert error">{err}</div>}
-        <Field label="Link" htmlFor="lf-url">
+        <Field
+          label="Link"
+          htmlFor="lf-url"
+        >
           <input
             id="lf-url"
             className="input"
@@ -157,7 +187,10 @@ export function LinkForm({ projectId, taskId, onClose, onSaved }) {
             placeholder="https://"
           />
         </Field>
-        <Field label="Name" htmlFor="lf-name">
+        <Field
+          label="Name"
+          htmlFor="lf-name"
+        >
           <input
             id="lf-name"
             className="input"
@@ -166,7 +199,10 @@ export function LinkForm({ projectId, taskId, onClose, onSaved }) {
             placeholder="e.g. Raw event photos"
           />
         </Field>
-        <Field label="Category" htmlFor="lf-cat">
+        <Field
+          label="Category"
+          htmlFor="lf-cat"
+        >
           <select
             id="lf-cat"
             className="select"
@@ -178,7 +214,10 @@ export function LinkForm({ projectId, taskId, onClose, onSaved }) {
             ))}
           </select>
         </Field>
-        <Field label="Note" htmlFor="lf-note">
+        <Field
+          label="Note"
+          htmlFor="lf-note"
+        >
           <input
             id="lf-note"
             className="input"
@@ -218,16 +257,25 @@ export function FileCard({ file, onOpen, onToggleFinal, showProject, canEdit }) 
             onToggleFinal(file);
           }}
         >
-          <Star size={16} fill={file.is_final ? 'currentColor' : 'none'} />
+          <Star
+            size={16}
+            fill={file.is_final ? 'currentColor' : 'none'}
+          />
         </button>
       )}
       {!canEdit && file.is_final ? (
         <span className="star on static">
-          <Star size={16} fill="currentColor" />
+          <Star
+            size={16}
+            fill="currentColor"
+          />
         </span>
       ) : null}
       <div className="fbody">
-        <div className="b6 small ellipsis" title={file.name}>
+        <div
+          className="b6 small ellipsis"
+          title={file.name}
+        >
           {file.name}
         </div>
         <div className="xs muted ellipsis">
@@ -237,7 +285,10 @@ export function FileCard({ file, onOpen, onToggleFinal, showProject, canEdit }) 
         </div>
         {showProject && (
           <div className="xs ellipsis mt-4">
-            <span className="dot" style={{ background: file.vertical_color, marginRight: 5 }} />
+            <span
+              className="dot"
+              style={{ background: file.vertical_color, marginRight: 5 }}
+            />
             {file.client || file.code} · <span className="muted">{file.project_name}</span>
           </div>
         )}
@@ -255,7 +306,10 @@ export function FileRow({ file, onOpen }) {
       onClick={() => onOpen(file)}
       onKeyDown={(e) => e.key === 'Enter' && onOpen(file)}
     >
-      <FileIcon file={file} size={17} />
+      <FileIcon
+        file={file}
+        size={17}
+      />
       <div className="grow">
         <div className="small b6 ellipsis">
           {file.is_new && <NewTag />}
@@ -377,7 +431,11 @@ export function FilePreview({
               {file.is_final ? 'Final asset' : 'Mark as final'}
             </button>
           )}
-          <button type="button" className="btn primary" onClick={download}>
+          <button
+            type="button"
+            className="btn primary"
+            onClick={download}
+          >
             {file.kind === 'link' ? (
               <>
                 <ExternalLink size={16} />
@@ -396,9 +454,15 @@ export function FilePreview({
       <div className="modal-body">
         <div className="preview-box">
           {isImage && url ? (
-            <img src={url} alt={file.name} />
+            <img
+              src={url}
+              alt={file.name}
+            />
           ) : isVideo && url ? (
-            <video src={url} controls />
+            <video
+              src={url}
+              controls
+            />
           ) : (
             <div style={{ width: 'min(420px, 100%)' }}>
               <FileThumb file={file} />
@@ -416,10 +480,17 @@ export function FilePreview({
             <>
               <dt>Project</dt>
               <dd>
-                <Link to={`/projects/${file.project_id}`} onClick={onClose}>
+                <Link
+                  to={`/projects/${file.project_id}`}
+                  onClick={onClose}
+                >
                   {file.code} · {file.project_name}
                 </Link>{' '}
-                <VChip name={file.vertical} color={file.vertical_color} small />
+                <VChip
+                  name={file.vertical}
+                  color={file.vertical_color}
+                  small
+                />
               </dd>
             </>
           )}
@@ -433,7 +504,11 @@ export function FilePreview({
             <>
               <dt>Link</dt>
               <dd className="ellipsis">
-                <a href={file.url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {file.url}
                 </a>
               </dd>
@@ -460,7 +535,11 @@ export function FilePreview({
           )}
         </dl>
         {canEdit && !edit && (
-          <button type="button" className="btn sm mt-16" onClick={() => setEdit(true)}>
+          <button
+            type="button"
+            className="btn sm mt-16"
+            onClick={() => setEdit(true)}
+          >
             <Pencil size={14} />
             Rename or recategorise
           </button>
@@ -473,7 +552,10 @@ export function FilePreview({
               if (await patch(f, 'File updated')) setEdit(false);
             }}
           >
-            <Field label="Name" htmlFor="fp-name">
+            <Field
+              label="Name"
+              htmlFor="fp-name"
+            >
               <input
                 id="fp-name"
                 className="input"
@@ -482,7 +564,10 @@ export function FilePreview({
                 required
               />
             </Field>
-            <Field label="Category" htmlFor="fp-cat">
+            <Field
+              label="Category"
+              htmlFor="fp-cat"
+            >
               <select
                 id="fp-cat"
                 className="select"
@@ -494,7 +579,11 @@ export function FilePreview({
                 ))}
               </select>
             </Field>
-            <Field label="Note" className="full" htmlFor="fp-note">
+            <Field
+              label="Note"
+              className="full"
+              htmlFor="fp-note"
+            >
               <input
                 id="fp-note"
                 className="input"
@@ -503,11 +592,21 @@ export function FilePreview({
                 maxLength={500}
               />
             </Field>
-            <div className="full row" style={{ justifyContent: 'flex-end' }}>
-              <button type="button" className="btn sm" onClick={() => setEdit(false)}>
+            <div
+              className="full row"
+              style={{ justifyContent: 'flex-end' }}
+            >
+              <button
+                type="button"
+                className="btn sm"
+                onClick={() => setEdit(false)}
+              >
                 Cancel
               </button>
-              <button type="submit" className="btn sm primary">
+              <button
+                type="submit"
+                className="btn sm primary"
+              >
                 Save
               </button>
             </div>
@@ -520,7 +619,11 @@ export function FilePreview({
 
 export function AddLinkButton({ onClick }) {
   return (
-    <button type="button" className="btn" onClick={onClick}>
+    <button
+      type="button"
+      className="btn"
+      onClick={onClick}
+    >
       <Link2 size={16} />
       Add link
     </button>

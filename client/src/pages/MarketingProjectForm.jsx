@@ -150,7 +150,11 @@ export function MarketingProjectForm({
       size="wide"
       footer={
         <>
-          <button type="button" className="btn" onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+          >
             Cancel
           </button>
           <button
@@ -164,7 +168,11 @@ export function MarketingProjectForm({
         </>
       }
     >
-      <form id="service-project" className="modal-body" onSubmit={submit}>
+      <form
+        id="service-project"
+        className="modal-body"
+        onSubmit={submit}
+      >
         {error && <div className="alert error mb-16">{error}</div>}
         <Field label="Project field">
           <div
@@ -184,13 +192,20 @@ export function MarketingProjectForm({
             ))}
           </div>
           {onFieldChange && (
-            <button type="button" className="link mt-8" onClick={onFieldChange}>
+            <button
+              type="button"
+              className="link mt-8"
+              onClick={onFieldChange}
+            >
               Change project field
             </button>
           )}
         </Field>
         {manageableVerticals.length > 1 && !project && (
-          <Field label="Vertical" className="mt-16">
+          <Field
+            label="Vertical"
+            className="mt-16"
+          >
             <select
               className="select"
               value={verticalId}
@@ -200,7 +215,10 @@ export function MarketingProjectForm({
               }}
             >
               {manageableVerticals.map((v) => (
-                <option key={v.id} value={v.id}>
+                <option
+                  key={v.id}
+                  value={v.id}
+                >
                   {v.name}
                 </option>
               ))}
@@ -274,7 +292,10 @@ export function MarketingProjectForm({
                     onChange={set('page_count')}
                   />
                 </Field>
-                <Field label="Platform / technology" className="full">
+                <Field
+                  label="Platform / technology"
+                  className="full"
+                >
                   <input
                     className="input"
                     value={f.technology}
@@ -325,7 +346,10 @@ export function MarketingProjectForm({
                     onChange={set('keyword_count')}
                   />
                 </Field>
-                <Field label="Monthly SEO deliverables" className="full">
+                <Field
+                  label="Monthly SEO deliverables"
+                  className="full"
+                >
                   <input
                     className="input"
                     value={f.deliverables}
@@ -354,7 +378,10 @@ export function MarketingProjectForm({
                     onChange={set('monthly_ad_budget')}
                   />
                 </Field>
-                <Field label="Campaign objective" className="full">
+                <Field
+                  label="Campaign objective"
+                  className="full"
+                >
                   <input
                     className="input"
                     value={f.objective}
@@ -448,16 +475,26 @@ export function MarketingProjectForm({
             )}
             {project && (
               <Field label="Status">
-                <select className="select" value={f.status} onChange={set('status')}>
+                <select
+                  className="select"
+                  value={f.status}
+                  onChange={set('status')}
+                >
                   {['planning', 'active', 'on_hold', 'completed', 'cancelled'].map((s) => (
-                    <option key={s} value={s}>
+                    <option
+                      key={s}
+                      value={s}
+                    >
                       {s.replaceAll('_', ' ')}
                     </option>
                   ))}
                 </select>
               </Field>
             )}
-            <Field label="Scope / notes" className="full">
+            <Field
+              label="Scope / notes"
+              className="full"
+            >
               <textarea
                 className="input"
                 rows={3}

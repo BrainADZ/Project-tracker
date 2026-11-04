@@ -168,7 +168,10 @@ function GroupRow({ g, active, meId }) {
         <span className="t-row-top">
           <span className="t-prev">{preview(g.last, meId)}</span>
           {unread && (
-            <span className={`pill-num ${g.member ? 'alert' : ''}`} title={`${g.unread} unread`}>
+            <span
+              className={`pill-num ${g.member ? 'alert' : ''}`}
+              title={`${g.unread} unread`}
+            >
               {g.unread}
             </span>
           )}
@@ -207,7 +210,10 @@ function GroupList({ items, activeId, meId }) {
   const mine = shown.filter((g) => g.member);
   const oversee = shown.filter((g) => !g.member);
   return (
-    <aside className="t-list card flush" aria-label="Your team groups">
+    <aside
+      className="t-list card flush"
+      aria-label="Your team groups"
+    >
       <div className="t-list-head">
         <div className="t-search">
           <Search size={16} />
@@ -236,18 +242,34 @@ function GroupList({ items, activeId, meId }) {
           </div>
         )}
         {mine.map((g) => (
-          <GroupRow key={g.id} g={g} active={g.id === activeId} meId={meId} />
+          <GroupRow
+            key={g.id}
+            g={g}
+            active={g.id === activeId}
+            meId={meId}
+          />
         ))}
         {oversee.length > 0 && (
-          <div className="t-sec" title="You are a head of these verticals, so you can look in">
+          <div
+            className="t-sec"
+            title="You are a head of these verticals, so you can look in"
+          >
             Groups you oversee <span>{oversee.length}</span>
           </div>
         )}
         {oversee.map((g) => (
-          <GroupRow key={g.id} g={g} active={g.id === activeId} meId={meId} />
+          <GroupRow
+            key={g.id}
+            g={g}
+            active={g.id === activeId}
+            meId={meId}
+          />
         ))}
         {shown.length === 0 && (
-          <div className="empty small" style={{ padding: '28px 16px' }}>
+          <div
+            className="empty small"
+            style={{ padding: '28px 16px' }}
+          >
             {items.length === 0
               ? 'No groups yet. You join a project’s group as soon as you are on its team or get a task in it.'
               : show === 'unread' && !term
@@ -266,7 +288,10 @@ function StatusChip({ status, size = 13 }) {
   const st = GROUP_STATUS[status];
   if (!st) return null;
   return (
-    <span className="t-st-chip" style={{ color: st.color, background: st.soft }}>
+    <span
+      className="t-st-chip"
+      style={{ color: st.color, background: st.soft }}
+    >
       <st.icon size={size} />
       {st.label}
     </span>
@@ -297,8 +322,14 @@ function Attachments({ files, onOpen }) {
         </div>
       )}
       {others.map((f) => (
-        <div key={f.id} className="t-file">
-          <FileIcon file={f} size={18} />
+        <div
+          key={f.id}
+          className="t-file"
+        >
+          <FileIcon
+            file={f}
+            size={18}
+          />
           <button
             type="button"
             className="t-file-main"
@@ -330,7 +361,10 @@ function Message({ m, compact, onChanged, onOpenFile }) {
     return (
       <div className="t-notice">
         <span>{m.body}</span>
-        <time dateTime={m.created_at} title={fmtTime(m.created_at)}>
+        <time
+          dateTime={m.created_at}
+          title={fmtTime(m.created_at)}
+        >
           {clock(m.created_at)}
         </time>
       </div>
@@ -340,11 +374,18 @@ function Message({ m, compact, onChanged, onOpenFile }) {
     <div className={`t-msg ${compact ? 'compact' : ''} k-${m.kind}`}>
       <div className="t-av">
         {compact ? (
-          <time className="t-hover-time" dateTime={m.created_at}>
+          <time
+            className="t-hover-time"
+            dateTime={m.created_at}
+          >
             {clock(m.created_at)}
           </time>
         ) : (
-          <Avatar name={m.user_name || 'Someone'} color={m.user_color} size={36} />
+          <Avatar
+            name={m.user_name || 'Someone'}
+            color={m.user_color}
+            size={36}
+          />
         )}
       </div>
       <div className="t-body">
@@ -357,13 +398,19 @@ function Message({ m, compact, onChanged, onOpenFile }) {
                 Update
               </span>
             )}
-            <time dateTime={m.created_at} title={fmtTime(m.created_at)}>
+            <time
+              dateTime={m.created_at}
+              title={fmtTime(m.created_at)}
+            >
               {clock(m.created_at)}
             </time>
           </div>
         )}
         {m.kind === 'status' ? (
-          <div className="t-status" style={{ borderLeftColor: GROUP_STATUS[m.status]?.color }}>
+          <div
+            className="t-status"
+            style={{ borderLeftColor: GROUP_STATUS[m.status]?.color }}
+          >
             <StatusChip status={m.status} />
             {m.body && (
               <span className="t-text">
@@ -382,7 +429,12 @@ function Message({ m, compact, onChanged, onOpenFile }) {
             </div>
           )
         )}
-        {m.files?.length > 0 && <Attachments files={m.files} onOpen={onOpenFile} />}
+        {m.files?.length > 0 && (
+          <Attachments
+            files={m.files}
+            onOpen={onOpenFile}
+          />
+        )}
         <DeleteControls
           c={m}
           base={`/group-messages/${m.id}`}
@@ -579,7 +631,11 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
 
   return (
     <div className={`t-compose mode-${mode}`}>
-      <div className="t-modes" role="radiogroup" aria-label="What are you posting?">
+      <div
+        className="t-modes"
+        role="radiogroup"
+        aria-label="What are you posting?"
+      >
         {[
           ['message', 'Message', MessageSquareText],
           ['update', 'Update', Megaphone],
@@ -599,7 +655,11 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
         ))}
       </div>
       {mode === 'status' && (
-        <div className="t-st-pick" role="radiogroup" aria-label="Your status">
+        <div
+          className="t-st-pick"
+          role="radiogroup"
+          aria-label="Your status"
+        >
           {Object.entries(GROUP_STATUS).map(([k, st]) => (
             <button
               key={k}
@@ -621,7 +681,10 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
         </div>
       )}
       {files.length > 0 && (
-        <div className="t-tray" aria-label="Attachments">
+        <div
+          className="t-tray"
+          aria-label="Attachments"
+        >
           {files.map((f) => (
             <div
               key={f.key}
@@ -629,9 +692,15 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
               title={f.error || f.name}
             >
               {f.preview ? (
-                <img src={f.preview} alt="" />
+                <img
+                  src={f.preview}
+                  alt=""
+                />
               ) : (
-                <FileIcon file={{ name: f.name, mime: f.mime, kind: 'file' }} size={16} />
+                <FileIcon
+                  file={{ name: f.name, mime: f.mime, kind: 'file' }}
+                  size={16}
+                />
               )}
               <span className="t-chip-text">
                 <span className="small b6 ellipsis">{f.name}</span>
@@ -644,7 +713,11 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
                     bytes(f.size)
                   ) : (
                     <>
-                      <Loader2 size={11} className="spin" /> {Math.round(f.progress * 100)}%
+                      <Loader2
+                        size={11}
+                        className="spin"
+                      />{' '}
+                      {Math.round(f.progress * 100)}%
                     </>
                   )}
                 </span>
@@ -719,7 +792,11 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
           </span>
         </button>
         {mention && matches.length > 0 && (
-          <div className="dropdown t-mention" role="listbox" aria-label="Mention someone">
+          <div
+            className="dropdown t-mention"
+            role="listbox"
+            aria-label="Mention someone"
+          >
             {matches.map((p, i) => (
               <div
                 key={p.id}
@@ -729,7 +806,11 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
                 onMouseDown={(e) => (e.preventDefault(), pick(p))}
                 onMouseEnter={() => setMention((x) => ({ ...x, focus: i }))}
               >
-                <Avatar name={p.name} color={p.color} size={24} />
+                <Avatar
+                  name={p.name}
+                  color={p.color}
+                  size={24}
+                />
                 <span className="small b6">{p.name}</span>
                 <span className="xs muted ellipsis">{p.title}</span>
               </div>
@@ -751,23 +832,44 @@ const Composer = forwardRef(function Composer({ g, onSent }, outer) {
 
 function PeoplePanel({ g, onClose, overlay }) {
   return (
-    <aside className={`t-side card ${overlay ? 'floating' : ''}`} aria-label="People in this group">
+    <aside
+      className={`t-side card ${overlay ? 'floating' : ''}`}
+      aria-label="People in this group"
+    >
       <div className="card-head">
         <h3>
-          <Users size={17} color="var(--blue)" />
+          <Users
+            size={17}
+            color="var(--blue)"
+          />
           People <span className="sub">{g.members.length}</span>
         </h3>
         {overlay && (
-          <button type="button" className="icon-btn sm-x" aria-label="Close" onClick={onClose}>
+          <button
+            type="button"
+            className="icon-btn sm-x"
+            aria-label="Close"
+            onClick={onClose}
+          >
             <X size={16} />
           </button>
         )}
       </div>
       <div className="t-people">
         {g.members.map((m) => (
-          <div key={m.id} className="t-person">
-            <Avatar name={m.name} color={m.color} size={34} />
-            <div className="grow" style={{ minWidth: 0 }}>
+          <div
+            key={m.id}
+            className="t-person"
+          >
+            <Avatar
+              name={m.name}
+              color={m.color}
+              size={34}
+            />
+            <div
+              className="grow"
+              style={{ minWidth: 0 }}
+            >
               <div className="small b6 ellipsis">
                 {m.name}
                 {m.owner && <span className="badge b-blue t-owner">Owner</span>}
@@ -780,7 +882,10 @@ function PeoplePanel({ g, onClose, overlay }) {
               </div>
               {m.status ? (
                 <div className="t-pstatus">
-                  <StatusChip status={m.status.status} size={12} />
+                  <StatusChip
+                    status={m.status.status}
+                    size={12}
+                  />
                   <span className="xs faint">{timeAgo(m.status.created_at)}</span>
                   {m.status.body && <div className="xs t-pnote">{m.status.body}</div>}
                 </div>
@@ -796,8 +901,16 @@ function PeoplePanel({ g, onClose, overlay }) {
           <div className="t-sec">Heads who can look in</div>
           <div className="t-heads">
             {g.heads.map((h) => (
-              <span key={h.id} className="t-head-chip" title={h.title}>
-                <Avatar name={h.name} color={h.color} size={22} />
+              <span
+                key={h.id}
+                className="t-head-chip"
+                title={h.title}
+              >
+                <Avatar
+                  name={h.name}
+                  color={h.color}
+                  size={22}
+                />
                 {h.name}
               </span>
             ))}
@@ -947,7 +1060,10 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
           icon={Lock}
           title={error.status === 404 ? 'Group not found' : 'Could not open this group'}
           action={
-            <Link to="/teams" className="btn">
+            <Link
+              to="/teams"
+              className="btn"
+            >
               Back to groups
             </Link>
           }
@@ -1031,9 +1147,16 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
 
   return (
     <>
-      <section className="t-chat card flush" aria-label={`${p.name} group`} {...dropProps}>
+      <section
+        className="t-chat card flush"
+        aria-label={`${p.name} group`}
+        {...dropProps}
+      >
         {dragging && (
-          <div className="t-drop" aria-hidden="true">
+          <div
+            className="t-drop"
+            aria-hidden="true"
+          >
             <Upload size={30} />
             <b>Drop to share with the {p.code} group</b>
             <span className="small">
@@ -1059,10 +1182,18 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
           >
             {p.vertical[0]}
           </span>
-          <div className="grow" style={{ minWidth: 0 }}>
+          <div
+            className="grow"
+            style={{ minWidth: 0 }}
+          >
             <div className="t-title-row">
               <h2 className="t-title">{p.name}</h2>
-              {!narrow && <StatusBadge status={p.status} readyLabel={p.ready_label} />}
+              {!narrow && (
+                <StatusBadge
+                  status={p.status}
+                  readyLabel={p.ready_label}
+                />
+              )}
             </div>
             <div className="xs muted ellipsis">
               {narrow
@@ -1085,17 +1216,29 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
                     {g.members.length}
                   </>
                 ) : (
-                  <AvatarStack people={g.members} max={3} size={22} />
+                  <AvatarStack
+                    people={g.members}
+                    max={3}
+                    size={22}
+                  />
                 )}
               </button>
             )}
-            <Link to={`/projects/${p.id}`} className="btn sm" title="Open the project">
+            <Link
+              to={`/projects/${p.id}`}
+              className="btn sm"
+              title="Open the project"
+            >
               <ExternalLink size={15} />
               <span className="hide-sm">Project</span>
             </Link>
           </div>
         </header>
-        <div className="t-views" role="tablist" aria-label="Show">
+        <div
+          className="t-views"
+          role="tablist"
+          aria-label="Show"
+        >
           <button
             type="button"
             role="tab"
@@ -1141,8 +1284,14 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
         {g.open && flagged.length > 0 && (
           <div className="t-flags">
             {flagged.map((m) => (
-              <span key={m.id} className="t-flag-item">
-                <StatusChip status={m.status.status} size={12} />
+              <span
+                key={m.id}
+                className="t-flag-item"
+              >
+                <StatusChip
+                  status={m.status.status}
+                  size={12}
+                />
                 <b>{m.name.split(' ')[0]}</b>
                 {m.status.body ? `: ${m.status.body}` : ''}
               </span>
@@ -1150,10 +1299,19 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
           </div>
         )}
         <div className="t-msgs-wrap">
-          <div className="t-msgs" ref={listRef} onScroll={onScroll} aria-live="polite">
+          <div
+            className="t-msgs"
+            ref={listRef}
+            onScroll={onScroll}
+            aria-live="polite"
+          >
             {hasMore && (
               <div className="t-older">
-                <button type="button" className="btn sm" onClick={loadOlder}>
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={loadOlder}
+                >
                   Show earlier messages
                 </button>
               </div>
@@ -1182,11 +1340,17 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
             ) : (
               rows.map((r) =>
                 r.day ? (
-                  <div key={r.key} className="t-day">
+                  <div
+                    key={r.key}
+                    className="t-day"
+                  >
                     <span>{dayLabel(r.day)}</span>
                   </div>
                 ) : r.divider ? (
-                  <div key="new" className="t-new-divider">
+                  <div
+                    key="new"
+                    className="t-new-divider"
+                  >
                     <span>New</span>
                   </div>
                 ) : (
@@ -1216,7 +1380,11 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
           )}
         </div>
         {g.can_post ? (
-          <Composer ref={composerRef} g={g} onSent={sent} />
+          <Composer
+            ref={composerRef}
+            g={g}
+            onSent={sent}
+          />
         ) : (
           <div className="t-readonly xs muted">
             <Lock size={13} />
@@ -1226,7 +1394,13 @@ function Chat({ id, narrow, wide, onRead, onListChanged }) {
           </div>
         )}
       </section>
-      {showPanel && <PeoplePanel g={g} overlay={!wide} onClose={() => setPeopleOpen(false)} />}
+      {showPanel && (
+        <PeoplePanel
+          g={g}
+          overlay={!wide}
+          onClose={() => setPeopleOpen(false)}
+        />
+      )}
       {preview && (
         <FilePreview
           file={preview}
@@ -1303,7 +1477,10 @@ export default function Teams({ id }) {
           </div>
         </div>
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       <div
         ref={gridRef}
         className={`teams ${activeId ? 'has-chat' : ''} ${wide ? 'wide' : ''}`}
@@ -1314,7 +1491,11 @@ export default function Teams({ id }) {
             <Loading />
           </section>
         ) : (
-          <GroupList items={items} activeId={activeId} meId={me.id} />
+          <GroupList
+            items={items}
+            activeId={activeId}
+            meId={me.id}
+          />
         )}
         {activeId ? (
           <Chat
@@ -1328,7 +1509,10 @@ export default function Teams({ id }) {
         ) : (
           !narrow && (
             <section className="t-chat card">
-              <Empty icon={MessagesSquare} title={items.length ? 'Pick a group' : 'No groups yet'}>
+              <Empty
+                icon={MessagesSquare}
+                title={items.length ? 'Pick a group' : 'No groups yet'}
+              >
                 {items.length
                   ? 'Choose a project on the left to see its chat, updates and everyone’s status.'
                   : 'You join a project’s group as soon as you are on its team or get a task in it.'}

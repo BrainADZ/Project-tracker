@@ -162,7 +162,10 @@ export default function Archive() {
             >
               <option value="">Any client</option>
               {clients.map((c) => (
-                <option key={c.name} value={c.name}>
+                <option
+                  key={c.name}
+                  value={c.name}
+                >
                   {c.name} ({c.n})
                 </option>
               ))}
@@ -207,7 +210,10 @@ export default function Archive() {
               </button>
             )}
           </div>
-          <ErrorNote error={error} retry={reload} />
+          <ErrorNote
+            error={error}
+            retry={reload}
+          />
           {loading && !data ? (
             <Loading />
           ) : items.length === 0 ? (
@@ -221,7 +227,10 @@ export default function Archive() {
               </Empty>
             </div>
           ) : (
-            <div className="col" style={{ gap: 18 }}>
+            <div
+              className="col"
+              style={{ gap: 18 }}
+            >
               {byYear.map(([y, list]) => (
                 <section key={y}>
                   <div className="year-head">
@@ -240,12 +249,19 @@ export default function Archive() {
                         style={{ borderTop: `3px solid ${p.vertical_color}` }}
                       >
                         <div className="row between">
-                          <VChip name={p.vertical} color={p.vertical_color} small />
+                          <VChip
+                            name={p.vertical}
+                            color={p.vertical_color}
+                            small
+                          />
                           <StatusBadge status={p.status} />
                         </div>
                         <div className="mt-8">
                           <div className="xs muted b6">{p.code}</div>
-                          <div className="b7" style={{ fontSize: 15.5, lineHeight: 1.3 }}>
+                          <div
+                            className="b7"
+                            style={{ fontSize: 15.5, lineHeight: 1.3 }}
+                          >
                             {p.client ? `${p.client} · ` : ''}
                             {p.name}
                           </div>
@@ -273,7 +289,11 @@ export default function Archive() {
                         </div>
                         <div className="row between mt-12">
                           <div className="row gap-6">
-                            <Avatar name={p.owner_name} color={p.owner_color} size={24} />
+                            <Avatar
+                              name={p.owner_name}
+                              color={p.owner_color}
+                              size={24}
+                            />
                             <span className="small">{p.owner_name}</span>
                           </div>
                           {canManage(p.vertical_id) && (

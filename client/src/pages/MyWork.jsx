@@ -107,7 +107,10 @@ export default function MyWork() {
           ]}
         />
       </div>
-      <ErrorNote error={error} retry={reload} />
+      <ErrorNote
+        error={error}
+        retry={reload}
+      />
       {loading && !data ? (
         <Loading />
       ) : items.length === 0 ? (
@@ -135,11 +138,17 @@ export default function MyWork() {
           ))}
         </div>
       ) : (
-        <div className="col" style={{ gap: 16 }}>
+        <div
+          className="col"
+          style={{ gap: 16 }}
+        >
           {BUCKETS.map(
             ([k, label]) =>
               grouped[k].length > 0 && (
-                <section key={k} className="card flush">
+                <section
+                  key={k}
+                  className="card flush"
+                >
                   <div className="stage-head">
                     <b className={k === 'overdue' ? 'red' : ''}>{label}</b>
                     <CountPill
@@ -180,16 +189,28 @@ function WorkRow({ t, today, onToggle, onOpen, showWho }) {
         onClick={() => onToggle(t)}
         aria-label={t.status === 'done' ? `Reopen ${t.title}` : `Mark ${t.title} done`}
       >
-        {t.status === 'done' && <Check size={13} strokeWidth={3} />}
+        {t.status === 'done' && (
+          <Check
+            size={13}
+            strokeWidth={3}
+          />
+        )}
       </button>
-      <button type="button" className="trow-main" onClick={onOpen}>
+      <button
+        type="button"
+        className="trow-main"
+        onClick={onOpen}
+      >
         <span className="ttitle">
           {t.is_new && <NewTag />}
           {t.title}
         </span>
         <span className="tmeta">
           <span className="xs muted ellipsis">
-            <span className="dot" style={{ background: t.vertical_color, marginRight: 5 }} />
+            <span
+              className="dot"
+              style={{ background: t.vertical_color, marginRight: 5 }}
+            />
             {t.code} · {t.client ? `${t.client} · ` : ''}
             {t.project_name}
           </span>
@@ -201,7 +222,11 @@ function WorkRow({ t, today, onToggle, onOpen, showWho }) {
         <span className="tassignee">
           {t.assignee_name ? (
             <>
-              <Avatar name={t.assignee_name} color={t.assignee_color} size={24} />
+              <Avatar
+                name={t.assignee_name}
+                color={t.assignee_color}
+                size={24}
+              />
               <span className="small hide-sm">{t.assignee_name.split(' ')[0]}</span>
             </>
           ) : (
