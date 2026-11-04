@@ -498,9 +498,25 @@ export function GeneralDailyReporting({
                   <th scope="col" className="work-client">
                     Client / project
                   </th>
-                  <th scope="col">Work / content</th>
-                  {!websiteContext && <th scope="col">Social / content</th>}
-                  <th scope="col">{websiteContext ? 'Developer' : 'Assigned to'}</th>
+                  <th scope="col">
+                    {websiteContext
+                      ? 'Work / module'
+                      : currentDepartment === 'seo'
+                        ? 'SEO work'
+                        : 'Work / content'}
+                  </th>
+                  {!websiteContext && (
+                    <th scope="col">
+                      {currentDepartment === 'social' ? 'Social / content' : 'Project contact'}
+                    </th>
+                  )}
+                  <th scope="col">
+                    {websiteContext
+                      ? 'Developer'
+                      : currentDepartment === 'seo'
+                        ? 'SEO executive'
+                        : 'Assigned to'}
+                  </th>
                   {websiteContext && <th scope="col">Deadline</th>}
                   <th scope="col">Start</th>
                   <th scope="col">Completed</th>
@@ -780,7 +796,10 @@ export function GeneralDailyReporting({
                 />
               </Field>
             )}
-            <Field label="Work / content" className="full">
+            <Field
+              label={currentDepartment === 'seo' ? 'SEO work' : 'Work / content'}
+              className="full"
+            >
               <input
                 className="input"
                 required
@@ -816,7 +835,13 @@ export function GeneralDailyReporting({
             {f.project_id ? (
               <>
                 {canSelectContact && (
-                  <Field label="Social / content person">
+                  <Field
+                    label={
+                      selected?.service_type === 'social'
+                        ? 'Social / content person'
+                        : 'Project lead / contact'
+                    }
+                  >
                     <select
                       className="select"
                       value={f.social_id || ''}
@@ -831,7 +856,15 @@ export function GeneralDailyReporting({
                     </select>
                   </Field>
                 )}
-                <Field label={websiteForm ? 'Developer' : 'Assigned designer / person'}>
+                <Field
+                  label={
+                    websiteForm
+                      ? 'Developer'
+                      : selected?.service_type === 'seo'
+                        ? 'SEO executive'
+                        : 'Assigned designer / person'
+                  }
+                >
                   <select
                     className="select"
                     disabled={websiteForm && !canChooseWorkContact(me, selected)}

@@ -1858,6 +1858,7 @@ test('development and social sheets, extras, bootstrap and project views remain 
     assert.deepEqual((await f.call(f.manager, 'GET', '/bootstrap')).reporting_access.departments, [
       'social',
       'development',
+      'seo',
     ]);
     assert.equal(f.db.get('PRAGMA foreign_key_check'), undefined);
   } finally {

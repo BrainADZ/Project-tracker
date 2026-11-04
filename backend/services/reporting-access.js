@@ -9,11 +9,14 @@ import {
 export const REPORTING_DEPARTMENTS = {
   social: 'Social Media Reporting',
   development: 'Development Reporting',
+  seo: 'SEO Reporting',
   other: 'Project Reporting',
 };
 export function defaultReportingDepartment(user) {
+  const title = user?.title || '';
+  if (/\bseo\b/i.test(title)) return 'seo';
   return /\b(developer|development|frontend|backend|full.?stack|software|engineer(?:ing)?|website|web head|technical head)\b/i.test(
-    user?.title || '',
+    title,
   )
     ? 'development'
     : 'social';
@@ -23,7 +26,9 @@ export function projectReportingDepartment(project) {
     ? 'development'
     : project?.service_type === 'social'
       ? 'social'
-      : 'other';
+      : project?.service_type === 'seo'
+        ? 'seo'
+        : 'other';
 }
 export const reportingPath = (department) =>
   '/daily-reporting/' + (REPORTING_DEPARTMENTS[department] ? department : 'social');
@@ -51,6 +56,7 @@ export function reportingAccess(db, user) {
   if (vids.some((id) => canManageVertical(user, id))) {
     departments.add('social');
     departments.add('development');
+    departments.add('seo');
   }
   const projects = vids.length
     ? db.all(
@@ -87,7 +93,7 @@ export function reportingAccess(db, user) {
       departments.add(r.reporting_team);
     if (!departments.size) departments.add(preferred);
   }
-  const ordered = ['social', 'development', 'other'].filter((d) => departments.has(d));
+  const ordered = ['social', 'development', 'seo', 'other'].filter((d) => departments.has(d));
   return {
     departments: ordered,
     default_department: departments.has(preferred) ? preferred : ordered[0] || preferred,

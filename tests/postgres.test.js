@@ -12,6 +12,7 @@ test(
     const db = openPostgres(process.env.DATABASE_URL);
     try {
       migrate(db);
+      assert.ok(db.get("SELECT to_regclass('public.seo_keywords') AS name").name);
       assert.equal(db.get("SELECT 'LIKE COLLATE NOCASE' AS sample").sample, 'LIKE COLLATE NOCASE');
       const row = db.get('SELECT id FROM users WHERE email = ?', 'web-dev1.demo@brainadz.com');
       assert.ok(row?.id);
@@ -53,6 +54,33 @@ test(
         '/marketing',
       ]) {
         await assert.doesNotReject(handle(adminCtx, 'GET', path), path);
+      }
+      db.exec('BEGIN');
+      try {
+        const vertical = db.get("SELECT id FROM verticals WHERE code='MKT'").id;
+        const projectId = db.run(
+          "INSERT INTO projects(code,vertical_id,name,owner_id,service_type,service_details) VALUES (?,?,?,?, 'seo',?)",
+          `PG-SEO-${Date.now()}`,
+          vertical,
+          'PostgreSQL SEO smoke test',
+          admin.id,
+          JSON.stringify({ specialist_id: admin.id, monthly_target: 3 }),
+        ).id;
+        const seoPath = `/projects/${projectId}/seo`;
+        const keyword = await handle(
+          { ...adminCtx, body: { keyword: 'SEO smoke test' } },
+          'POST',
+          seoPath + '/keywords',
+        );
+        await handle(
+          { ...adminCtx, body: { month: '2026-11', position: 4 } },
+          'PUT',
+          seoPath + `/keywords/${keyword.id}/rank`,
+        );
+        const seo = await handle({ ...adminCtx, query: { month: '2026-11' } }, 'GET', seoPath);
+        assert.equal(seo.summary.top_ten, 1);
+      } finally {
+        db.exec('ROLLBACK');
       }
       await handle(
         { ...ctx, query: { department: 'development', date: '2026-11-03' } },

@@ -37,6 +37,7 @@ function Routes() {
     return <DailyReporting key="social" department="social" />;
   if (path === '/daily-reporting/development')
     return <DailyReporting key="development" department="development" />;
+  if (path === '/daily-reporting/seo') return <DailyReporting key="seo" department="seo" />;
   if (path === '/daily-reporting/other') return <DailyReporting key="other" department="other" />;
   if (path === '/daily-reporting') return <DailyReporting department={reportingDepartment} />;
   if ((m = match('/daily-reporting/:id', path))) return <DailyReporting projectId={m.id} />;

@@ -89,6 +89,7 @@ export function MarketingProjectForm({
               ? {
                   website_url: f.website_url,
                   keyword_count: f.keyword_count,
+                  monthly_target: f.monthly_target,
                   deliverables: f.deliverables,
                 }
               : {
@@ -323,6 +324,15 @@ export function MarketingProjectForm({
                     min="0"
                     value={f.keyword_count}
                     onChange={set('keyword_count')}
+                  />
+                </Field>
+                <Field label="Monthly SEO work target">
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={f.monthly_target}
+                    onChange={set('monthly_target')}
                   />
                 </Field>
                 <Field label="Monthly SEO deliverables" className="full">

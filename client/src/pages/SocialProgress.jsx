@@ -1,17 +1,31 @@
 import { Progress } from '../ui.jsx';
 
-export default function SocialProgress({ summary: s, month, onMonthChange, loading }) {
+export default function SocialProgress({
+  summary: s,
+  month,
+  onMonthChange,
+  loading,
+  kind = 'social',
+}) {
   if (!s) return null;
+  const seo = kind === 'seo';
+  const item = seo ? 'SEO work items' : 'creatives';
   const label = new Intl.DateTimeFormat('en-IN', {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(s.month + '-01T00:00:00Z'));
   return (
-    <section className="social-monthly" aria-label="Monthly creative progress" aria-busy={loading}>
+    <section
+      className="social-monthly"
+      aria-label={seo ? 'Monthly SEO work progress' : 'Monthly creative progress'}
+      aria-busy={loading}
+    >
       <div className="row wrap between">
         <div>
-          <h3>{label} · Monthly work</h3>
+          <h3>
+            {label} · {seo ? 'SEO work' : 'Monthly work'}
+          </h3>
           <p className="small muted mt-4">
             Updates automatically from daily work. The project continues each month.
           </p>
@@ -35,17 +49,17 @@ export default function SocialProgress({ summary: s, month, onMonthChange, loadi
       </div>
       <div className="social-target-line">
         <strong>
-          {s.done} / {s.target || '—'} creatives done
+          {s.done} / {s.target || '—'} {item} done
         </strong>
         <span>{s.target ? s.remaining + ' remaining' : 'Set the monthly target in Edit'}</span>
       </div>
       <div
         role="progressbar"
-        aria-label={label + ' creative target'}
+        aria-label={label + (seo ? ' SEO work target' : ' creative target')}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={s.percent}
-        aria-valuetext={s.done + ' of ' + s.target + ' creatives done'}
+        aria-valuetext={s.done + ' of ' + s.target + ' ' + item + ' done'}
       >
         <Progress value={s.percent} color="var(--cyan)" />
       </div>

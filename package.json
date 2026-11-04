@@ -21,7 +21,8 @@
     "seed:demo": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/seeds/seed-demo.js",
     "test": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning --test tests/*.test.js",
     "seed:marketing": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/seeds/seed-marketing-demo.js",
-    "seed:website": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/seeds/seed-website-demo.js"
+    "seed:website": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/seeds/seed-website-demo.js",
+    "seed:seo": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning backend/seeds/seed-seo-demo.js"
   },
   "dependencies": {
     "express": "4.22.3",

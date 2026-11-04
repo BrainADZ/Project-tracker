@@ -1,9 +1,10 @@
 import { TRACKING_SCHEMA } from '../services/work-tracking.js';
 import { MARKETING_SCHEMA } from './marketing-schema.js';
+import { SEO_SCHEMA } from './seo-schema.js';
 // Canonical schema definition used by the PostgreSQL schema converter and
 // legacy SQLite migration tests.
 
-export const SCHEMA_VERSION = 19;
+export const SCHEMA_VERSION = 20;
 
 // Kept as a function so a migration can rebuild the table with the same definition.
 export function projectsTable(name) {
@@ -242,7 +243,8 @@ CREATE TABLE IF NOT EXISTS group_messages (
 CREATE INDEX IF NOT EXISTS idx_group_messages_project ON group_messages(project_id, id);
 ` +
   MARKETING_SCHEMA +
-  TRACKING_SCHEMA;
+  TRACKING_SCHEMA +
+  SEO_SCHEMA;
 
 export const FILE_CATEGORIES = [
   'Brief',

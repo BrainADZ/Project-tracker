@@ -8,7 +8,12 @@ export function reportingMonth(value, today) {
 
 // Work belongs to its planned month. Revisions retain the same task id.
 export function socialProgressFor(db, projects, today, requestedMonth) {
-  const social = projects.filter((p) => p.service_type === 'social');
+  const social = projects.filter(
+    (p) =>
+      p.service_type === 'social' ||
+      (p.service_type === 'seo' &&
+        (typeof p.stages === 'string' ? parseJSON(p.stages, []) : p.stages || []).length === 0),
+  );
   const result = new Map();
   if (!social.length) return result;
   const month = reportingMonth(requestedMonth, today);

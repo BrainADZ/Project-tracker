@@ -4,6 +4,7 @@ import { useApp } from '../store.jsx';
 import { Logo } from '../Layout.jsx';
 import { Field } from '../ui.jsx';
 import { WEBSITE_DEMO_PEOPLE, websiteDemoEmail } from '../../../backend/seeds/website-demo.js';
+import { SEO_DEMO_PEOPLE, seoDemoEmail } from '../../../backend/seeds/seo-demo.js';
 
 const QUICK_ACCOUNTS = [
   { label: 'Admin · all verticals', email: 'rajiv.malhotra@brainadz.com' },
@@ -16,6 +17,10 @@ const QUICK_ACCOUNTS = [
   ...WEBSITE_DEMO_PEOPLE.map((p) => ({
     label: p.title + ' (demo)',
     email: websiteDemoEmail(p.key),
+  })),
+  ...SEO_DEMO_PEOPLE.map((p) => ({
+    label: p.title + ' (demo)',
+    email: seoDemoEmail(p.key),
   })),
 ];
 

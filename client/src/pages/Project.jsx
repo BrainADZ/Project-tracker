@@ -65,6 +65,7 @@ import { ProjectForm } from './ProjectForm.jsx';
 import { TaskModal } from './TaskModal.jsx';
 import { toCsv } from './Projects.jsx';
 import SocialProgress from './SocialProgress.jsx';
+import SeoTracker from './SeoTracker.jsx';
 import WebsiteProgress from './WebsiteProgress.jsx';
 import WebsiteTasks from './WebsiteTasks.jsx';
 import DailyReporting from './DailyReporting.jsx';
@@ -367,6 +368,7 @@ function Team({ p, reload, onEdit }) {
 
 function Overview({ p, reload, onEdit }) {
   const { today } = useApp();
+  const recurring = p.service_type === 'social' || (p.service_type === 'seo' && !p.stages.length);
   return (
     <div className="grid">
       <div className="span-8 col" style={{ gap: 16 }}>
@@ -425,9 +427,9 @@ function Overview({ p, reload, onEdit }) {
         </section>
         <section className="card">
           <div className="card-head">
-            <h3>{p.service_type === 'social' ? 'Pending work' : 'Up next'}</h3>
+            <h3>{recurring ? 'Pending work' : 'Up next'}</h3>
             <Link to={`/projects/${p.id}/tasks`} className="link">
-              {p.service_type === 'social' ? 'Daily work' : 'All tasks'}
+              {recurring ? 'Daily work' : 'All tasks'}
             </Link>
           </div>
           {p.upcoming_tasks.length === 0 ? (
@@ -436,18 +438,14 @@ function Overview({ p, reload, onEdit }) {
             p.upcoming_tasks.map((t) => (
               <Link
                 key={t.id}
-                to={
-                  p.service_type === 'social'
-                    ? `/projects/${p.id}/tasks`
-                    : `/projects/${p.id}/tasks/${t.id}`
-                }
+                to={recurring ? `/projects/${p.id}/tasks` : `/projects/${p.id}/tasks/${t.id}`}
                 className="list-item plain"
               >
                 <span className="dot" style={{ background: TASK_STATUS[t.status].color }} />
                 <div className="grow">
                   <div className="small b6 ellipsis">{t.title}</div>
                   <div className="xs muted">
-                    {p.service_type !== 'social' && <>{t.stage} · </>}
+                    {!recurring && <>{t.stage} · </>}
                     {TASK_STATUS[t.status].label}
                   </div>
                 </div>
@@ -467,7 +465,7 @@ function Overview({ p, reload, onEdit }) {
             ))
           )}
         </section>
-        {!['social', 'website', 'software'].includes(p.service_type) && (
+        {!recurring && !isDevelopmentProject(p) && (
           <section className="card">
             <div className="card-head">
               <h3>Progress by stage</h3>
@@ -501,7 +499,7 @@ function Overview({ p, reload, onEdit }) {
         )}
       </div>
       <div className="span-4 col" style={{ gap: 16 }}>
-        {p.service_type !== 'social' && <Milestones p={p} reload={reload} />}
+        {!recurring && <Milestones p={p} reload={reload} />}
         <Team p={p} reload={reload} onEdit={onEdit} />
         <section className="card">
           <div className="card-head">
@@ -529,7 +527,7 @@ function Overview({ p, reload, onEdit }) {
             </dd>
             {p.completed_at && (
               <>
-                <dt>{p.service_type === 'social' ? 'Contract closed' : 'Delivered'}</dt>
+                <dt>{recurring ? 'Contract closed' : 'Delivered'}</dt>
                 <dd>{fmtDate(p.completed_at.slice(0, 10), { year: true })}</dd>
               </>
             )}
@@ -1295,7 +1293,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
     setData,
   } = useLoad(() => api.get(`/projects/${id}`, { month: month || undefined }), [id, month]);
   useEffect(() => {
-    if (!['social', 'website', 'software'].includes(p?.service_type)) return;
+    if (!['social', 'seo', 'website', 'software'].includes(p?.service_type)) return;
     const fresh = () => {
       if (document.visibilityState === 'visible') reload({ quiet: true });
     };
@@ -1356,18 +1354,20 @@ export default function Project({ id, tab = 'overview', taskId }) {
     }
   };
   const social = p.service_type === 'social',
+    seo = p.service_type === 'seo',
+    recurring = social || (seo && !p.stages.length),
     website = isDevelopmentProject(p);
   const close = async () => {
     const open = p.task_total - p.task_done;
     const ok = await confirm({
-      title: social ? `Close ${p.code} contract?` : `Mark ${p.code} as delivered?`,
-      message: `${social ? 'Close only when the client engagement ends, not when the monthly target is met. ' : ''}${open ? `${open} task${open > 1 ? 's are' : ' is'} still open. ` : ''}The project moves to Past Projects with all its files and history, and you can reopen it at any time.`,
-      confirmLabel: social ? 'Close contract' : 'Mark delivered',
+      title: recurring ? `Close ${p.code} contract?` : `Mark ${p.code} as delivered?`,
+      message: `${recurring ? 'Close only when the client engagement ends, not when the monthly target is met. ' : ''}${open ? `${open} task${open > 1 ? 's are' : ' is'} still open. ` : ''}The project moves to Past Projects with all its files and history, and you can reopen it at any time.`,
+      confirmLabel: recurring ? 'Close contract' : 'Mark delivered',
     });
     if (ok)
       setStatus(
         'completed',
-        social
+        recurring
           ? 'Contract closed and moved to Past Projects'
           : 'Project delivered and moved to Past Projects',
       );
@@ -1426,11 +1426,12 @@ export default function Project({ id, tab = 'overview', taskId }) {
     ['overview', 'Overview'],
     [
       'tasks',
-      social ? 'Daily work' : 'Tasks',
-      social ? p.monthly?.assigned : p.task_total,
+      recurring ? 'Daily work' : 'Tasks',
+      recurring ? p.monthly?.assigned : p.task_total,
       p.unseen?.tasks,
     ],
     ...(website ? [['reporting', 'Daily reporting']] : []),
+    ...(seo ? [['seo', 'SEO tracker']] : []),
     ['files', 'Files & assets', p.file_count, p.unseen?.files],
     ['activity', 'Discussion', p.comment_total, p.unseen?.discussion],
   ];
@@ -1512,7 +1513,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
               </Link>
             )}
             {p.permissions.edit &&
-              !social &&
+              !recurring &&
               !website &&
               !closed &&
               p.ready_label &&
@@ -1528,7 +1529,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
                 </button>
               )}
             {p.permissions.edit &&
-              !social &&
+              !recurring &&
               !closed &&
               (!p.ready_label || p.status === 'ready') && (
                 <button type="button" className="btn success" onClick={close}>
@@ -1555,7 +1556,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
             <Menu
               buttonClass="btn"
               items={[
-                social &&
+                recurring &&
                   p.permissions.edit &&
                   !closed && { label: 'Close contract', icon: CheckCircle2, onClick: close },
                 canManage(p.vertical_id) && {
@@ -1569,7 +1570,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
                   onClick: saveTemplate,
                 },
                 p.permissions.edit &&
-                  !social &&
+                  !recurring &&
                   !closed &&
                   p.ready_label &&
                   p.status !== 'ready' && {
@@ -1615,7 +1616,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
         </div>
 
         <div className="facts">
-          {!social && !website && (
+          {!recurring && !website && (
             <Fact
               icon={Diamond}
               label={p.key_date_label}
@@ -1635,7 +1636,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
           )}
           <Fact
             icon={CalendarRange}
-            label={social ? 'Contract dates' : 'Start to wrap-up'}
+            label={recurring ? 'Contract dates' : 'Start to wrap-up'}
             tone={p.late ? 'red' : ''}
           >
             {p.start_date ? fmtDate(p.start_date, { today }) : '—'} →{' '}
@@ -1669,6 +1670,11 @@ export default function Project({ id, tab = 'overview', taskId }) {
               {p.service_details.monthly_target || '—'} creatives
             </Fact>
           )}
+          {seo && (
+            <Fact icon={List} label="Monthly SEO target">
+              {p.service_details.monthly_target || '—'} work items
+            </Fact>
+          )}
           {p.service_details.lead_id && (
             <Fact icon={Users} label="Client contact">
               {users.find((u) => u.id === p.service_details.lead_id)?.name || '—'}
@@ -1689,7 +1695,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
               {p.city || p.venue || '—'}
             </Fact>
           )}
-          {!social && !website && (
+          {!recurring && !website && (
             <div className="fact ring-fact">
               <Ring value={p.progress} size={54} stroke={6} color={p.vertical_color} />
               <div className="xs muted">
@@ -1701,18 +1707,19 @@ export default function Project({ id, tab = 'overview', taskId }) {
           )}
         </div>
 
-        {social && (
+        {recurring && (
           <SocialProgress
             summary={p.monthly}
             month={month}
             onMonthChange={setMonth}
             loading={loading}
+            kind={seo ? 'seo' : 'social'}
           />
         )}
         {website && (
           <WebsiteProgress summary={p.website} software={p.service_type === 'software'} />
         )}
-        {!social && !website && p.stages.length > 0 && (
+        {!recurring && !website && p.stages.length > 0 && (
           <StageStepper
             stages={p.stages}
             current={p.stage}
@@ -1745,7 +1752,7 @@ export default function Project({ id, tab = 'overview', taskId }) {
 
       {tab === 'overview' && <Overview p={p} reload={reload} onEdit={() => setEditing(true)} />}
       {tab === 'tasks' &&
-        (social ? (
+        (recurring ? (
           <DailyReporting
             key={p.id}
             projectId={p.id}
@@ -1766,6 +1773,14 @@ export default function Project({ id, tab = 'overview', taskId }) {
         ))}
       {tab === 'reporting' && website && (
         <DailyReporting key={p.id + '-reporting'} projectId={p.id} embedded />
+      )}
+      {tab === 'seo' && seo && (
+        <SeoTracker
+          key={p.id + '-' + reportMonth}
+          project={p}
+          month={reportMonth}
+          onMonthChange={setMonth}
+        />
       )}
       {tab === 'files' && <FilesTab p={p} reloadProject={reload} onSeen={seen.files} />}
       {tab === 'activity' && <Discussion p={p} onSeen={seen.discussion} />}

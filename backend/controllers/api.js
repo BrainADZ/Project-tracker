@@ -28,6 +28,7 @@ import {
 } from '../services/project-services.js';
 import { registerDailyReporting } from './daily-reporting.js';
 import { registerMarketing } from './marketing.js';
+import { registerSeo } from './seo.js';
 // The project-management API as plain functions. The Node server mounts it under /api.
 //
 // handle(ctx, method, path) where ctx = { db, user, query, body, upload, services }
@@ -852,7 +853,8 @@ route('POST', '/projects', (ctx) => {
     if (!template) throw bad('That template is not available for this vertical');
   }
   const stages =
-    f.service_type === 'social'
+    f.service_type === 'social' ||
+    (f.service_type === 'seo' && Number(parseJSON(f.service_details, {}).monthly_target) > 0)
       ? []
       : isDevelopmentProject(f)
         ? WEBSITE_STAGES
@@ -3260,6 +3262,7 @@ route('PATCH', '/admin/settings', (ctx) => {
 });
 
 registerMarketing(route, callRoute);
+registerSeo(route);
 
 registerDailyReporting(route, callRoute);
 registerDevelopmentReporting(route, callRoute);

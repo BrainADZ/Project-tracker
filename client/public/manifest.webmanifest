@@ -20,7 +20,7 @@
   "shortcuts": [
     {
       "name": "My Work",
-      "url": "/#/my",
+      "url": "/my",
       "icons": [
         {
           "src": "/icons/brand-icon-512.png",
@@ -30,7 +30,7 @@
     },
     {
       "name": "Projects",
-      "url": "/#/projects",
+      "url": "/projects",
       "icons": [
         {
           "src": "/icons/brand-icon-512.png",
@@ -40,7 +40,7 @@
     },
     {
       "name": "Team Groups",
-      "url": "/#/teams",
+      "url": "/teams",
       "icons": [
         {
           "src": "/icons/brand-icon-512.png",

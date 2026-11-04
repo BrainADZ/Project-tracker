@@ -1,33 +1,47 @@
-// Small hash router so links and the back button work.
+// Small history router so app links use ordinary paths and the back button works.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const RouterCtx = createContext(null);
-const readHash = () => (window.location.hash.replace(/^#/, '') || '/').split('?')[0];
+const readPath = () => window.location.pathname || '/';
+
+function initialPath() {
+  // Existing shared/bookmarked hash links should continue to open the same page.
+  if (window.location.hash.startsWith('#/')) {
+    const oldPath = window.location.hash.slice(1);
+    window.history.replaceState(window.history.state, '', oldPath);
+  }
+  if (window.history.state?.bpmDepth === undefined)
+    window.history.replaceState({ ...window.history.state, bpmDepth: 0 }, '', window.location.href);
+  return readPath();
+}
 
 export function RouterProvider({ children }) {
-  const [stack, setStack] = useState(() => [readHash()]);
-  const path = stack[stack.length - 1];
+  const [path, setPath] = useState(initialPath);
 
   useEffect(() => {
-    const on = () => setStack((s) => [...s.slice(-30), readHash()]);
-    window.addEventListener('hashchange', on);
-    return () => window.removeEventListener('hashchange', on);
+    const on = () => setPath(readPath());
+    window.addEventListener('popstate', on);
+    return () => window.removeEventListener('popstate', on);
   }, []);
 
   const navigate = useCallback((to, { replace = false } = {}) => {
+    const depth = window.history.state?.bpmDepth || 0;
+    const nextPath = to.split('?')[0];
     if (replace) {
-      window.history.replaceState(null, '', '#' + to);
-      setStack((s) => [...s.slice(0, -1), to]);
-    } else window.location.hash = to;
+      window.history.replaceState({ ...window.history.state, bpmDepth: depth }, '', to);
+    } else if (to !== window.location.pathname + window.location.search) {
+      window.history.pushState({ bpmDepth: depth + 1 }, '', to);
+    }
+    setPath(nextPath);
     if (!replace) window.scrollTo({ top: 0 });
   }, []);
 
   const back = useCallback(
     (fallback = '/') => {
-      if (stack.length > 1) window.history.back();
+      if (window.history.state?.bpmDepth > 0) window.history.back();
       else navigate(fallback);
     },
-    [stack.length, navigate],
+    [navigate],
   );
 
   const value = useMemo(() => ({ path, navigate, back }), [path, navigate, back]);
@@ -51,12 +65,22 @@ export function Link({ to, children, className, onClick, ...rest }) {
   const { navigate } = useRouter();
   return (
     <a
-      href={'#' + to}
+      href={to}
       className={className}
       onClick={(e) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-        e.preventDefault();
         onClick?.(e);
+        if (
+          e.defaultPrevented ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.shiftKey ||
+          e.altKey ||
+          e.button !== 0 ||
+          (e.currentTarget.target && e.currentTarget.target !== '_self') ||
+          e.currentTarget.hasAttribute('download')
+        )
+          return;
+        e.preventDefault();
         navigate(to);
       }}
       {...rest}

@@ -1,7 +1,7 @@
 // The pages in the main menu, shared by the docked sidebar and the floating menu, so both
 // show the same pages, counts and permissions.
 import { useApp } from './store.jsx';
-import { Megaphone, Code2 } from 'lucide-react';
+import { Megaphone, Code2, SearchCheck } from 'lucide-react';
 import {
   DashboardIcon,
   MyWorkIcon,
@@ -56,6 +56,14 @@ export const NAV = [
     icon: Code2,
     keys: 'daily developer website software reporting',
     tint: '#e8effe',
+  },
+  {
+    to: '/daily-reporting/seo',
+    department: 'seo',
+    label: 'SEO Reporting',
+    icon: SearchCheck,
+    keys: 'daily seo keywords rankings optimisation reporting',
+    tint: '#eaf5ec',
   },
   {
     to: '/teams',

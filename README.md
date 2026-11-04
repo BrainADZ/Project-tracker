@@ -162,6 +162,17 @@ Social media clients are ongoing retainers. Their project page shows an automati
 - Close contract is in the project menu and is used when the whole engagement ends.
 - Existing social project tasks are preserved and connected to Daily Reporting during the database upgrade. Existing work does not gain invented timer sessions.
 
+### SEO projects
+
+Create an SEO project with a monthly work target and assign an SEO specialist. The project page shows monthly progress based on completed daily work; reaching the target does not close the contract. **SEO Reporting** in the sidebar shows the team's daily SEO work separately from social media and development.
+
+Run `npm run seed:seo` to add one SEO manager, one SEO executive and a sample SEO project with a daily work item. The accounts are `seo-manager.demo@brainadz.com` and `seo-executive.demo@brainadz.com` with password `demo1234`. Running the seed again preserves edits and passwords.
+
+- The specialist records work and active time through Daily Reporting or the project's Daily work tab. Managers can assign and review work.
+- The SEO tab stores monthly organic sessions, clicks, impressions, indexed pages and notes. It also tracks keywords, target URLs, search volume and monthly search positions. Earlier positions remain available for comparison.
+- The project manager, owner and assigned specialist can update SEO data. Other project viewers can read it. Closed projects remain readable.
+- Existing SEO projects with stages keep their original task flow and gain the SEO tab. New projects with a monthly target use the recurring monthly progress view.
+
 ### Website projects
 
 A website project has one head, any number of selected developers, and a sales person. The head owns the project; no separate social contact or marketing-manager selection is used. The CEO's administrator account can oversee every service project and group without being selected into each team.
@@ -190,7 +201,7 @@ Employees and heads see their assigned projects and permitted reports. Live mana
 
 ### Separate daily reporting sheets
 
-Social Media Reporting (`#/daily-reporting/social`) contains social project work and creative extra work. Development Reporting (`#/daily-reporting/development`) contains Marketing website work, Live software work and development extra work. Project pickers, team filters and CSV exports follow the selected sheet.
+Social Media Reporting (`/daily-reporting/social`) contains social project work and creative extra work. Development Reporting (`/daily-reporting/development`) contains Marketing website work, Live software work and development extra work. SEO Reporting (`/daily-reporting/seo`) contains SEO project work and SEO extra work. Project pickers, team filters and CSV exports follow the selected sheet.
 
 Managers and the configured project head can see their team's reports. Other employees see only work where they are the assigned person or social/content contact. The same access check protects work details, notes, timer history and updates; changing a filter or opening another work ID does not reveal someone else's report. Developer and social/content menus open the appropriate sheet, while managers and the CEO can open both.
 
